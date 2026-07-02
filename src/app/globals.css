@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --accord-ink: #050b16;
+  --accord-night: #07101d;
+  --accord-navy: #0b1220;
+  --accord-elevated: #101a2d;
+  --accord-primary: #625bff;
+  --accord-blue: #4f6bff;
+  --accord-violet: #8b7cff;
+  --accord-bg: #f6f8fc;
+  --accord-border: #e3e8f2;
+  --accord-text: #071225;
+  --accord-muted: #64748b;
+  background: var(--accord-bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 16% -10%, rgba(98, 91, 255, 0.11), transparent 32rem),
+    radial-gradient(circle at 84% 0%, rgba(79, 107, 255, 0.09), transparent 28rem),
+    linear-gradient(180deg, #fbfcff 0%, var(--accord-bg) 38%, #f1f4fa 100%);
+  color: var(--accord-text);
+  font-feature-settings: "ss01" 1, "cv05" 1;
+  text-rendering: geometricPrecision;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  letter-spacing: -0.005em;
+}
+
+::selection {
+  background: rgba(98, 91, 255, 0.22);
+}
+
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.dark-grid {
+  background-image:
+    linear-gradient(rgba(227, 232, 242, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 232, 242, 0.055) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.accord-panel {
+  border: 1px solid rgba(227, 232, 242, 0.88);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 252, 255, 0.94)),
+    #ffffff;
+  box-shadow: 0 1px 1px rgba(7, 18, 37, 0.04), 0 12px 32px rgba(7, 18, 37, 0.06);
+}
+
+.accord-focus {
+  outline: 2px solid rgba(98, 91, 255, 0.38);
+  outline-offset: 2px;
+}
+
+.noise-mask {
+  mask-image: linear-gradient(180deg, black, transparent);
+}
