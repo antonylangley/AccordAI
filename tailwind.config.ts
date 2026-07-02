@@ -19,23 +19,25 @@ const config: Config = {
         line: "rgba(30, 42, 61, 0.14)",
         accord: {
           ink: "#050B16",
-          night: "#07101D",
+          night: "#070C16",
           navy: "#0B1220",
           elevated: "#101A2D",
           primary: "#625BFF",
           blue: "#4F6BFF",
           violet: "#8B7CFF",
-          mist: "#F6F8FC",
-          border: "#E3E8F2",
-          darkBorder: "#1E2A3D",
-          text: "#071225",
-          muted: "#64748B"
+          mist: "#F5F6FA",
+          surface: "#FFFFFF",
+          border: "#E7EAF1",
+          hairline: "#ECEEF4",
+          darkBorder: "#18212F",
+          text: "#0A1120",
+          muted: "#667085"
         }
       },
       boxShadow: {
-        "accord-soft": "0 18px 50px rgba(7, 18, 37, 0.08)",
-        "accord-panel": "0 1px 1px rgba(7, 18, 37, 0.04), 0 12px 32px rgba(7, 18, 37, 0.06)",
-        "accord-glow": "0 0 0 1px rgba(98, 91, 255, 0.18), 0 18px 60px rgba(79, 107, 255, 0.16)"
+        "accord-soft": "0 12px 40px rgba(10, 17, 32, 0.08)",
+        "accord-panel": "0 1px 2px rgba(10, 17, 32, 0.04)",
+        "accord-glow": "0 0 0 1px rgba(98, 91, 255, 0.16), 0 12px 40px rgba(79, 107, 255, 0.14)"
       }
     }
   },

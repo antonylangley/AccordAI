@@ -1,4 +1,6 @@
 import type { LucideIcon } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type StatCardProps = {
   label: string;
@@ -8,19 +10,38 @@ type StatCardProps = {
 };
 
 export function StatCard({ label, value, detail, icon: Icon }: StatCardProps) {
+  const trend = detail.startsWith("+") ? "up" : detail.startsWith("-") ? "down" : "flat";
+
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-accord-border bg-white/92 p-4 shadow-accord-panel">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-accord-primary/0 via-accord-primary/70 to-accord-blue/0" />
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-accord-muted">{label}</p>
-          <p className="mt-2 text-[2rem] font-semibold leading-none tracking-[-0.03em] text-accord-text">{value}</p>
-        </div>
-        <div className="rounded-xl border border-accord-border bg-gradient-to-br from-white to-accord-mist p-2 text-accord-primary shadow-sm">
-          <Icon className="h-4 w-4" aria-hidden="true" />
-        </div>
+    <article className="accord-surface accord-surface-hover group flex flex-col justify-between rounded-xl p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-accord-muted">
+          {label}
+        </p>
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-accord-hairline bg-accord-mist text-accord-muted transition group-hover:border-accord-primary/30 group-hover:text-accord-primary">
+          <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
       </div>
-      <p className="mt-4 border-t border-accord-border/70 pt-3 text-xs leading-5 text-accord-muted">{detail}</p>
+
+      <p className="tnum mt-4 text-[1.75rem] font-semibold leading-none tracking-[-0.03em] text-accord-text">
+        {value}
+      </p>
+
+      <div className="mt-3 flex items-center gap-1.5 border-t border-accord-hairline pt-3">
+        {trend === "up" ? (
+          <ArrowUpRight className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" />
+        ) : trend === "down" ? (
+          <ArrowDownRight className="h-3.5 w-3.5 text-red-600" aria-hidden="true" />
+        ) : null}
+        <p
+          className={cn(
+            "text-xs leading-5",
+            trend === "up" ? "font-medium text-emerald-700" : trend === "down" ? "font-medium text-red-700" : "text-accord-muted"
+          )}
+        >
+          {detail}
+        </p>
+      </div>
     </article>
   );
 }

@@ -3,21 +3,27 @@ import type { ReactNode } from "react";
 type ChartCardProps = {
   title: string;
   description?: string;
+  meta?: string;
+  action?: ReactNode;
   children: ReactNode;
 };
 
-export function ChartCard({ title, description, children }: ChartCardProps) {
+export function ChartCard({ title, description, meta, action, children }: ChartCardProps) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-accord-border bg-white/92 shadow-accord-panel">
-      <div className="border-b border-accord-border/80 bg-gradient-to-b from-white to-accord-mist/60 px-5 py-4">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-sm font-semibold text-accord-text">{title}</h2>
-            {description ? <p className="mt-1 text-xs leading-5 text-accord-muted">{description}</p> : null}
-          </div>
-          <span className="mt-1 h-2 w-2 rounded-full bg-accord-primary shadow-[0_0_18px_rgba(98,91,255,0.45)]" />
+    <section className="accord-surface flex flex-col overflow-hidden rounded-xl">
+      <header className="flex items-start justify-between gap-4 border-b border-accord-hairline px-5 py-4">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold tracking-[-0.01em] text-accord-text">{title}</h2>
+          {description ? <p className="mt-1 text-xs leading-5 text-accord-muted">{description}</p> : null}
         </div>
-      </div>
+        {action ? (
+          <div className="shrink-0">{action}</div>
+        ) : meta ? (
+          <span className="shrink-0 font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-accord-muted">
+            {meta}
+          </span>
+        ) : null}
+      </header>
       <div className="p-5">{children}</div>
     </section>
   );

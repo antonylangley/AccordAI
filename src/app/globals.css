@@ -5,16 +5,18 @@
 :root {
   color-scheme: light;
   --accord-ink: #050b16;
-  --accord-night: #07101d;
+  --accord-night: #070c16;
   --accord-navy: #0b1220;
   --accord-elevated: #101a2d;
   --accord-primary: #625bff;
   --accord-blue: #4f6bff;
   --accord-violet: #8b7cff;
-  --accord-bg: #f6f8fc;
-  --accord-border: #e3e8f2;
-  --accord-text: #071225;
-  --accord-muted: #64748b;
+  --accord-bg: #f5f6fa;
+  --accord-surface: #ffffff;
+  --accord-border: #e7eaf1;
+  --accord-hairline: #eceef4;
+  --accord-text: #0a1120;
+  --accord-muted: #667085;
   background: var(--accord-bg);
 }
 
@@ -25,12 +27,18 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 16% -10%, rgba(98, 91, 255, 0.11), transparent 32rem),
-    radial-gradient(circle at 84% 0%, rgba(79, 107, 255, 0.09), transparent 28rem),
-    linear-gradient(180deg, #fbfcff 0%, var(--accord-bg) 38%, #f1f4fa 100%);
+    radial-gradient(circle at 50% -12%, rgba(98, 91, 255, 0.05), transparent 34rem),
+    linear-gradient(180deg, #fbfcfe 0%, var(--accord-bg) 44%);
   color: var(--accord-text);
   font-feature-settings: "ss01" 1, "cv05" 1;
   text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tabular figures for a precise, data-desk feel */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 button,
@@ -59,17 +67,28 @@ textarea {
 
 .dark-grid {
   background-image:
-    linear-gradient(rgba(227, 232, 242, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(227, 232, 242, 0.055) 1px, transparent 1px);
+    linear-gradient(rgba(227, 232, 242, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227, 232, 242, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 
 .accord-panel {
-  border: 1px solid rgba(227, 232, 242, 0.88);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(250, 252, 255, 0.94)),
-    #ffffff;
-  box-shadow: 0 1px 1px rgba(7, 18, 37, 0.04), 0 12px 32px rgba(7, 18, 37, 0.06);
+  border: 1px solid var(--accord-border);
+  background: var(--accord-surface);
+  box-shadow: 0 1px 2px rgba(10, 17, 32, 0.04);
+}
+
+/* Crisp, flat surface that lifts subtly on hover — the workhorse card */
+.accord-surface {
+  border: 1px solid var(--accord-border);
+  background: var(--accord-surface);
+  box-shadow: 0 1px 2px rgba(10, 17, 32, 0.03);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.accord-surface-hover:hover {
+  border-color: #dde1ec;
+  box-shadow: 0 1px 2px rgba(10, 17, 32, 0.04), 0 10px 30px rgba(10, 17, 32, 0.06);
 }
 
 .accord-focus {
