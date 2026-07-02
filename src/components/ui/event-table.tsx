@@ -16,7 +16,7 @@ const headClass =
 
 export function EventTable({ events, compact = false, selectedId, onSelect }: EventTableProps) {
   return (
-    <div className="accord-surface overflow-hidden rounded-xl">
+    <div className="accord-surface overflow-hidden rounded-md">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
           <thead className="border-b border-accord-border bg-accord-mist/60">

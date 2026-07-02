@@ -26,7 +26,7 @@ export function AccordLogo({
           framed &&
             cn(
               "border border-white/10 bg-white shadow-accord-glow",
-              compact ? "rounded-xl px-2.5 py-1.5" : "rounded-2xl px-3 py-2"
+              compact ? "rounded-md px-2.5 py-1.5" : "rounded-lg px-3.5 py-2.5"
             ),
           className
         )}
@@ -38,7 +38,7 @@ export function AccordLogo({
           height={94}
           alt="Accord"
           priority
-          className={cn("w-auto", compact ? "h-6" : "h-8")}
+          className={cn("w-auto", compact ? "h-6" : "h-9")}
         />
       </div>
     );

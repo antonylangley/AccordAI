@@ -26,14 +26,14 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="flex h-9 items-center gap-2 rounded-lg border border-accord-border bg-white px-3 text-sm font-medium text-accord-text transition hover:border-accord-primary/30"
+              className="flex h-9 items-center gap-2 rounded-md border border-accord-border bg-white px-3 text-sm font-medium text-accord-text transition hover:border-accord-primary/30"
             >
               <Calendar className="h-4 w-4 text-accord-muted" aria-hidden="true" />
               Last 7 days
             </button>
             <button
               type="button"
-              className="flex h-9 items-center gap-2 rounded-lg bg-accord-text px-3 text-sm font-medium text-white transition hover:opacity-90"
+              className="flex h-9 items-center gap-2 rounded-md bg-accord-text px-3 text-sm font-medium text-white transition hover:opacity-90"
             >
               <Download className="h-4 w-4" aria-hidden="true" />
               Export
@@ -48,8 +48,7 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <section className="relative overflow-hidden rounded-2xl border border-accord-darkBorder bg-gradient-to-br from-accord-ink to-accord-night p-6 text-white shadow-accord-soft">
-        <div className="dark-grid pointer-events-none absolute inset-0" aria-hidden="true" />
+      <section className="relative overflow-hidden rounded-lg border border-accord-darkBorder bg-gradient-to-br from-accord-ink to-accord-night p-6 text-white shadow-accord-soft">
         <div className="relative grid gap-6 lg:grid-cols-[1fr_1.5fr] lg:items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-accord-violet">
@@ -68,7 +67,7 @@ export default function DashboardPage() {
             {postureTiles.map(({ value, label, detail, icon: Icon }) => (
               <article
                 key={label}
-                className="rounded-xl border border-white/[0.08] bg-white/[0.04] p-4 transition hover:border-white/[0.16]"
+                className="rounded-md border border-white/[0.08] bg-white/[0.04] p-4 transition hover:border-white/[0.16]"
               >
                 <div className="flex items-center justify-between">
                   <p className="tnum text-2xl font-semibold tracking-[-0.02em]">{value}</p>
@@ -107,7 +106,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/risk-events"
-            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-accord-border bg-white px-3 py-2 text-sm font-medium text-accord-text transition hover:border-accord-primary/30 sm:flex"
+            className="hidden shrink-0 items-center gap-1.5 rounded-md border border-accord-border bg-white px-3 py-2 text-sm font-medium text-accord-text transition hover:border-accord-primary/30 sm:flex"
           >
             View all
             <ArrowRight className="h-4 w-4 text-accord-muted" aria-hidden="true" />

@@ -41,9 +41,9 @@ export function Sidebar() {
     <aside className="hidden min-h-screen w-64 shrink-0 flex-col border-r border-accord-darkBorder bg-gradient-to-b from-accord-ink to-accord-night px-3.5 py-5 text-white lg:flex">
       <Link
         href="/"
-        className="mb-8 inline-flex rounded-xl focus:outline-none focus:ring-2 focus:ring-accord-primary/50"
+        className="mb-8 inline-flex rounded-lg focus:outline-none focus:ring-2 focus:ring-accord-primary/50"
       >
-        <AccordLogo lockup framed compact />
+        <AccordLogo lockup framed />
       </Link>
 
       <nav aria-label="Primary navigation" className="flex-1 space-y-6">

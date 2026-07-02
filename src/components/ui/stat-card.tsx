@@ -13,12 +13,12 @@ export function StatCard({ label, value, detail, icon: Icon }: StatCardProps) {
   const trend = detail.startsWith("+") ? "up" : detail.startsWith("-") ? "down" : "flat";
 
   return (
-    <article className="accord-surface accord-surface-hover group flex flex-col justify-between rounded-xl p-4">
+    <article className="accord-surface accord-surface-hover group flex flex-col justify-between rounded-md p-4">
       <div className="flex items-start justify-between gap-3">
         <p className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-accord-muted">
           {label}
         </p>
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-accord-hairline bg-accord-mist text-accord-muted transition group-hover:border-accord-primary/30 group-hover:text-accord-primary">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-accord-hairline bg-accord-mist text-accord-muted transition group-hover:border-accord-primary/30 group-hover:text-accord-primary">
           <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
       </div>

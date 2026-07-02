@@ -10,7 +10,7 @@ type ChartCardProps = {
 
 export function ChartCard({ title, description, meta, action, children }: ChartCardProps) {
   return (
-    <section className="accord-surface flex flex-col overflow-hidden rounded-xl">
+    <section className="accord-surface flex flex-col overflow-hidden rounded-md">
       <header className="flex items-start justify-between gap-4 border-b border-accord-hairline px-5 py-4">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold tracking-[-0.01em] text-accord-text">{title}</h2>
