@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "lint": "next lint"
+    "lint": "next lint",
+    "eval:redaction": "node scripts/evaluate-redaction.cjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

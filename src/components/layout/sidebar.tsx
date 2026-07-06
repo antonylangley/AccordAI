@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: BarChart3 },
-  { label: "Governed Chat", href: "/chat", icon: MessageSquare },
+  { label: "Accord Chat", href: "/chat", icon: MessageSquare },
   { label: "Risk Events", href: "/risk-events", icon: ShieldAlert },
   { label: "Policies", href: "/policies", icon: SlidersHorizontal },
   { label: "Audit Reports", href: "/audit-reports", icon: FileText },
