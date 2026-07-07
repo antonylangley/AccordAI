@@ -1,0 +1,211 @@
+#accord-guard-root {
+  bottom: max(18px, env(safe-area-inset-bottom));
+  color: #071225;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  left: 50%;
+  pointer-events: none;
+  position: fixed;
+  transform: translateX(-50%);
+  width: min(520px, calc(100vw - 28px));
+  z-index: 2147483646;
+}
+
+.accord-guard-shell,
+.accord-guard-shell * {
+  box-sizing: border-box;
+}
+
+.accord-guard-pill,
+.accord-guard-card,
+.accord-guard-popover,
+.accord-guard-note {
+  backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.accord-guard-pill {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(227, 232, 242, 0.95);
+  border-radius: 999px;
+  box-shadow: 0 12px 34px rgba(7, 18, 37, 0.12);
+  display: inline-flex;
+  gap: 8px;
+  margin: 0 auto;
+  opacity: 0;
+  padding: 7px 10px;
+  transform: translateY(8px) scale(0.96);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.accord-guard-pill[data-visible="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.accord-guard-mark {
+  align-items: center;
+  background: linear-gradient(135deg, #625bff, #4f6bff);
+  border-radius: 9px;
+  color: white;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  letter-spacing: -0.04em;
+  width: 24px;
+}
+
+.accord-guard-status {
+  color: #071225;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.accord-guard-pulse {
+  animation: accord-guard-pulse 900ms ease-in-out infinite;
+  background: #625bff;
+  border-radius: 999px;
+  height: 7px;
+  width: 7px;
+}
+
+.accord-guard-link,
+.accord-guard-small-button,
+.accord-guard-popover button {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: #625bff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 0;
+}
+
+.accord-guard-card {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #dfe4ff;
+  border-radius: 16px;
+  box-shadow: 0 16px 44px rgba(7, 18, 37, 0.13);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 12px 14px;
+}
+
+.accord-guard-card-redact {
+  background: linear-gradient(135deg, rgba(246, 245, 255, 0.96), rgba(255, 255, 255, 0.96));
+  border-color: #d8d4ff;
+}
+
+.accord-guard-card-blocked,
+.accord-guard-card-failed {
+  background: rgba(255, 247, 247, 0.96);
+  border-color: #fecaca;
+}
+
+.accord-guard-title {
+  color: #071225;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.accord-guard-copy,
+.accord-guard-popover-copy,
+.accord-guard-boundary,
+.accord-guard-note {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 3px 0 0;
+}
+
+.accord-guard-popover {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(227, 232, 242, 0.95);
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(7, 18, 37, 0.16);
+  margin-top: 8px;
+  padding: 14px;
+}
+
+.accord-guard-popover-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.accord-guard-popover-header p {
+  color: #071225;
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.accord-guard-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.accord-guard-flags span {
+  background: #f1f2ff;
+  border-radius: 999px;
+  color: #625bff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
+.accord-guard-boundary {
+  border-top: 1px solid #e3e8f2;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+.accord-guard-note {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  color: #9a3412;
+  margin-top: 8px;
+  padding: 9px 11px;
+}
+
+.accord-guard-composer[data-accord-guard-state="scanning"] {
+  outline: 2px solid rgba(98, 91, 255, 0.22) !important;
+  outline-offset: 4px !important;
+}
+
+.accord-guard-composer[data-accord-guard-state="redact"] {
+  outline: 2px solid rgba(98, 91, 255, 0.38) !important;
+  outline-offset: 4px !important;
+}
+
+.accord-guard-composer[data-accord-guard-state="blocked"],
+.accord-guard-composer[data-accord-guard-state="failed"] {
+  outline: 2px solid rgba(239, 68, 68, 0.38) !important;
+  outline-offset: 4px !important;
+}
+
+@keyframes accord-guard-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

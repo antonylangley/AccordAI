@@ -8,6 +8,8 @@ out/
 # production
 dist/
 build/
+extension/.output/
+extension/.wxt/
 
 # local env
 .env

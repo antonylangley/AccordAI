@@ -6,9 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "next lint",
-    "eval:redaction": "node scripts/evaluate-redaction.cjs"
+    "eval:redaction": "node scripts/evaluate-redaction.cjs",
+    "guard:dev": "pnpm --filter @accord/guard dev",
+    "guard:build": "pnpm --filter @accord/guard build",
+    "guard:typecheck": "pnpm --filter @accord/guard typecheck",
+    "guard:test": "pnpm --filter @accord/guard test"
   },
   "dependencies": {
+    "@accord/governance-core": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "^14.2.5",
