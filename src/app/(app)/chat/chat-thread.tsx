@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import { FileSearch, ShieldCheck, Wand2 } from "lucide-react";
 import type { ChatMessage as ChatMessageType } from "./types";
 import { ChatMessage } from "./chat-message";
@@ -18,9 +19,33 @@ const starters = [
 
 export function ChatThread({ messages, onStarterSelect }: ChatThreadProps) {
   const empty = messages.length === 0;
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+  }, [messages.length]);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+
+    const observer = new MutationObserver(() => {
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    });
+
+    observer.observe(scroller, { childList: true, characterData: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_50%_-10%,rgba(98,91,255,0.055),transparent_24rem),linear-gradient(180deg,#fff,#fafbff)] px-4 py-4">
+    <div
+      ref={scrollerRef}
+      className="min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_50%_-10%,rgba(98,91,255,0.055),transparent_24rem),linear-gradient(180deg,#fff,#fafbff)] px-4 py-4"
+    >
       {empty ? (
         <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center text-center">
           <Image src="/accord-mark.png" alt="" width={48} height={48} className="object-contain" />

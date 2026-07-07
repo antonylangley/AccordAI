@@ -8,6 +8,7 @@ export type ChatMessage = {
   role: MessageRole;
   content: string;
   meta?: string;
+  status?: "thinking" | "typing";
 };
 
 export type Conversation = {

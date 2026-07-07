@@ -344,8 +344,39 @@ export function ChatWorkspace() {
     }
 
     const baseId = Date.now();
+    const pendingAssistantId = baseId + 2;
+    const outgoingMessages = messages
+      .filter((message): message is ChatMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
+      .map((message) => ({
+        role: message.role,
+        content: message.content
+      }));
+    const outgoingAttachments = attachments;
+    const attachmentPayload = outgoingAttachments.map(toChatAttachmentPayload);
+
     setIsSending(true);
     setError(null);
+    setGatewayResult(null);
+    setInput("");
+    setAttachments([]);
+    setWarningDismissed(false);
+    setShowRedactionExplanation(false);
+    setMessages((current) => [
+      ...current,
+      {
+        id: baseId + 1,
+        role: "user",
+        content: trimmed,
+        meta: `${model} / ${useCase} / ${sensitivity} / Provider sees governed preview`
+      },
+      {
+        id: pendingAssistantId,
+        role: "assistant",
+        content: "",
+        meta: "Scanning policy and routing through Accord",
+        status: "thinking"
+      }
+    ]);
 
     try {
       const result = await sendChatRequest({
@@ -356,13 +387,8 @@ export function ChatWorkspace() {
         thinkingMode,
         tools: selectedToolIds,
         conversationId: selectedConversationId,
-        messages: messages
-          .filter((message): message is ChatMessage & { role: "user" | "assistant" } => message.role === "user" || message.role === "assistant")
-          .map((message) => ({
-            role: message.role,
-            content: message.content
-          })),
-        attachments: attachments.map(toChatAttachmentPayload)
+        messages: outgoingMessages,
+        attachments: attachmentPayload
       });
 
       const policyLabel = policyActionLabel(result.policyDecision.action);
@@ -374,32 +400,49 @@ export function ChatWorkspace() {
       const meta = `${result.provider.label.toUpperCase()} / ${result.provider.model.toUpperCase()} / ${policyMeta} / RISK ${result.riskScore}`;
 
       setGatewayResult(result);
-      setMessages((current) => [
-        ...current,
-        {
-          id: baseId,
-          role: "system",
-          content: buildTurnEventSummary(result)
-        },
-        {
-          id: baseId + 1,
-          role: "user",
-          content: trimmed,
-          meta: `${model} / ${useCase} / ${sensitivity} / Provider saw redacted preview`
-        },
-        {
-          id: baseId + 2,
-          role: "assistant",
-          content: result.assistantResponse,
-          meta
+      setMessages((current) => {
+        const pendingIndex = current.findIndex((message) => message.id === pendingAssistantId);
+
+        if (pendingIndex === -1) {
+          return [
+            ...current,
+            {
+              id: baseId,
+              role: "system",
+              content: buildTurnEventSummary(result)
+            },
+            {
+              id: pendingAssistantId,
+              role: "assistant",
+              content: result.assistantResponse,
+              meta,
+              status: "typing"
+            }
+          ];
         }
-      ]);
-      setInput("");
-      setAttachments([]);
-      setWarningDismissed(false);
-      setShowRedactionExplanation(false);
+
+        return [
+          ...current.slice(0, pendingIndex),
+          {
+            id: baseId,
+            role: "system",
+            content: buildTurnEventSummary(result)
+          },
+          {
+            id: pendingAssistantId,
+            role: "assistant",
+            content: result.assistantResponse,
+            meta,
+            status: "typing"
+          },
+          ...current.slice(pendingIndex + 1)
+        ];
+      });
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Chat gateway failed.");
+      setMessages((current) => current.filter((message) => message.id !== pendingAssistantId));
+      setInput(trimmed);
+      setAttachments(outgoingAttachments);
     } finally {
       setIsSending(false);
     }

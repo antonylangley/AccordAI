@@ -14,6 +14,7 @@ import {
   Sparkles,
   Users
 } from "lucide-react";
+import { LandingScrollReveal } from "@/components/landing/scroll-reveal";
 import { AccordLogo } from "@/components/ui/accord-logo";
 
 export const dynamic = "force-dynamic";
@@ -53,11 +54,12 @@ const useCases = [
 
 export default function LandingPage() {
   return (
-    <main className="relative overflow-hidden bg-[#fbfcff] text-accord-text">
-      <section className="relative min-h-screen overflow-hidden border-b border-accord-border/70 bg-white">
+    <main className="landing-page relative overflow-hidden bg-[#fbfcff] text-accord-text">
+      <LandingScrollReveal />
+      <section className="landing-hero relative min-h-screen overflow-hidden border-b border-accord-border/70 bg-white">
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-white bg-[url('/accord-hero-visual.png')] bg-[length:100%_auto] bg-top bg-no-repeat"
+          className="landing-hero-bg absolute inset-0 bg-white bg-[url('/accord-hero-visual.png')] bg-[length:100%_auto] bg-top bg-no-repeat"
         />
         <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-35" />
         <div
@@ -90,7 +92,7 @@ export default function LandingPage() {
         </nav>
 
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-84px)] max-w-7xl items-center px-6 pb-20 pt-10">
-          <div className="max-w-3xl">
+          <div className="landing-hero-copy max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-accord-border bg-white/86 px-3 py-1.5 text-sm font-medium text-accord-primary shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               AI governance without surveillance
@@ -123,7 +125,11 @@ export default function LandingPage() {
                 ["184ms", "median scan"],
                 ["92%", "low/medium risk"]
               ].map(([value, label]) => (
-                <div key={label} className="rounded-2xl border border-accord-border bg-white/74 px-4 py-3 shadow-sm backdrop-blur">
+                <div
+                  key={label}
+                  className="scroll-card rounded-2xl border border-accord-border bg-white/74 px-4 py-3 shadow-sm backdrop-blur"
+                  data-reveal
+                >
                   <p className="font-semibold text-accord-text">{value}</p>
                   <p className="mt-1 text-xs text-accord-muted">{label}</p>
                 </div>
@@ -133,9 +139,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="how" className="relative z-10 border-b border-accord-border/70 bg-white/94 px-6 py-24 backdrop-blur-sm">
+      <section id="how" className="landing-section relative z-10 border-b border-accord-border/70 bg-white/94 px-6 py-24 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto max-w-3xl text-center" data-reveal>
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
             How it works
           </p>
@@ -153,7 +159,8 @@ export default function LandingPage() {
             return (
               <article
                 key={step.title}
-                className="group relative overflow-hidden rounded-3xl border border-accord-border bg-white p-6 shadow-accord-panel"
+                className="scroll-card group relative overflow-hidden rounded-3xl border border-accord-border bg-white p-6 shadow-accord-panel"
+                data-reveal
               >
                 <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-accord-primary/40 to-transparent" />
                 <div className="flex items-center justify-between">
@@ -171,9 +178,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="product" className="relative z-10 border-y border-accord-border bg-[#f6f8ff]/94 px-6 py-24 backdrop-blur-sm">
+      <section id="product" className="landing-section relative z-10 border-y border-accord-border bg-[#f6f8ff]/94 px-6 py-24 backdrop-blur-sm">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.72fr_1.28fr]">
-          <div>
+          <div data-reveal>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
               Product preview
             </p>
@@ -193,14 +200,16 @@ export default function LandingPage() {
               ))}
             </div>
           </div>
-          <DashboardMockup />
+          <div className="scroll-depth" data-reveal>
+            <DashboardMockup />
+          </div>
         </div>
       </section>
 
-      <section id="privacy" className="relative z-10 bg-white/94 px-6 py-24 backdrop-blur-sm">
+      <section id="privacy" className="landing-section relative z-10 bg-white/94 px-6 py-24 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl rounded-[2rem] border border-accord-border bg-[linear-gradient(135deg,#ffffff_0%,#f8f9ff_60%,#eef2ff_100%)] p-6 shadow-accord-panel md:p-10">
           <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
-            <div>
+            <div data-reveal>
               <div className="mb-5 inline-flex rounded-2xl bg-white p-3 text-accord-primary shadow-sm ring-1 ring-accord-border">
                 <LockKeyhole className="h-6 w-6" aria-hidden="true" />
               </div>
@@ -225,7 +234,11 @@ export default function LandingPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {privacyFeatures.map(([title, detail]) => (
-                <article key={title} className="rounded-2xl border border-accord-border bg-white/90 p-5 shadow-sm">
+                <article
+                  key={title}
+                  className="scroll-card rounded-2xl border border-accord-border bg-white/90 p-5 shadow-sm"
+                  data-reveal
+                >
                   <ShieldCheck className="h-5 w-5 text-accord-primary" aria-hidden="true" />
                   <h3 className="mt-4 font-semibold text-accord-text">{title}</h3>
                   <p className="mt-2 text-sm leading-6 text-accord-muted">{detail}</p>
@@ -236,11 +249,11 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="use-cases" className="relative z-10 overflow-hidden bg-accord-night px-6 py-24 text-white">
+      <section id="use-cases" className="landing-section relative z-10 overflow-hidden bg-accord-night px-6 py-24 text-white">
         <div className="absolute inset-0 dark-grid opacity-70" />
         <div className="absolute right-[-10rem] top-[-10rem] h-80 w-80 rounded-full bg-accord-primary/20 blur-3xl" />
         <div className="relative mx-auto max-w-7xl">
-          <div className="max-w-2xl">
+          <div className="max-w-2xl" data-reveal>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-violet">
               Use cases
             </p>
@@ -254,7 +267,8 @@ export default function LandingPage() {
             {useCases.map(([label, detail, Icon]) => (
               <article
                 key={label as string}
-                className="rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] backdrop-blur"
+                className="scroll-card rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] backdrop-blur"
+                data-reveal
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-accord-violet ring-1 ring-white/10">
                   <Icon className="h-5 w-5" aria-hidden="true" />
@@ -267,9 +281,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative z-10 bg-white/95 px-6 py-24 text-center backdrop-blur-sm">
+      <section className="landing-section relative z-10 bg-white/95 px-6 py-24 text-center backdrop-blur-sm">
         <div className="absolute inset-x-0 top-0 mx-auto h-px max-w-5xl bg-gradient-to-r from-transparent via-accord-border to-transparent" />
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-4xl" data-reveal>
           <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-accord-border bg-white shadow-accord-panel">
             <Image
               src="/accord-clay-mark.jpg"
@@ -354,21 +368,63 @@ function DashboardMockup() {
                 <p className="text-sm font-semibold text-accord-text">AI usage over time</p>
                 <p className="text-xs text-accord-muted">30 days</p>
               </div>
-              <div className="mt-6 h-44 rounded-2xl bg-[#f8faff] p-4">
-                <div className="relative h-full">
-                  {[0, 1, 2, 3].map((line) => (
-                    <div
-                      key={line}
-                      className="absolute left-0 right-0 border-t border-dashed border-accord-border"
-                      style={{ top: `${line * 30}%` }}
+              <div className="mt-5 overflow-hidden rounded-2xl border border-accord-border/80 bg-[linear-gradient(180deg,#fbfcff_0%,#f5f7ff_100%)] p-4">
+                <div className="mb-2 flex items-center justify-between text-[11px] font-medium text-accord-muted">
+                  <span>Requests routed</span>
+                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-600">+14.2%</span>
+                </div>
+                <svg
+                  className="h-36 w-full overflow-visible"
+                  viewBox="0 0 360 150"
+                  role="img"
+                  aria-label="Line chart showing Accord AI usage rising over the last 30 days"
+                >
+                  <defs>
+                    <linearGradient id="usageAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="#625bff" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="#625bff" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="usageLineGradient" x1="0" x2="1" y1="0" y2="0">
+                      <stop offset="0%" stopColor="#625bff" />
+                      <stop offset="100%" stopColor="#4f6bff" />
+                    </linearGradient>
+                  </defs>
+
+                  {[34, 66, 98, 130].map((y) => (
+                    <line
+                      key={y}
+                      x1="34"
+                      x2="342"
+                      y1={y}
+                      y2={y}
+                      stroke="#e3e8f2"
+                      strokeDasharray="4 7"
+                      strokeWidth="1"
                     />
                   ))}
-                  <div className="absolute bottom-5 left-0 h-1 w-[18%] rounded-full bg-accord-primary/70" />
-                  <div className="absolute bottom-12 left-[17%] h-1 w-[18%] rotate-[-12deg] rounded-full bg-accord-primary/80" />
-                  <div className="absolute bottom-16 left-[34%] h-1 w-[18%] rotate-[8deg] rounded-full bg-accord-primary" />
-                  <div className="absolute bottom-24 left-[51%] h-1 w-[18%] rotate-[-15deg] rounded-full bg-accord-blue" />
-                  <div className="absolute bottom-28 left-[68%] h-1 w-[22%] rotate-[10deg] rounded-full bg-accord-blue" />
-                </div>
+
+                  <path
+                    d="M38 118 C72 110 96 98 124 90 C158 80 180 86 210 70 C238 55 254 39 284 43 C309 46 324 57 340 49 L340 132 L38 132 Z"
+                    fill="url(#usageAreaGradient)"
+                  />
+                  <path
+                    d="M38 118 C72 110 96 98 124 90 C158 80 180 86 210 70 C238 55 254 39 284 43 C309 46 324 57 340 49"
+                    fill="none"
+                    stroke="url(#usageLineGradient)"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="5"
+                  />
+                  {[["38", "118"], ["124", "90"], ["210", "70"], ["284", "43"], ["340", "49"]].map(([cx, cy]) => (
+                    <circle key={`${cx}-${cy}`} cx={cx} cy={cy} fill="#ffffff" r="5" stroke="#625bff" strokeWidth="3" />
+                  ))}
+                  <text fill="#94a3b8" fontSize="10" fontWeight="600" x="34" y="148">
+                    Week 1
+                  </text>
+                  <text fill="#94a3b8" fontSize="10" fontWeight="600" x="292" y="148">
+                    Week 4
+                  </text>
+                </svg>
               </div>
             </div>
 
