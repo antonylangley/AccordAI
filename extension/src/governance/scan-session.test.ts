@@ -38,6 +38,10 @@ describe("Accord Guard scan session", () => {
     expect(result.action).toBe("redact");
     expect(result.entityCounts.PERSON).toBe(1);
     expect(result.entityCounts.EMAIL).toBe(1);
+    expect(result.decorations).toEqual([
+      { type: "PERSON", start: 18, end: 28, placeholder: "[PERSON_1]" },
+      { type: "EMAIL", start: 32, end: 46, placeholder: "[EMAIL_1]" }
+    ]);
     expect(result.sanitizedText).toContain("[PERSON_1]");
     expect(result.sanitizedText).toContain("[EMAIL_1]");
   });
@@ -61,6 +65,10 @@ describe("Accord Guard scan session", () => {
     const result = await scan("Use api_key=sk-1234567890abcdef to debug this.", "conversation:secret");
 
     expect(result.action).toBe("block");
+    expect(result.decorations[0]).toMatchObject({
+      type: "SECRET",
+      placeholder: "[SECRET_1]"
+    });
     expect(result.flags.some((flag) => flag.type === "secret")).toBe(true);
   });
 

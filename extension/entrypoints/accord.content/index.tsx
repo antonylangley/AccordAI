@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { defineContentScript } from "wxt/utils/define-content-script";
 import "./style.css";
+import accordMarkUrl from "../../src/assets/accord-mark.png";
 import { ChatGPTAdapter } from "../../src/adapters/chatgpt";
 import type { SurfaceAssistantResponse } from "../../src/adapters/types";
 import { rehydrateTextNodes } from "../../src/governance/response-rehydration";
@@ -29,9 +30,27 @@ export default defineContentScript({
 
     const state = createSurfaceState();
     const root = createRoot(rootElement);
+    let observedComposer: HTMLElement | null = null;
+    let resizeObserver: ResizeObserver | undefined;
+    const syncGuardChrome = () => {
+      adapter.positionGuardRoot(rootElement);
+
+      const composer = adapter.findComposer();
+      if (composer === observedComposer) return;
+
+      resizeObserver?.disconnect();
+      observedComposer = composer;
+
+      if (composer && "ResizeObserver" in window) {
+        resizeObserver = new ResizeObserver(() => adapter.positionGuardRoot(rootElement));
+        resizeObserver.observe(composer);
+      }
+    };
     const render = () => {
+      syncGuardChrome();
       root.render(
         <AccordIndicator
+          markUrl={accordMarkUrl}
           state={state.getSnapshot()}
           onWhy={() => {
             state.set({ whyOpen: !state.getSnapshot().whyOpen });
@@ -48,6 +67,8 @@ export default defineContentScript({
     const scanSeq = { current: 0 };
     let liveScanTimer: number | undefined;
     let conversationKey = adapter.getConversationKey();
+    window.addEventListener("resize", syncGuardChrome);
+    window.addEventListener("scroll", syncGuardChrome, true);
 
     const syncConversationKey = async () => {
       const nextKey = adapter.getConversationKey();
@@ -67,19 +88,22 @@ export default defineContentScript({
     };
 
     const runLiveScan = (text: string) => {
+      const sequence = ++scanSeq.current;
       window.clearTimeout(liveScanTimer);
+      syncGuardChrome();
 
       if (!text.trim()) {
-        state.set({ phase: "idle", scan: undefined, message: undefined });
+        state.set({ phase: "idle", scan: undefined, message: undefined, draftText: "" });
         adapter.setComposerDecoratedState("clear");
+        adapter.clearEntityDecorations();
         return;
       }
 
-      state.set({ phase: "scanning", message: undefined });
+      state.set({ phase: "scanning", message: undefined, draftText: text });
       adapter.setComposerDecoratedState("scanning");
+      adapter.clearEntityDecorations();
 
       liveScanTimer = window.setTimeout(() => {
-        const sequence = ++scanSeq.current;
         void syncConversationKey()
           .then(() =>
             sendGuardMessage({
@@ -96,7 +120,7 @@ export default defineContentScript({
           )
           .then((response) => {
             if (!response.ok || response.result == null || !("action" in response.result) || sequence !== scanSeq.current) return;
-            applyScanState(response.result);
+            applyScanState(response.result, text);
           })
           .catch(() => {
             state.set({ phase: "failed", message: "Accord scan unavailable." });
@@ -105,16 +129,19 @@ export default defineContentScript({
       }, 300);
     };
 
-    const applyScanState = (scan: SafeScanResult) => {
+    const applyScanState = (scan: SafeScanResult, draftText: string) => {
       if (scan.action === "block") {
-        state.set({ phase: "blocked", scan, message: scan.explanation });
+        state.set({ phase: "blocked", scan, message: scan.explanation, draftText });
         adapter.setComposerDecoratedState("blocked");
+        adapter.setEntityDecorations(scan.decorations, "blocked", draftText);
       } else if (scan.action === "redact") {
-        state.set({ phase: "redact", scan, message: scan.explanation });
+        state.set({ phase: "redact", scan, message: scan.explanation, draftText });
         adapter.setComposerDecoratedState("redact");
+        adapter.setEntityDecorations(scan.decorations, "redact", draftText);
       } else {
-        state.set({ phase: "clear", scan, message: undefined });
+        state.set({ phase: "clear", scan, message: undefined, draftText });
         adapter.setComposerDecoratedState("clear");
+        adapter.clearEntityDecorations();
       }
     };
 
@@ -125,8 +152,9 @@ export default defineContentScript({
       }
 
       submission.prevent();
-      state.set({ phase: "scanning", message: "Running final Accord scan..." });
+      state.set({ phase: "scanning", message: "Running final Accord scan...", draftText: adapter.getDraftText() });
       adapter.setComposerDecoratedState("scanning");
+      adapter.clearEntityDecorations();
 
       void syncConversationKey()
         .then(() =>
@@ -159,9 +187,15 @@ export default defineContentScript({
               await adapter.submit();
             },
             onState: (nextState) => {
-              state.set(nextState);
+              const draftText = adapter.getDraftText();
+              state.set({ ...nextState, draftText });
               if (nextState.phase) {
                 adapter.setComposerDecoratedState(nextState.phase);
+              }
+              if (nextState.phase === "blocked" && nextState.scan) {
+                adapter.setEntityDecorations(nextState.scan.decorations, "blocked", draftText);
+              } else {
+                adapter.clearEntityDecorations();
               }
             }
           })
@@ -192,15 +226,24 @@ export default defineContentScript({
 
     const unsubscribeRoute = adapter.subscribeToRouteChanges(() => {
       void syncConversationKey();
+      syncGuardChrome();
     });
 
     const attachmentTimer = window.setInterval(() => {
-      state.set({ attachmentNotice: adapter.hasAttachments() });
+      const attachmentNotice = adapter.hasAttachments();
+      if (state.getSnapshot().attachmentNotice !== attachmentNotice) {
+        state.set({ attachmentNotice });
+      }
+      syncGuardChrome();
     }, 1500);
 
     ctx.addEventListener(window, "beforeunload", () => {
       window.clearTimeout(liveScanTimer);
       window.clearInterval(attachmentTimer);
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", syncGuardChrome);
+      window.removeEventListener("scroll", syncGuardChrome, true);
+      adapter.clearEntityDecorations();
       unsubscribeDraft();
       unsubscribeSubmit();
       unsubscribeResponses();

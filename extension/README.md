@@ -4,7 +4,7 @@ Accord Guard is the employee-facing browser-mode surface for Accord. It adds a c
 
 ## Architecture
 
-ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> `@accord/governance-core` scanner -> safe scan result -> inline Accord UI.
+ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> `@accord/governance-core` scanner -> safe scan result with entity offsets -> inline Accord UI.
 
 The existing Accord Workspace web app still owns provider requests inside the admin/control-plane product. Accord Guard does not call OpenAI, Anthropic, Gemini, or private ChatGPT APIs. It only reads and writes the supported ChatGPT page DOM.
 
@@ -17,6 +17,8 @@ Supported claim: detected identifiers are removed before governed message submis
 Do not claim: the provider can never access raw draft text.
 
 Sensitive placeholder mappings live only in `chrome.storage.session` in the extension service worker. They are not returned to the content script as a map, not sent to Accord backend services, not logged, and not stored in `chrome.storage.local` or `chrome.storage.sync`.
+
+The content script receives only local decoration metadata for the current draft: entity type, start offset, end offset, and placeholder. It derives any employee-visible tooltip text from the already-visible composer draft and does not receive the complete `RedactionMap`.
 
 ## Known Limitations
 
@@ -169,7 +171,7 @@ Expected: quiet Accord active state, message sends normally.
 Draft an email to John Smith at john@gmail.com.
 ```
 
-Expected: compact warning, final submission replaces the draft with `[PERSON_1]` and `[EMAIL_1]` before sending.
+Expected: John Smith and john@gmail.com receive Accord violet inline highlighting, the compact emblem shows protected identifiers, and final submission replaces the draft with `[PERSON_1]` and `[EMAIL_1]` before sending.
 
 3. Conversation-stable placeholder:
 
@@ -193,7 +195,7 @@ Expected: Mary Jones becomes `[PERSON_2]`.
 Use api_key=sk-1234567890abcdef to debug this.
 ```
 
-Expected: blocked state, no submission.
+Expected: the exact credential span receives stronger blocked highlighting, the compact emblem shows `Sending blocked`, and no submission occurs.
 
 6. Response rehydration:
 

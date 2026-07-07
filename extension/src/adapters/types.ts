@@ -1,6 +1,15 @@
+import type { EntityType } from "@accord/governance-core";
+
 export type AISurface = "chatgpt";
 
 export type ComposerDecorationState = "idle" | "clear" | "scanning" | "redact" | "blocked" | "failed";
+
+export type ComposerEntityDecoration = {
+  type: EntityType;
+  start: number;
+  end: number;
+  placeholder: string;
+};
 
 export type SurfaceAssistantResponse = {
   id: string;
@@ -27,5 +36,8 @@ export interface AISurfaceAdapter {
   getConversationKey(): string;
   submit(): Promise<void>;
   setComposerDecoratedState(state: ComposerDecorationState): void;
+  positionGuardRoot(root: HTMLElement): void;
+  setEntityDecorations(decorations: ComposerEntityDecoration[], state: ComposerDecorationState, draftText: string): void;
+  clearEntityDecorations(): void;
   hasAttachments(): boolean;
 }

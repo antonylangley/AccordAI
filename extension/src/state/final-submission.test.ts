@@ -60,6 +60,7 @@ function scanResult(overrides: Partial<SafeScanResult>): SafeScanResult {
     riskLevel: "low",
     detectedEntityCount: 0,
     entityCounts: {},
+    decorations: [],
     flags: [],
     explanation: "No elevated issue.",
     ...overrides

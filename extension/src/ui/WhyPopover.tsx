@@ -1,34 +1,127 @@
+import type { EntityDecoration } from "../messaging/types";
 import type { SurfaceSnapshot } from "../state/surface-state";
 
 type WhyPopoverProps = {
   state: SurfaceSnapshot;
+  markUrl: string;
   onClose: () => void;
 };
 
-export function WhyPopover({ state, onClose }: WhyPopoverProps) {
-  const flags = state.scan?.flags || [];
+export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
+  const decorations = state.scan?.decorations || [];
+  const counts = countDecorations(decorations);
+  const blocked = state.phase === "blocked";
 
   return (
     <div className="accord-guard-popover">
       <div className="accord-guard-popover-header">
-        <p>Accord Guard</p>
+        <div className="accord-guard-popover-brand">
+          <img src={markUrl} alt="" />
+          <p>Accord Guard</p>
+        </div>
         <button type="button" onClick={onClose} aria-label="Close Accord explanation">
-          ×
+          x
         </button>
       </div>
-      <p className="accord-guard-popover-copy">
-        {state.message || state.scan?.explanation || "Detected identifiers are removed before governed message submission."}
-      </p>
-      {flags.length ? (
-        <div className="accord-guard-flags">
-          {flags.map((flag) => (
-            <span key={`${flag.type}-${flag.label}`}>{flag.label}</span>
+
+      <p className="accord-guard-popover-copy">{summaryCopy(state, decorations.length)}</p>
+
+      {Object.keys(counts).length ? (
+        <div className="accord-guard-counts">
+          {Object.entries(counts).map(([type, count]) => (
+            <span key={type}>
+              {shortEntityLabel(type as EntityDecoration["type"])} - {count}
+            </span>
           ))}
         </div>
       ) : null}
-      <p className="accord-guard-boundary">
-        Browser mode scans typed text in the ChatGPT page DOM. It does not govern file uploads, images, screenshots, or voice input.
-      </p>
+
+      {decorations.length ? (
+        <div className="accord-guard-entities">
+          {decorations.slice(0, 6).map((decoration, index) => (
+            <div className="accord-guard-entity-row" key={`${decoration.placeholder}-${decoration.start}-${index}`}>
+              <div>
+                <p className="accord-guard-entity-label">{entityLabel(decoration.type)}</p>
+                <p className="accord-guard-entity-action">{entityAction(decoration, blocked)}</p>
+              </div>
+              {decoration.type === "SECRET" ? (
+                <span className="accord-guard-placeholder">Blocked</span>
+              ) : (
+                <span className="accord-guard-placeholder">
+                  {state.draftText.slice(decoration.start, decoration.end)} -&gt; {decoration.placeholder}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {state.attachmentNotice ? (
+        <p className="accord-guard-boundary">
+          Text governance active. 1 attachment is not governed in browser mode. Use Accord Workspace for governed file analysis.
+        </p>
+      ) : null}
     </div>
   );
+}
+
+function summaryCopy(state: SurfaceSnapshot, decorationCount: number) {
+  if (state.phase === "blocked") {
+    return "This value cannot be submitted to an external AI tool. Sending blocked.";
+  }
+
+  if (decorationCount > 0) {
+    return `${decorationCount} identifier${decorationCount === 1 ? "" : "s"} protected. They will be replaced before AI submission.`;
+  }
+
+  if (state.attachmentNotice) {
+    return "Text governance is active. Attachment governance is limited in browser mode.";
+  }
+
+  if (state.phase === "scanning") return "Checking this draft locally.";
+  if (state.phase === "failed") return state.message || "Accord could not verify this send.";
+  return "Text governance is active on this AI surface.";
+}
+
+function countDecorations(decorations: EntityDecoration[]) {
+  return decorations.reduce<Partial<Record<EntityDecoration["type"], number>>>((counts, decoration) => {
+    counts[decoration.type] = (counts[decoration.type] || 0) + 1;
+    return counts;
+  }, {});
+}
+
+function entityLabel(type: EntityDecoration["type"]) {
+  const labels: Record<EntityDecoration["type"], string> = {
+    PERSON: "Person identifier",
+    EMAIL: "Email address",
+    PHONE: "Phone number",
+    ADDRESS: "Address",
+    ACCOUNT: "Account identifier",
+    SECRET: "Possible API credential",
+    OTHER: "Identifier"
+  };
+
+  return labels[type];
+}
+
+function shortEntityLabel(type: EntityDecoration["type"]) {
+  const labels: Record<EntityDecoration["type"], string> = {
+    PERSON: "Person",
+    EMAIL: "Email",
+    PHONE: "Phone",
+    ADDRESS: "Address",
+    ACCOUNT: "Account",
+    SECRET: "Secret",
+    OTHER: "Identifier"
+  };
+
+  return labels[type];
+}
+
+function entityAction(decoration: EntityDecoration, blocked: boolean) {
+  if (blocked || decoration.type === "SECRET") {
+    return decoration.type === "SECRET" ? "Sending blocked" : "Sending blocked by policy";
+  }
+
+  return "Will be hidden before submission";
 }

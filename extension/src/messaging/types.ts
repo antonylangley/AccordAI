@@ -1,4 +1,11 @@
-import type { ChatFlagSeverity, ChatFlagType, ChatPolicyAction, ChatScanStage, EntityCountSummary } from "@accord/governance-core";
+import type {
+  ChatFlagSeverity,
+  ChatFlagType,
+  ChatPolicyAction,
+  ChatScanStage,
+  EntityCountSummary,
+  EntityType
+} from "@accord/governance-core";
 import type { AISurface } from "../adapters/types";
 
 export type SafeRiskFlag = {
@@ -9,6 +16,13 @@ export type SafeRiskFlag = {
   evidence: string;
 };
 
+export type EntityDecoration = {
+  type: EntityType;
+  start: number;
+  end: number;
+  placeholder: string;
+};
+
 export type SafeScanResult = {
   scanId: string;
   action: ChatPolicyAction;
@@ -16,6 +30,7 @@ export type SafeScanResult = {
   riskLevel: "low" | "medium" | "high" | "critical";
   detectedEntityCount: number;
   entityCounts: EntityCountSummary;
+  decorations: EntityDecoration[];
   flags: SafeRiskFlag[];
   explanation: string;
   sanitizedText?: string;

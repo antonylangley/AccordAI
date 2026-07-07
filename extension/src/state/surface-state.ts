@@ -7,6 +7,7 @@ export type SurfaceSnapshot = {
   phase: SurfacePhase;
   scan?: SafeScanResult;
   message?: string;
+  draftText: string;
   whyOpen: boolean;
   attachmentNotice: boolean;
 };
@@ -16,6 +17,7 @@ export type SurfacePatch = Partial<SurfaceSnapshot>;
 export function createSurfaceState() {
   let snapshot: SurfaceSnapshot = {
     phase: "idle",
+    draftText: "",
     whyOpen: false,
     attachmentNotice: false
   };

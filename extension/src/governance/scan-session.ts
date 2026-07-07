@@ -51,6 +51,12 @@ function toSafeScanResult(scan: ChatScanResult, decision: ChatPolicyDecision, in
     riskLevel: riskLevel(scan.riskScore),
     detectedEntityCount,
     entityCounts: scan.entityCounts,
+    decorations: scan.entities.map((entity) => ({
+      type: entity.type,
+      start: entity.start,
+      end: entity.end,
+      placeholder: entity.id
+    })),
     flags: scan.flags.map((flag) => ({
       type: flag.type,
       label: flag.label,
