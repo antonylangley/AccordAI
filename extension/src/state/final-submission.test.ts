@@ -63,6 +63,18 @@ function scanResult(overrides: Partial<SafeScanResult>): SafeScanResult {
     decorations: [],
     flags: [],
     explanation: "No elevated issue.",
+    personDetection: {
+      mode: "hybrid-local-rules",
+      nerStatus: "ready",
+      detector: "test",
+      candidateCount: 0,
+      timedOut: false,
+      model: {
+        name: "none",
+        assetSizeBytes: 0,
+        executionContext: "service_worker"
+      }
+    },
     ...overrides
   };
 }

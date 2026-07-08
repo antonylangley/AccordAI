@@ -1,5 +1,5 @@
 import { defineBackground } from "wxt/utils/define-background";
-import { moveVault, rehydrateAssistantText, scanDraft } from "../src/governance/scan-session";
+import { governAttachmentBatch, moveVault, rehydrateAssistantText, scanDraft } from "../src/governance/scan-session";
 import type { AccordGuardMessage, AccordGuardResponse } from "../src/messaging/types";
 
 export default defineBackground(() => {
@@ -25,6 +25,11 @@ async function handleMessage(message: AccordGuardMessage): Promise<AccordGuardRe
       return {
         ok: true,
         result: await scanDraft(message.payload)
+      };
+    case "accord.governAttachments":
+      return {
+        ok: true,
+        result: await governAttachmentBatch(message.payload)
       };
     case "accord.rehydrateResponse":
       return {

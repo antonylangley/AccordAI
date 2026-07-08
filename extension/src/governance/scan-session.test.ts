@@ -117,6 +117,40 @@ describe("Accord Guard scan session", () => {
 
     expect(result.text).toBe("Hi [PERSON_1]");
   });
+
+  test.each([
+    ["David O'Connor completed the technical review.", "David O'Connor"],
+    ["Tell David O’Connor the report is ready.", "David O’Connor"],
+    ["María José García approved the document.", "María José García"],
+    ["Jean-Pierre Dubois sent the contract.", "Jean-Pierre Dubois"],
+    ["José Luis Rodríguez signed the report.", "José Luis Rodríguez"],
+    ["Anna van der Berg reviewed the memo.", "Anna van der Berg"],
+    ["João da Silva called yesterday.", "João da Silva"],
+    ["Wei Zhang approved the release.", "Wei Zhang"]
+  ])("detects exact PERSON span for %s", async (text, expectedName) => {
+    const result = await scan(text, `conversation:person:${text}`);
+    const person = result.decorations.find((decoration) => decoration.type === "PERSON");
+
+    expect(result.action).toBe("redact");
+    expect(result.entityCounts.PERSON).toBe(1);
+    expect(person).toBeDefined();
+    expect(text.slice(person!.start, person!.end)).toBe(expectedName);
+    expect(result.sanitizedText).toContain("[PERSON_1]");
+  });
+
+  test.each([
+    "Representational State Transfer is an architectural style.",
+    "Customer Support Team owns this queue.",
+    "Q3 Risk Review is finished.",
+    "The Monday Client Meeting was moved.",
+    "React State Update caused a rerender.",
+    "New York Office is closing.",
+    "Accord Guard is active."
+  ])("does not redact technical or product phrase: %s", async (text) => {
+    const result = await scan(text, `conversation:negative:${text}`);
+
+    expect(result.decorations.filter((decoration) => decoration.type === "PERSON")).toHaveLength(0);
+  });
 });
 
 function scan(text: string, conversationKey: string) {

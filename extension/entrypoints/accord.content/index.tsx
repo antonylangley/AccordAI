@@ -5,9 +5,11 @@ import "./style.css";
 import accordMarkUrl from "../../src/assets/accord-mark.png";
 import { ChatGPTAdapter } from "../../src/adapters/chatgpt";
 import type { SurfaceAssistantResponse } from "../../src/adapters/types";
+import { isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, safeMimeType } from "../../src/attachments/policy";
 import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
-import type { SafeScanResult } from "../../src/messaging/types";
+import type { GovernAttachmentsResult, GuardAttachmentInput, SafeScanResult } from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
+import { runGovernedAttachmentHandoff } from "../../src/state/attachment-handoff";
 import { runFinalSubmissionDecision, TrustedSubmissionGate } from "../../src/state/final-submission";
 import { createSurfaceState } from "../../src/state/surface-state";
 import { AccordIndicator } from "../../src/ui/AccordIndicator";
@@ -207,6 +209,72 @@ export default defineContentScript({
         });
     });
 
+    const unsubscribeAttachments = adapter.subscribeToAttachmentSelection((selection) => {
+      state.set({ phase: "scanning", message: "Scanning file...", draftText: adapter.getDraftText(), attachmentNotice: true });
+
+      void syncConversationKey()
+        .then(() => buildAttachmentPayload(selection.files))
+        .then((attachments) =>
+          sendGuardMessage({
+            type: "accord.governAttachments",
+            payload: {
+              surface: "chatgpt",
+              conversationKey,
+              sensitivity: "Internal",
+              attachments
+            }
+          })
+        )
+        .then(async (message) => {
+          if (!message.ok || !message.result || !("batchAction" in message.result)) {
+            throw new Error(message.ok ? "Accord attachment governance failed." : message.error);
+          }
+
+          const result = message.result as GovernAttachmentsResult;
+
+          if (result.batchAction !== "allow") {
+            adapter.clearFileInput(selection.input);
+            state.set({ phase: "blocked", message: result.summary, attachmentNotice: true });
+            return;
+          }
+
+          const governedFiles = result.results.map((fileResult) => {
+            if (typeof fileResult.sanitizedText !== "string") {
+              throw new Error("Accord did not return a governed file copy.");
+            }
+
+            return new File([fileResult.sanitizedText], fileResult.sanitizedName, {
+              type: safeMimeType(fileResult.mimeType, fileResult.sanitizedName),
+              lastModified: fileResult.lastModified
+            });
+          });
+
+          const verified = await runGovernedAttachmentHandoff({
+            files: governedFiles,
+            setGovernedFiles: (files) => adapter.setGovernedFiles(selection.input, files),
+            verifyGovernedFiles: (files) => adapter.verifyGovernedFiles(selection.input, files),
+            dispatchTrustedSelection: () => adapter.dispatchGovernedFileSelection(selection.input),
+            clearFileInput: () => adapter.clearFileInput(selection.input),
+            onState: (nextState) => state.set({ ...nextState, attachmentNotice: true, draftText: adapter.getDraftText() })
+          });
+
+          if (!verified) return;
+
+          const hasRedactions = result.results.some((fileResult) => fileResult.redactionCount > 0);
+          state.set({
+            phase: hasRedactions ? "redact" : "clear",
+            message: result.summary,
+            attachmentNotice: true,
+            draftText: adapter.getDraftText()
+          });
+        })
+        .catch((error: unknown) => {
+          adapter.clearFileInput(selection.input);
+          const message = error instanceof Error ? error.message : "Accord could not govern this attachment.";
+          state.set({ phase: "failed", message, attachmentNotice: true });
+        });
+    });
+
     const unsubscribeResponses = adapter.subscribeToAssistantResponses((response) => {
       void syncConversationKey().then(() => rehydrateResponse(response));
     });
@@ -264,6 +332,7 @@ export default defineContentScript({
       adapter.clearEntityDecorations();
       unsubscribeDraft();
       unsubscribeSubmit();
+      unsubscribeAttachments();
       unsubscribeResponses();
       unsubscribeRoute();
       root.unmount();
@@ -271,3 +340,23 @@ export default defineContentScript({
     });
   }
 });
+
+async function buildAttachmentPayload(files: File[]): Promise<GuardAttachmentInput[]> {
+  return Promise.all(
+    files.map(async (file) => {
+      const input: GuardAttachmentInput = {
+        id: crypto.randomUUID(),
+        originalName: file.name,
+        size: file.size,
+        mimeType: file.type,
+        lastModified: file.lastModified
+      };
+
+      if (file.size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES && isSupportedTextAttachment(file.name, file.type)) {
+        input.text = await file.text();
+      }
+
+      return input;
+    })
+  );
+}

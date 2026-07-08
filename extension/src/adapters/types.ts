@@ -22,6 +22,11 @@ export type SubmissionController = {
   prevent: () => void;
 };
 
+export type AttachmentSelection = {
+  input: HTMLInputElement;
+  files: File[];
+};
+
 export interface AISurfaceAdapter {
   readonly surface: AISurface;
   isCurrentSurface(): boolean;
@@ -31,6 +36,11 @@ export interface AISurfaceAdapter {
   findSendButton(): HTMLElement | null;
   subscribeToDraft(callback: (text: string) => void): () => void;
   subscribeToSubmit(callback: (submission: SubmissionController) => void): () => void;
+  subscribeToAttachmentSelection(callback: (selection: AttachmentSelection) => void): () => void;
+  setGovernedFiles(input: HTMLInputElement, files: File[]): Promise<void>;
+  verifyGovernedFiles(input: HTMLInputElement, files: File[]): boolean;
+  dispatchGovernedFileSelection(input: HTMLInputElement): void;
+  clearFileInput(input: HTMLInputElement): void;
   subscribeToAssistantResponses(callback: (response: SurfaceAssistantResponse) => void): () => void;
   subscribeToRouteChanges(callback: () => void): () => void;
   getConversationKey(): string;

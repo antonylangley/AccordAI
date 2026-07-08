@@ -36,6 +36,8 @@ export type DetectedEntity = {
   contextSignals: string[];
 };
 
+export type ExternalEntityCandidate = Omit<DetectedEntity, "id">;
+
 export type RedactionMap = Record<
   string,
   {

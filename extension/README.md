@@ -4,7 +4,7 @@ Accord Guard is the employee-facing browser-mode surface for Accord. It adds a c
 
 ## Architecture
 
-ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> `@accord/governance-core` scanner/rehydrator -> safe scan and replacement metadata -> inline Accord UI.
+ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> local PERSON candidate detector plus `@accord/governance-core` scanner/rehydrator -> safe scan and replacement metadata -> inline Accord UI.
 
 The existing Accord Workspace web app still owns provider requests inside the admin/control-plane product. Accord Guard does not call OpenAI, Anthropic, Gemini, or private ChatGPT APIs. It only reads and writes the supported ChatGPT page DOM.
 
@@ -12,7 +12,7 @@ The existing Accord Workspace web app still owns provider requests inside the ad
 
 Browser mode scans text typed into the existing ChatGPT composer, so the raw draft exists in the ChatGPT page DOM before Accord replaces it at final submission.
 
-Supported claim: detected identifiers are removed before governed message submission.
+Supported claim: detected identifiers are removed before governed message submission. Supported text/source-code attachments are intercepted, governed locally, replaced with a new sanitized `File`, and only the governed file is re-dispatched to ChatGPT.
 
 Do not claim: the provider can never access raw draft text.
 
@@ -20,12 +20,15 @@ Sensitive placeholder mappings live only in `chrome.storage.session` in the exte
 
 The content script receives only local decoration metadata for the current draft: entity type, start offset, end offset, and placeholder. It derives any employee-visible tooltip text from the already-visible composer draft and does not receive the complete `RedactionMap`.
 
+For supported text/code attachments, the content script temporarily reads the selected browser `File` locally and sends its text through extension messaging to the service worker for governance. The service worker returns only sanitized attachment text, sanitized filename, and safe metadata needed to construct a governed `File`. It does not return original attachment text, original filenames, or the complete `RedactionMap`.
+
 Assistant responses are resolved in Accord-owned UI. The original ChatGPT assistant DOM remains placeholder-based. The service worker returns only the resolved text plus replacement spans for the current response text, and Accord renders an aligned overlay over the existing assistant response region. Restored values receive violet highlights, prose blocks expose hover-only `Copy resolved block` controls, and the Accord emblem popover contains `Resolved / Protected original` plus `Copy full resolved response`.
 
 ## Known Limitations
 
 - ChatGPT only. Claude support is intentionally not part of this milestone.
-- Typed text only. File uploads, images, screenshots, and voice input are not governed in browser mode yet.
+- Supported text/source-code uploads are governed in browser mode. PDF, DOCX, images, archives, and binary files fail closed with an Accord Workspace message.
+- PERSON enhancement currently uses a bundled deterministic local candidate detector in the service worker. No transformer/ONNX model is packaged in this pass, so model asset size impact is 0 bytes and there is no offscreen inference document yet.
 - Session-scoped placeholder vaults are lost after browser restart, extension reload, or service-worker/session reset.
 - ChatGPT DOM selectors may need updates if ChatGPT changes its composer or response markup.
 - This build has not been live-verified against the current ChatGPT production DOM from this coding environment.
@@ -198,6 +201,24 @@ Use api_key=sk-1234567890abcdef to debug this.
 ```
 
 Expected: the exact credential span receives stronger blocked highlighting, the compact emblem shows `Sending blocked`, and no submission occurs.
+
+7. Supported text/code attachment:
+
+```text
+customer.ts
+const customerName = "John Smith";
+const customerEmail = "john@gmail.com";
+```
+
+Expected: Accord intercepts the file selection, creates a governed copy containing `[PERSON_1]` and `[EMAIL_1]`, and only the governed copy is handed to ChatGPT.
+
+8. Unsupported attachment:
+
+```text
+report.pdf
+```
+
+Expected: Accord blocks the browser-mode upload and tells the employee to use Accord Workspace for governed file analysis.
 
 6. Response resolution:
 

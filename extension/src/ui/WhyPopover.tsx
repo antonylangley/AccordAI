@@ -57,9 +57,7 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
       ) : null}
 
       {state.attachmentNotice ? (
-        <p className="accord-guard-boundary">
-          Text governance active. 1 attachment is not governed in browser mode. Use Accord Workspace for governed file analysis.
-        </p>
+        <p className="accord-guard-boundary">{state.message || "Supported text and code attachments are governed before upload."}</p>
       ) : null}
     </div>
   );
@@ -75,7 +73,7 @@ function summaryCopy(state: SurfaceSnapshot, decorationCount: number) {
   }
 
   if (state.attachmentNotice) {
-    return "Text governance is active. Attachment governance is limited in browser mode.";
+    return state.message || "Supported text and code attachments are governed before upload. Unsupported files fail closed.";
   }
 
   if (state.phase === "scanning") return "Checking this draft locally.";

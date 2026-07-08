@@ -7,6 +7,7 @@ import type {
   EntityType
 } from "@accord/governance-core";
 import type { AISurface } from "../adapters/types";
+import type { PersonDetectionCoverage } from "../person-detection/person-detector";
 
 export type SafeRiskFlag = {
   type: ChatFlagType;
@@ -33,6 +34,7 @@ export type SafeScanResult = {
   decorations: EntityDecoration[];
   flags: SafeRiskFlag[];
   explanation: string;
+  personDetection: PersonDetectionCoverage;
   sanitizedText?: string;
 };
 
@@ -57,6 +59,64 @@ export type MoveVaultPayload = {
   toConversationKey: string;
 };
 
+export type GuardAttachmentInput = {
+  id: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+  lastModified: number;
+  text?: string;
+};
+
+export type GovernAttachmentsPayload = {
+  surface: AISurface;
+  conversationKey: string;
+  sensitivity: string;
+  attachments: GuardAttachmentInput[];
+};
+
+export type GovernedAttachmentAction = "clean" | "redacted" | "blocked" | "unsupported" | "too_large" | "failed";
+
+export type SafeAttachmentTelemetry = {
+  surface: AISurface;
+  attachmentCount: number;
+  sanitizedName: string;
+  extension: string;
+  mimeCategory: string;
+  sizeBucket: string;
+  action: GovernedAttachmentAction;
+  riskScore: number;
+  entityCounts: EntityCountSummary;
+  redactionCount: number;
+  blockedReasonCategory?: string;
+  personDetectorStatus: PersonDetectionCoverage["nerStatus"];
+  timestamp: string;
+};
+
+export type GovernedAttachmentResult = {
+  id: string;
+  action: GovernedAttachmentAction;
+  originalNameCategory: "raw_not_returned";
+  sanitizedName: string;
+  extension: string;
+  mimeType: string;
+  size: number;
+  lastModified: number;
+  riskScore: number;
+  entityCounts: EntityCountSummary;
+  redactionCount: number;
+  reason: string;
+  personDetection: PersonDetectionCoverage;
+  sanitizedText?: string;
+  telemetry: SafeAttachmentTelemetry;
+};
+
+export type GovernAttachmentsResult = {
+  batchAction: "allow" | "block";
+  results: GovernedAttachmentResult[];
+  summary: string;
+};
+
 export type RehydrateSafeResult = {
   resolvedText: string;
   replacements: Array<{
@@ -74,9 +134,10 @@ export type RehydrateSafeResult = {
 
 export type AccordGuardMessage =
   | { type: "accord.scanDraft"; payload: ScanDraftPayload }
+  | { type: "accord.governAttachments"; payload: GovernAttachmentsPayload }
   | { type: "accord.rehydrateResponse"; payload: RehydrateResponsePayload }
   | { type: "accord.moveVault"; payload: MoveVaultPayload };
 
 export type AccordGuardResponse =
-  | { ok: true; result?: SafeScanResult | RehydrateSafeResult }
+  | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult }
   | { ok: false; error: string };

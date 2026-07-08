@@ -1,21 +1,32 @@
 import { decidePolicy, rehydrateResponse, scanText } from "@accord/governance-core";
 import type { ChatPolicyDecision, ChatRedaction, ChatScanResult, DetectedEntity, EntityCountSummary, RedactionMap } from "@accord/governance-core";
+import {
+  getFileExtension,
+  isSupportedTextAttachment,
+  MAX_GUARDED_TEXT_ATTACHMENT_BYTES,
+  safeMimeType,
+  splitFileName
+} from "../attachments/policy";
 import type {
+  GovernAttachmentsPayload,
+  GovernAttachmentsResult,
+  GovernedAttachmentAction,
+  GovernedAttachmentResult,
+  GuardAttachmentInput,
   MoveVaultPayload,
   RehydrateResponsePayload,
   RehydrateSafeResult,
   SafeScanResult,
   ScanDraftPayload
 } from "../messaging/types";
+import { detectPersonCandidates, type PersonDetectionCoverage } from "../person-detection/person-detector";
 import { PlaceholderVault } from "./placeholder-vault";
 
 const vault = new PlaceholderVault();
 
 export async function scanDraft(payload: ScanDraftPayload): Promise<SafeScanResult> {
   const seedRedactionMap = await vault.load(payload.surface, payload.conversationKey);
-  const scan = scanText(payload.text, "preflight", payload.sensitivity || "Internal", {
-    seedRedactionMap
-  });
+  const { scan, personDetection } = await runGovernanceScan(payload.text, "preflight", payload.sensitivity || "Internal", seedRedactionMap);
   const stabilizedScan = applyConversationStableRedactions(payload.text, scan, seedRedactionMap);
   const decision = decidePolicy(stabilizedScan);
 
@@ -23,7 +34,49 @@ export async function scanDraft(payload: ScanDraftPayload): Promise<SafeScanResu
     await vault.merge(payload.surface, payload.conversationKey, stabilizedScan.redactionMap);
   }
 
-  return toSafeScanResult(stabilizedScan, decision, payload.includeSanitizedText);
+  return toSafeScanResult(stabilizedScan, decision, payload.includeSanitizedText, personDetection);
+}
+
+export async function governAttachmentBatch(payload: GovernAttachmentsPayload): Promise<GovernAttachmentsResult> {
+  let workingRedactionMap = await vault.load(payload.surface, payload.conversationKey);
+  const results: GovernedAttachmentResult[] = [];
+  const acceptedMaps: RedactionMap[] = [];
+
+  for (const attachment of payload.attachments) {
+    const { result, redactionMap } = await governSingleAttachment(attachment, payload, workingRedactionMap);
+    results.push(result);
+
+    if (result.action === "clean" || result.action === "redacted") {
+      if (redactionMap && Object.keys(redactionMap).length) {
+        acceptedMaps.push(redactionMap);
+        workingRedactionMap = {
+          ...workingRedactionMap,
+          ...redactionMap
+        };
+      }
+    }
+  }
+
+  const hasFailure = results.some((result) => !["clean", "redacted"].includes(result.action));
+
+  if (hasFailure) {
+    return {
+      batchAction: "block",
+      results: results.map((result) => ({ ...result, sanitizedText: undefined })),
+      summary: firstBlockingSummary(results)
+    };
+  }
+
+  const mergedMap = Object.assign({}, ...acceptedMaps);
+  if (Object.keys(mergedMap).length) {
+    await vault.merge(payload.surface, payload.conversationKey, mergedMap);
+  }
+
+  return {
+    batchAction: "allow",
+    results,
+    summary: buildAttachmentSummary(results)
+  };
 }
 
 export async function rehydrateAssistantText(payload: RehydrateResponsePayload): Promise<RehydrateSafeResult> {
@@ -45,7 +98,278 @@ export function moveVault(payload: MoveVaultPayload) {
   return vault.move(payload);
 }
 
-function toSafeScanResult(scan: ChatScanResult, decision: ChatPolicyDecision, includeSanitizedText: boolean): SafeScanResult {
+async function governSingleAttachment(
+  attachment: GuardAttachmentInput,
+  payload: GovernAttachmentsPayload,
+  seedRedactionMap: RedactionMap
+): Promise<{ result: GovernedAttachmentResult; redactionMap?: RedactionMap }> {
+  const extension = getFileExtension(attachment.originalName);
+  const base = {
+    id: attachment.id,
+    extension,
+    mimeType: safeMimeType(attachment.mimeType, attachment.originalName),
+    size: attachment.size,
+    lastModified: attachment.lastModified
+  };
+
+  if (!isSupportedTextAttachment(attachment.originalName, attachment.mimeType)) {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "unsupported",
+        sanitizedName: sanitizedFallbackName(attachment.originalName),
+        reason: "This file type is not governed in browser mode yet. Use Accord Workspace for governed file analysis.",
+        riskScore: 0,
+        entityCounts: {},
+        redactionCount: 0,
+        personDetection: unavailablePersonDetection(),
+        surface: payload.surface,
+        blockedReasonCategory: "unsupported_type"
+      })
+    };
+  }
+
+  if (attachment.size > MAX_GUARDED_TEXT_ATTACHMENT_BYTES) {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "too_large",
+        sanitizedName: sanitizedFallbackName(attachment.originalName),
+        reason: "File is too large for browser-mode governance. Use Accord Workspace.",
+        riskScore: 0,
+        entityCounts: {},
+        redactionCount: 0,
+        personDetection: unavailablePersonDetection(),
+        surface: payload.surface,
+        blockedReasonCategory: "too_large"
+      })
+    };
+  }
+
+  if (typeof attachment.text !== "string") {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "failed",
+        sanitizedName: sanitizedFallbackName(attachment.originalName),
+        reason: "Accord could not read this file locally. File upload blocked.",
+        riskScore: 0,
+        entityCounts: {},
+        redactionCount: 0,
+        personDetection: unavailablePersonDetection(),
+        surface: payload.surface,
+        blockedReasonCategory: "read_failed"
+      })
+    };
+  }
+
+  const filenameScan = await governAttachmentFilename(attachment.originalName, payload.sensitivity, seedRedactionMap);
+  const filenameDecision = decidePolicy(filenameScan.scan);
+  const filenameSeed = {
+    ...seedRedactionMap,
+    ...filenameScan.scan.redactionMap
+  };
+  const contentScanResult = await runGovernanceScan(attachment.text, "attachment", payload.sensitivity || "Internal", filenameSeed);
+  const contentScan = applyConversationStableRedactions(attachment.text, contentScanResult.scan, filenameSeed);
+  const contentDecision = decidePolicy(contentScan);
+  const combinedEntities = [...filenameScan.scan.entities, ...contentScan.entities];
+  const entityCounts = countEntities(combinedEntities);
+  const redactionCount = new Set(combinedEntities.map((entity) => entity.id)).size;
+  const combinedRisk = Math.max(filenameScan.scan.riskScore, contentScan.riskScore);
+  const personDetection = mergePersonDetection(filenameScan.personDetection, contentScanResult.personDetection);
+
+  if (filenameDecision.action === "block" || contentDecision.action === "block") {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "blocked",
+        sanitizedName: filenameScan.sanitizedName,
+        reason: hasSecret(contentScan) || hasSecret(filenameScan.scan) ? "Possible credential detected. File upload blocked." : "Unsafe file content detected. File upload blocked.",
+        riskScore: combinedRisk,
+        entityCounts,
+        redactionCount,
+        personDetection,
+        surface: payload.surface,
+        blockedReasonCategory: hasSecret(contentScan) || hasSecret(filenameScan.scan) ? "secret" : "policy_block"
+      })
+    };
+  }
+
+  const action: GovernedAttachmentAction = redactionCount > 0 ? "redacted" : "clean";
+  const result = buildAttachmentResult({
+    ...base,
+    action,
+    sanitizedName: filenameScan.sanitizedName,
+    reason:
+      action === "redacted"
+        ? `${redactionCount} identifier${redactionCount === 1 ? "" : "s"} protected in ${filenameScan.sanitizedName}. Only the governed copy will be uploaded.`
+        : `${filenameScan.sanitizedName} governed locally.`,
+    riskScore: combinedRisk,
+    entityCounts,
+    redactionCount,
+    personDetection,
+    surface: payload.surface,
+    sanitizedText: contentScan.redactedText
+  });
+
+  return {
+    result,
+    redactionMap: {
+      ...filenameScan.scan.redactionMap,
+      ...contentScan.redactionMap
+    }
+  };
+}
+
+async function governAttachmentFilename(originalName: string, sensitivity: string, seedRedactionMap: RedactionMap) {
+  const { stem, extension } = splitFileName(originalName);
+  const normalizedStem = stem.replace(/[._-]+/g, " ");
+  const variants = Array.from(new Set([stem, normalizedStem].filter(Boolean)));
+  const scans = await Promise.all(variants.map((variant) => runGovernanceScan(variant, "attachment", sensitivity || "Internal", seedRedactionMap)));
+  const best = scans
+    .map(({ scan, personDetection }, index) => ({
+      scan: applyConversationStableRedactions(variants[index], scan, seedRedactionMap),
+      personDetection,
+      source: variants[index]
+    }))
+    .sort((a, b) => b.scan.entities.length - a.scan.entities.length || b.scan.riskScore - a.scan.riskScore)[0];
+  const safeStem = best?.scan.entities.length ? slugifyGovernedStem(best.scan.redactedText) : sanitizePlainStem(stem);
+
+  return {
+    scan: best?.scan || scanText(stem, "attachment", sensitivity || "Internal", { seedRedactionMap }),
+    personDetection: best?.personDetection || unavailablePersonDetection(),
+    sanitizedName: `${safeStem || "attachment"}${extension}`
+  };
+}
+
+type AttachmentResultInput = Omit<GovernedAttachmentResult, "originalNameCategory" | "telemetry"> & {
+  surface: GovernAttachmentsPayload["surface"];
+  blockedReasonCategory?: string;
+};
+
+function buildAttachmentResult(input: AttachmentResultInput): GovernedAttachmentResult {
+  const { surface, blockedReasonCategory, ...result } = input;
+
+  return {
+    ...result,
+    originalNameCategory: "raw_not_returned",
+    telemetry: {
+      surface,
+      attachmentCount: 1,
+      sanitizedName: input.sanitizedName,
+      extension: input.extension,
+      mimeCategory: mimeCategory(input.mimeType),
+      sizeBucket: sizeBucket(input.size),
+      action: input.action,
+      riskScore: input.riskScore,
+      entityCounts: input.entityCounts,
+      redactionCount: input.redactionCount,
+      blockedReasonCategory,
+      personDetectorStatus: input.personDetection.nerStatus,
+      timestamp: new Date().toISOString()
+    }
+  };
+}
+
+function firstBlockingSummary(results: GovernedAttachmentResult[]) {
+  const blocked = results.find((result) => !["clean", "redacted"].includes(result.action));
+  return blocked?.reason || "Attachment upload blocked by Accord.";
+}
+
+function buildAttachmentSummary(results: GovernedAttachmentResult[]) {
+  const redactions = results.reduce((sum, result) => sum + result.redactionCount, 0);
+  if (redactions > 0) return `${redactions} identifier${redactions === 1 ? "" : "s"} protected across ${results.length} file${results.length === 1 ? "" : "s"}.`;
+  return `${results.length} file${results.length === 1 ? "" : "s"} governed locally.`;
+}
+
+function hasSecret(scan: ChatScanResult) {
+  return scan.entities.some((entity) => entity.type === "SECRET") || scan.flags.some((flag) => flag.type === "secret");
+}
+
+function mergePersonDetection(first: PersonDetectionCoverage, second: PersonDetectionCoverage): PersonDetectionCoverage {
+  const statuses: Record<PersonDetectionCoverage["nerStatus"], number> = {
+    ready: 0,
+    unavailable: 1,
+    timeout: 2,
+    error: 3
+  };
+  const status = statuses[first.nerStatus] >= statuses[second.nerStatus] ? first.nerStatus : second.nerStatus;
+
+  return {
+    ...second,
+    nerStatus: status,
+    candidateCount: first.candidateCount + second.candidateCount,
+    timedOut: first.timedOut || second.timedOut
+  };
+}
+
+function unavailablePersonDetection(): PersonDetectionCoverage {
+  return {
+    mode: "hybrid-local-rules",
+    nerStatus: "unavailable",
+    detector: "local_person_detector_v1",
+    candidateCount: 0,
+    timedOut: false,
+    model: {
+      name: "none",
+      assetSizeBytes: 0,
+      executionContext: "service_worker"
+    }
+  };
+}
+
+function sanitizedFallbackName(name: string) {
+  const { stem, extension } = splitFileName(name);
+  return `${sanitizePlainStem(stem) || "attachment"}${extension}`;
+}
+
+function slugifyGovernedStem(stem: string) {
+  return stem
+    .replace(/\s+/g, "_")
+    .replace(/[^\p{L}\p{N}\[\]_.-]+/gu, "_")
+    .replace(/_{2,}/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 120);
+}
+
+function sanitizePlainStem(stem: string) {
+  return slugifyGovernedStem(stem).replace(/\[(PERSON|EMAIL|PHONE|ADDRESS|ACCOUNT|SECRET|OTHER)_\d+\]/g, "redacted");
+}
+
+function mimeCategory(mimeType: string) {
+  if (!mimeType) return "unknown";
+  if (mimeType.startsWith("text/")) return "text";
+  if (mimeType.includes("json")) return "json";
+  if (mimeType.includes("xml")) return "xml";
+  return "code_or_text";
+}
+
+function sizeBucket(size: number) {
+  if (size <= 10 * 1024) return "0-10kb";
+  if (size <= 100 * 1024) return "10-100kb";
+  if (size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES) return "100-256kb";
+  return "over_limit";
+}
+
+async function runGovernanceScan(text: string, stage: ChatScanResult["stage"], sensitivity: string, seedRedactionMap: RedactionMap) {
+  const personDetection = await detectPersonCandidates(text);
+  const scan = scanText(text, stage, sensitivity, {
+    seedRedactionMap,
+    additionalCandidates: personDetection.candidates
+  });
+
+  return {
+    scan,
+    personDetection: personDetection.coverage
+  };
+}
+
+function toSafeScanResult(
+  scan: ChatScanResult,
+  decision: ChatPolicyDecision,
+  includeSanitizedText: boolean,
+  personDetection: PersonDetectionCoverage
+): SafeScanResult {
   const detectedEntityCount = scan.redactions.length;
 
   return {
@@ -69,6 +393,7 @@ function toSafeScanResult(scan: ChatScanResult, decision: ChatPolicyDecision, in
       evidence: flag.evidence
     })),
     explanation: buildExplanation(decision, detectedEntityCount),
+    personDetection,
     sanitizedText: includeSanitizedText ? scan.redactedText : undefined
   };
 }

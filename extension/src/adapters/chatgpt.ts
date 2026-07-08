@@ -1,5 +1,6 @@
 import type {
   AISurfaceAdapter,
+  AttachmentSelection,
   ComposerDecorationState,
   ComposerEntityDecoration,
   SubmissionController,
@@ -44,6 +45,7 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   private lastDecorations: ComposerEntityDecoration[] = [];
   private lastDecorationState: ComposerDecorationState = "clear";
   private lastDecorationDraft = "";
+  private trustedAttachmentInputs = new WeakSet<HTMLInputElement>();
 
   isCurrentSurface() {
     return location.hostname === "chatgpt.com";
@@ -163,6 +165,59 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
       document.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("click", onClick, true);
     };
+  }
+
+  subscribeToAttachmentSelection(callback: (selection: AttachmentSelection) => void) {
+    const onChange = (event: Event) => {
+      const input = event.target instanceof HTMLInputElement && inputIsFilePicker(event.target) ? event.target : null;
+      if (!input) return;
+
+      if (this.trustedAttachmentInputs.has(input)) {
+        this.trustedAttachmentInputs.delete(input);
+        return;
+      }
+
+      const files = Array.from(input.files || []);
+      if (!files.length) return;
+
+      stopSubmission(event);
+      callback({ input, files });
+    };
+
+    document.addEventListener("change", onChange, true);
+
+    return () => {
+      document.removeEventListener("change", onChange, true);
+    };
+  }
+
+  async setGovernedFiles(input: HTMLInputElement, files: File[]) {
+    const transfer = new DataTransfer();
+    for (const file of files) {
+      transfer.items.add(file);
+    }
+    input.files = transfer.files;
+    await microtask();
+  }
+
+  verifyGovernedFiles(input: HTMLInputElement, files: File[]) {
+    const current = Array.from(input.files || []);
+    if (current.length !== files.length) return false;
+
+    return current.every((file, index) => {
+      const expected = files[index];
+      return file.name === expected.name && file.size === expected.size && file.type === expected.type;
+    });
+  }
+
+  dispatchGovernedFileSelection(input: HTMLInputElement) {
+    this.trustedAttachmentInputs.add(input);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  clearFileInput(input: HTMLInputElement) {
+    input.value = "";
   }
 
   subscribeToAssistantResponses(callback: (response: SurfaceAssistantResponse) => void) {
@@ -558,6 +613,10 @@ function stopSubmission(event: Event) {
 
 function isTextArea(element: HTMLElement): element is HTMLTextAreaElement {
   return element instanceof HTMLTextAreaElement;
+}
+
+function inputIsFilePicker(input: HTMLInputElement) {
+  return input.type === "file";
 }
 
 function isDisabled(element: HTMLElement) {

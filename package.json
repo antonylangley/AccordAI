@@ -7,6 +7,7 @@
     "build": "next build",
     "lint": "next lint",
     "eval:redaction": "node scripts/evaluate-redaction.cjs",
+    "eval:person": "node scripts/evaluate-person-detection.cjs",
     "guard:dev": "pnpm --filter @accord/guard dev",
     "guard:build": "pnpm --filter @accord/guard build",
     "guard:typecheck": "pnpm --filter @accord/guard typecheck",
