@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
+import { debugPersonCandidateGenerationForTests } from "@accord/governance-core";
 import { rehydrateAssistantText, scanDraft } from "./scan-session";
 
 const store: Record<string, unknown> = {};
@@ -146,6 +147,57 @@ describe("Accord Guard scan session", () => {
     expect(result.sanitizedText).toBe("write birthday invitations to my friends [PERSON_1], [PERSON_2], [PERSON_3].");
   });
 
+  test("detects coordinated lowercase names after a human action", async () => {
+    const text = "email neta rogovsky and kevin trejos abt saturday";
+    const result = await scan(text, "conversation:coordinated-failure");
+
+    expect(result.action).toBe("redact");
+    expect(result.detectedEntityCount).toBe(2);
+    expect(result.entityCounts.PERSON).toBe(2);
+    expect(personSpans(text, result)).toEqual(["neta rogovsky", "kevin trejos"]);
+    expect(result.sanitizedText).toBe("email [PERSON_1] and [PERSON_2] abt saturday");
+  });
+
+  test.each([
+    ["email neta rogovsky", ["neta rogovsky"], "email [PERSON_1]"],
+    ["email neta rogovsky and", ["neta rogovsky"], "email [PERSON_1] and"],
+    ["email neta rogovsky and kevin trejos", ["neta rogovsky", "kevin trejos"], "email [PERSON_1] and [PERSON_2]"],
+    [
+      "email neta rogovsky and kevin trejos abt saturday",
+      ["neta rogovsky", "kevin trejos"],
+      "email [PERSON_1] and [PERSON_2] abt saturday"
+    ]
+  ])("keeps coordinated lowercase names stable while typing: %s", async (text, expectedNames, expectedSanitizedText) => {
+    const result = await scan(text, `conversation:incremental:${text}`);
+
+    expect(personSpans(text, result)).toEqual(expectedNames);
+    expect(result.sanitizedText).toBe(expectedSanitizedText);
+  });
+
+  test("exposes deterministic coordinated candidate debug evidence for tests", () => {
+    const text = "email neta rogovsky and kevin trejos abt saturday";
+    const candidates = debugPersonCandidateGenerationForTests(text).filter((candidate) =>
+      candidate.source === "coordinated_human_sequence" && ["neta rogovsky", "kevin trejos"].includes(candidate.text)
+    );
+
+    expect(candidates).toEqual([
+      expect.objectContaining({
+        text: "neta rogovsky",
+        start: 6,
+        end: 19,
+        source: "coordinated_human_sequence",
+        contextSignals: expect.arrayContaining(["human_action_context", "coordinated_human_context"])
+      }),
+      expect.objectContaining({
+        text: "kevin trejos",
+        start: 24,
+        end: 36,
+        source: "coordinated_human_sequence",
+        contextSignals: expect.arrayContaining(["inherited_human_action_context", "coordinated_human_context"])
+      })
+    ]);
+  });
+
   test.each([
     ["invite my friends david o'connor and maria garcia", ["david o'connor", "maria garcia"]],
     ["the attendees are jean-pierre dubois, anna van der berg, and jo\u00e3o da silva", ["jean-pierre dubois", "anna van der berg", "jo\u00e3o da silva"]],
@@ -153,11 +205,28 @@ describe("Accord Guard scan session", () => {
     ["cc mary jones and david o'connor", ["mary jones", "david o'connor"]],
     ["participants include wei zhang, li wei, and aisha bint ahmed", ["wei zhang", "li wei", "aisha bint ahmed"]],
     ["my coworkers neta rogovsky and brandon gizzo are coming", ["neta rogovsky", "brandon gizzo"]],
-    ["email the recipients sarah connor, miles morales, peter parker", ["sarah connor", "miles morales", "peter parker"]]
+    ["email the recipients sarah connor, miles morales, peter parker", ["sarah connor", "miles morales", "peter parker"]],
+    ["ask john smith and mary jones to review it", ["john smith", "mary jones"]],
+    ["cc david o'connor and maria garcia", ["david o'connor", "maria garcia"]],
+    ["message jean-pierre dubois, anna van der berg and wei zhang", ["jean-pierre dubois", "anna van der berg", "wei zhang"]],
+    ["invite neta rogovsky, kevin trejos, and brandon gizzo", ["neta rogovsky", "kevin trejos", "brandon gizzo"]],
+    ["tell jo\u00e3o da silva and mar\u00eda jos\u00e9 garc\u00eda the meeting moved", ["jo\u00e3o da silva", "mar\u00eda jos\u00e9 garc\u00eda"]],
+    ["send this to li wei and aisha bint ahmed", ["li wei", "aisha bint ahmed"]],
+    ["email sarah connor; miles morales; peter parker about the launch", ["sarah connor", "miles morales", "peter parker"]]
   ])("detects lowercase context people: %s", async (text, expectedNames) => {
     const result = await scan(text, `conversation:lowercase:${text}`);
 
     expect(personSpans(text, result)).toEqual(expectedNames);
+  });
+
+  test("keeps coordinated lowercase placeholders stable across later prompts", async () => {
+    const firstText = "email neta rogovsky and kevin trejos abt saturday";
+    const secondText = "ask kevin trejos to bring drinks and tell neta rogovsky to come early";
+    const first = await scan(firstText, "conversation:coordinated-stable");
+    const second = await scan(secondText, "conversation:coordinated-stable");
+
+    expect(first.sanitizedText).toBe("email [PERSON_1] and [PERSON_2] abt saturday");
+    expect(second.sanitizedText).toBe("ask [PERSON_2] to bring drinks and tell [PERSON_1] to come early");
   });
 
   test("uses the same PERSON placeholder across capitalization changes", async () => {
@@ -185,7 +254,15 @@ describe("Accord Guard scan session", () => {
     "the attendees endpoint is returning null",
     "friends net work status is down",
     "react state update and context provider",
-    "birthday invitation template and customer email"
+    "birthday invitation template and customer email",
+    "email support and sales about saturday",
+    "ask product and engineering to review it",
+    "message customer support and account management",
+    "tell react state and context provider to update",
+    "email the report and contract",
+    "copy files and folders",
+    "invite users and admins",
+    "friends and family plan"
   ])("does not redact technical or product phrase: %s", async (text) => {
     const result = await scan(text, `conversation:negative:${text}`);
 

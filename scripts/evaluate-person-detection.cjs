@@ -31,6 +31,7 @@ async function main() {
   const metrics = { tp: 0, fp: 0, fn: 0 };
   const lowercaseContextMetrics = { tp: 0, fp: 0, fn: 0 };
   const humanListMetrics = { tp: 0, fp: 0, fn: 0 };
+  const coordinatedContextMetrics = { tp: 0, fp: 0, fn: 0 };
   const detectorBreakdown = {
     nerOnlyTruePositives: 0,
     heuristicOnlyTruePositives: 0,
@@ -59,6 +60,9 @@ async function main() {
     if (testCase.tags?.includes("human_list_context")) {
       applyMetrics(humanListMetrics, expected, actual);
     }
+    if (testCase.tags?.includes("coordinated_human_context")) {
+      applyMetrics(coordinatedContextMetrics, expected, actual);
+    }
     if (testCase.tags?.includes("normal_work_negative")) {
       normalWorkPromptCount += 1;
       if (actual.length > 0) normalWorkFalseAlertCount += 1;
@@ -86,8 +90,10 @@ async function main() {
   const fullScores = scores(metrics);
   const lowercaseScores = scores(lowercaseContextMetrics);
   const humanListScores = scores(humanListMetrics);
+  const coordinatedContextScores = scores(coordinatedContextMetrics);
   const lowercaseCases = corpus.filter((testCase) => testCase.tags?.includes("lowercase_context_person"));
   const humanListCases = corpus.filter((testCase) => testCase.tags?.includes("human_list_context"));
+  const coordinatedContextCases = corpus.filter((testCase) => testCase.tags?.includes("coordinated_human_context"));
   const report = {
     cases: corpus.length,
     positiveCases: corpus.filter((testCase) => testCase.expectedPeople.length).length,
@@ -102,6 +108,9 @@ async function main() {
     human_list_context_precision: humanListScores.precision,
     human_list_context_recall: humanListScores.recall,
     human_list_context_f1: humanListScores.f1,
+    coordinated_human_context_precision: coordinatedContextScores.precision,
+    coordinated_human_context_recall: coordinatedContextScores.recall,
+    coordinated_human_context_f1: coordinatedContextScores.f1,
     normal_work_false_alert_rate: normalWorkPromptCount === 0 ? 0 : round(normalWorkFalseAlertCount / normalWorkPromptCount),
     person: {
       truePositives: metrics.tp,
@@ -116,6 +125,12 @@ async function main() {
       truePositives: humanListMetrics.tp,
       falsePositives: humanListMetrics.fp,
       falseNegatives: humanListMetrics.fn
+    },
+    coordinatedHumanContext: {
+      cases: coordinatedContextCases.length,
+      truePositives: coordinatedContextMetrics.tp,
+      falsePositives: coordinatedContextMetrics.fp,
+      falseNegatives: coordinatedContextMetrics.fn
     },
     ...detectorBreakdown,
     falsePositives,
@@ -203,17 +218,22 @@ function buildCorpus() {
     {
       input: "write birthday invitations to my friends neta rogovsky, kevin trejos, brandon gizzo.",
       expectedPeople: ["neta rogovsky", "kevin trejos", "brandon gizzo"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "email neta rogovsky and kevin trejos abt saturday",
+      expectedPeople: ["neta rogovsky", "kevin trejos"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "invite my friends david o'connor and maria garcia",
       expectedPeople: ["david o'connor", "maria garcia"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "the attendees are jean-pierre dubois, anna van der berg, and jo\u00e3o da silva",
       expectedPeople: ["jean-pierre dubois", "anna van der berg", "jo\u00e3o da silva"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "send this to kevin trejos",
@@ -223,22 +243,57 @@ function buildCorpus() {
     {
       input: "cc mary jones and david o'connor",
       expectedPeople: ["mary jones", "david o'connor"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "participants include wei zhang, li wei, and aisha bint ahmed",
       expectedPeople: ["wei zhang", "li wei", "aisha bint ahmed"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "my coworkers neta rogovsky and brandon gizzo are coming",
       expectedPeople: ["neta rogovsky", "brandon gizzo"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     },
     {
       input: "email the recipients sarah connor, miles morales, peter parker",
       expectedPeople: ["sarah connor", "miles morales", "peter parker"],
-      tags: ["lowercase_context_person", "human_list_context"]
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "ask john smith and mary jones to review it",
+      expectedPeople: ["john smith", "mary jones"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "cc david o'connor and maria garcia",
+      expectedPeople: ["david o'connor", "maria garcia"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "message jean-pierre dubois, anna van der berg and wei zhang",
+      expectedPeople: ["jean-pierre dubois", "anna van der berg", "wei zhang"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "invite neta rogovsky, kevin trejos, and brandon gizzo",
+      expectedPeople: ["neta rogovsky", "kevin trejos", "brandon gizzo"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "tell jo\u00e3o da silva and mar\u00eda jos\u00e9 garc\u00eda the meeting moved",
+      expectedPeople: ["jo\u00e3o da silva", "mar\u00eda jos\u00e9 garc\u00eda"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "send this to li wei and aisha bint ahmed",
+      expectedPeople: ["li wei", "aisha bint ahmed"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
+    },
+    {
+      input: "email sarah connor; miles morales; peter parker about the launch",
+      expectedPeople: ["sarah connor", "miles morales", "peter parker"],
+      tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context"]
     }
   ].map((testCase, index) => ({
     id: `lowercase-context:${index}`,
@@ -292,12 +347,20 @@ function buildCorpus() {
     "the attendees endpoint is returning null",
     "friends net work status is down",
     "react state update and context provider",
-    "birthday invitation template and customer email"
+    "birthday invitation template and customer email",
+    "email support and sales about saturday",
+    "ask product and engineering to review it",
+    "message customer support and account management",
+    "tell react state and context provider to update",
+    "email the report and contract",
+    "copy files and folders",
+    "invite users and admins",
+    "friends and family plan"
   ].map((input, index) => ({
     id: `lowercase-context-negative:${index}`,
     input,
     expectedPeople: [],
-    tags: ["lowercase_context_person", "human_list_context", "normal_work_negative"]
+    tags: ["lowercase_context_person", "human_list_context", "coordinated_human_context", "normal_work_negative"]
   }));
 
   return [...positives, ...lowercaseContext, ...negatives, ...lowercaseNegatives];

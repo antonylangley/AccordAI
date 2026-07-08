@@ -206,10 +206,14 @@ const commonPersonFalsePositiveWords = new Set([
   "email",
   "encryption",
   "endpoint",
+  "engineering",
   "employee",
   "failed",
+  "family",
   "financial",
+  "files",
   "follow",
+  "folders",
   "friends",
   "governance",
   "graphql",
@@ -225,6 +229,7 @@ const commonPersonFalsePositiveWords = new Set([
   "loan",
   "list",
   "manager",
+  "management",
   "meeting",
   "message",
   "medical",
@@ -239,6 +244,7 @@ const commonPersonFalsePositiveWords = new Set([
   "patient",
   "platform",
   "planning",
+  "plan",
   "policy",
   "portal",
   "product",
@@ -253,12 +259,14 @@ const commonPersonFalsePositiveWords = new Set([
   "react",
   "regex",
   "request",
+  "report",
   "resources",
   "rest",
   "response",
   "review",
   "reviewing",
   "risk",
+  "sales",
   "search",
   "security",
   "success",
@@ -270,6 +278,7 @@ const commonPersonFalsePositiveWords = new Set([
   "technical",
   "template",
   "typescript",
+  "admins",
   "users",
   "validator",
   "tell",
@@ -347,6 +356,12 @@ const personTokenPattern = /[\p{L}\p{M}]+(?:[-'’][\p{L}\p{M}]+)*/gu;
 const humanListTrailingStopWords = new Set([
   "are",
   "arrived",
+  "abt",
+  "about",
+  "after",
+  "because",
+  "before",
+  "by",
   "called",
   "came",
   "can",
@@ -354,8 +369,17 @@ const humanListTrailingStopWords = new Set([
   "could",
   "is",
   "left",
+  "next",
   "needs",
+  "re",
+  "regarding",
   "should",
+  "that",
+  "the",
+  "to",
+  "today",
+  "tomorrow",
+  "tonight",
   "was",
   "were",
   "will",
@@ -363,7 +387,7 @@ const humanListTrailingStopWords = new Set([
 ]);
 
 const humanListIntroducerPattern =
-  /\b(?:(?:my|the|these|those|our)\s+)?(?:friends|people|recipients|invitees|attendees|employees|candidates|patients|reviewers|approvers|contacts|customers|clients|team\s+members|participants|guests|coworkers|colleagues)\b(?:\s+(?:are|include|includes))?|\b(?:invite(?:\s+(?:my\s+friends|these\s+people|the\s+attendees|the\s+recipients))?|send(?:\s+this)?\s+to|email(?:\s+the\s+recipients)?|copy|cc|message|contact)\b/giu;
+  /\b(?:(?:my|the|these|those|our)\s+)?(?:friends|people|recipients|invitees|attendees|employees|candidates|patients|reviewers|approvers|contacts|customers|clients|team\s+members|participants|guests|coworkers|colleagues)\b(?:\s+(?:are|include|includes))?|\b(?:invite(?:\s+(?:my\s+friends|these\s+people|the\s+attendees|the\s+recipients))?|send(?:\s+this)?\s+to|email(?:\s+the\s+recipients)?|copy|cc|message|contact|ask|tell|write\s+to|reply\s+to)\b/giu;
 
 export function scanText(text: string, stage: ChatScanStage, sensitivity = "Internal", options: ScanOptions = {}): ChatScanResult {
   const redaction = redactTextWithSummary(text, options);
@@ -478,7 +502,16 @@ export function validateEntityCandidate(candidate: EntityCandidate, fullText: st
       contextSignals.includes("ner_person") ||
       contextSignals.includes("local_person_candidate");
     const hasStrongLowercaseEvidence = contextSignals.some((signal) =>
-      ["human_list_context", "comma_separated_human_list", "direct_human_recipient", "near_email", "conversation_stable"].includes(signal)
+      [
+        "human_list_context",
+        "human_action_context",
+        "inherited_human_action_context",
+        "coordinated_human_context",
+        "comma_separated_human_list",
+        "direct_human_recipient",
+        "near_email",
+        "conversation_stable"
+      ].includes(signal)
     );
     const titleCase = tokens.every((token) => isCapitalizedNameToken(token.text) || personParticles.has(token.lower));
     const lowercaseContextName = tokens.every((token) => isLowercaseNameToken(token.text) || personParticles.has(token.lower));
@@ -491,6 +524,9 @@ export function validateEntityCandidate(candidate: EntityCandidate, fullText: st
         "near_person_role",
         "conversation_stable",
         "human_list_context",
+        "human_action_context",
+        "inherited_human_action_context",
+        "coordinated_human_context",
         "direct_human_recipient"
       ].includes(signal)
     );
@@ -755,6 +791,18 @@ function normalizePhrase(text: string) {
   return text.replace(/\s+/g, " ").trim().toLocaleLowerCase();
 }
 
+export function debugPersonCandidateGenerationForTests(text: string) {
+  return detectEntityCandidates(text)
+    .filter((candidate) => candidate.type === "PERSON")
+    .map((candidate) => ({
+      text: candidate.originalText,
+      start: candidate.start,
+      end: candidate.end,
+      source: candidate.detector,
+      contextSignals: candidate.contextSignals
+    }));
+}
+
 function normalizeNameToken(text: string) {
   return text.toLocaleLowerCase().replace(/[’]/g, "'");
 }
@@ -820,9 +868,15 @@ function detectHumanListPersonCandidates(text: string): EntityCandidate[] {
 
     const segment = text.slice(listStart, listEnd);
     const items = splitHumanListItems(segment, listStart);
-    const listSignals = items.length > 1 ? ["human_list_context", "comma_separated_human_list"] : ["human_list_context"];
+    const hasCoordination = items.length > 1 || /\b(?:and)\b|[,;]/iu.test(segment);
 
-    for (const item of items) {
+    for (const [index, item] of items.entries()) {
+      const listSignals = [
+        "human_list_context",
+        index === 0 ? "human_action_context" : "inherited_human_action_context",
+        ...(hasCoordination ? ["coordinated_human_context"] : []),
+        ...(items.length > 1 ? ["comma_separated_human_list"] : [])
+      ];
       const candidate = candidateFromListItem(text, item.start, item.end, listSignals);
       if (candidate) candidates.push(candidate);
     }
@@ -892,7 +946,7 @@ function candidateFromListItem(text: string, start: number, end: number, context
     start: candidateStart,
     end: candidateEnd,
     confidence: 0.72,
-    detector: "human_list_context_name",
+    detector: contextSignals.includes("coordinated_human_context") ? "coordinated_human_sequence" : "human_list_context_name",
     contextSignals
   };
 }
@@ -959,9 +1013,12 @@ function personSignalWeight(signal: string) {
   const weights: Record<string, number> = {
     comma_separated_human_list: 0.08,
     conversation_stable: 0.24,
+    coordinated_human_context: 0.1,
     detector_agreement: 0.12,
     direct_human_recipient: 0.14,
+    human_action_context: 0.12,
     human_list_context: 0.22,
+    inherited_human_action_context: 0.14,
     local_person_candidate: 0.12,
     near_name_context: 0.18,
     near_human_action: 0.16,

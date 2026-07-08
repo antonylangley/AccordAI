@@ -128,6 +128,24 @@ describe("Accord Guard attachment governance", () => {
     expect(result.results[0].sanitizedText).not.toContain("brandon gizzo");
   });
 
+  test("redacts coordinated lowercase recipients in governed source attachments", async () => {
+    const result = await govern(
+      [
+        file(
+          "recipients.ts",
+          'const recipients = [\n  "neta rogovsky",\n  "kevin trejos"\n];'
+        )
+      ],
+      "attachments:lowercase-recipients"
+    );
+
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0].sanitizedText).toContain("[PERSON_1]");
+    expect(result.results[0].sanitizedText).toContain("[PERSON_2]");
+    expect(result.results[0].sanitizedText).not.toContain("neta rogovsky");
+    expect(result.results[0].sanitizedText).not.toContain("kevin trejos");
+  });
+
   test("G: fails closed for unsupported files", async () => {
     const result = await govern([file("report.pdf", "", "application/pdf")], "attachments:unsupported");
 
