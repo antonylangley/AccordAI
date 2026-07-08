@@ -1,5 +1,13 @@
 import { decidePolicy, rehydrateResponse, scanText } from "@accord/governance-core";
-import type { ChatPolicyDecision, ChatRedaction, ChatScanResult, DetectedEntity, EntityCountSummary, RedactionMap } from "@accord/governance-core";
+import type {
+  ChatPolicyDecision,
+  ChatRedaction,
+  ChatScanResult,
+  DetectedEntity,
+  EntityCountSummary,
+  EntityType,
+  RedactionMap
+} from "@accord/governance-core";
 import {
   getFileExtension,
   isSupportedTextAttachment,
@@ -461,7 +469,7 @@ function findKnownEntities(text: string, seedRedactionMap: RedactionMap): Detect
   for (const [placeholder, entity] of Object.entries(seedRedactionMap)) {
     if (entity.type === "SECRET" || !entity.originalText) continue;
 
-    for (const range of findLiteralRanges(text, entity.originalText)) {
+    for (const range of findLiteralRanges(text, entity.originalText, entity.type)) {
       entities.push({
         id: placeholder,
         type: entity.type,
@@ -478,10 +486,10 @@ function findKnownEntities(text: string, seedRedactionMap: RedactionMap): Detect
   return entities;
 }
 
-function findLiteralRanges(text: string, literal: string) {
+function findLiteralRanges(text: string, literal: string, type: EntityType) {
   const ranges: Array<{ start: number; end: number }> = [];
   const escaped = literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`\\b${escaped}\\b`, "gi");
+  const pattern = new RegExp(`\\b${escaped}\\b`, type === "PERSON" ? "gi" : "g");
 
   for (const match of text.matchAll(pattern)) {
     if (typeof match.index !== "number") continue;

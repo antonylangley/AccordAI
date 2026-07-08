@@ -29,6 +29,8 @@ main().catch((error) => {
 async function main() {
   const corpus = buildCorpus();
   const metrics = { tp: 0, fp: 0, fn: 0 };
+  const lowercaseContextMetrics = { tp: 0, fp: 0, fn: 0 };
+  const humanListMetrics = { tp: 0, fp: 0, fn: 0 };
   const detectorBreakdown = {
     nerOnlyTruePositives: 0,
     heuristicOnlyTruePositives: 0,
@@ -36,6 +38,8 @@ async function main() {
   };
   const falsePositives = [];
   const falseNegatives = [];
+  let normalWorkPromptCount = 0;
+  let normalWorkFalseAlertCount = 0;
 
   for (const testCase of corpus) {
     const heuristicScan = scanText(testCase.input, "preflight", "Internal");
@@ -48,42 +52,70 @@ async function main() {
     const heuristic = uniquePeople(heuristicScan.entities);
     const localCandidates = uniqueCandidatePeople(localDetection.candidates);
 
+    applyMetrics(metrics, expected, actual);
+    if (testCase.tags?.includes("lowercase_context_person")) {
+      applyMetrics(lowercaseContextMetrics, expected, actual);
+    }
+    if (testCase.tags?.includes("human_list_context")) {
+      applyMetrics(humanListMetrics, expected, actual);
+    }
+    if (testCase.tags?.includes("normal_work_negative")) {
+      normalWorkPromptCount += 1;
+      if (actual.length > 0) normalWorkFalseAlertCount += 1;
+    }
+
     for (const person of actual) {
       if (expected.includes(person)) {
-        metrics.tp += 1;
         const heuristicHit = heuristic.includes(person);
         const localHit = localCandidates.includes(person);
         if (heuristicHit && localHit) detectorBreakdown.detectorAgreementTruePositives += 1;
         else if (heuristicHit) detectorBreakdown.heuristicOnlyTruePositives += 1;
         else if (localHit) detectorBreakdown.nerOnlyTruePositives += 1;
       } else {
-        metrics.fp += 1;
         falsePositives.push({ id: testCase.id, text: testCase.input, person });
       }
     }
 
     for (const person of expected) {
       if (!actual.includes(person)) {
-        metrics.fn += 1;
         falseNegatives.push({ id: testCase.id, text: testCase.input, person });
       }
     }
   }
 
-  const precision = metrics.tp + metrics.fp === 0 ? 1 : metrics.tp / (metrics.tp + metrics.fp);
-  const recall = metrics.tp + metrics.fn === 0 ? 1 : metrics.tp / (metrics.tp + metrics.fn);
-  const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+  const fullScores = scores(metrics);
+  const lowercaseScores = scores(lowercaseContextMetrics);
+  const humanListScores = scores(humanListMetrics);
+  const lowercaseCases = corpus.filter((testCase) => testCase.tags?.includes("lowercase_context_person"));
+  const humanListCases = corpus.filter((testCase) => testCase.tags?.includes("human_list_context"));
   const report = {
     cases: corpus.length,
     positiveCases: corpus.filter((testCase) => testCase.expectedPeople.length).length,
     negativeCases: corpus.filter((testCase) => !testCase.expectedPeople.length).length,
+    lowercase_context_person_support: {
+      cases: lowercaseCases.length,
+      expectedPeople: lowercaseCases.reduce((sum, testCase) => sum + testCase.expectedPeople.length, 0)
+    },
+    lowercase_context_person_precision: lowercaseScores.precision,
+    lowercase_context_person_recall: lowercaseScores.recall,
+    lowercase_context_person_f1: lowercaseScores.f1,
+    human_list_context_precision: humanListScores.precision,
+    human_list_context_recall: humanListScores.recall,
+    human_list_context_f1: humanListScores.f1,
+    normal_work_false_alert_rate: normalWorkPromptCount === 0 ? 0 : round(normalWorkFalseAlertCount / normalWorkPromptCount),
     person: {
       truePositives: metrics.tp,
       falsePositives: metrics.fp,
       falseNegatives: metrics.fn,
-      precision: round(precision),
-      recall: round(recall),
-      f1: round(f1)
+      precision: fullScores.precision,
+      recall: fullScores.recall,
+      f1: fullScores.f1
+    },
+    humanListContext: {
+      cases: humanListCases.length,
+      truePositives: humanListMetrics.tp,
+      falsePositives: humanListMetrics.fp,
+      falseNegatives: humanListMetrics.fn
     },
     ...detectorBreakdown,
     falsePositives,
@@ -167,6 +199,52 @@ function buildCorpus() {
     });
   });
 
+  const lowercaseContext = [
+    {
+      input: "write birthday invitations to my friends neta rogovsky, kevin trejos, brandon gizzo.",
+      expectedPeople: ["neta rogovsky", "kevin trejos", "brandon gizzo"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "invite my friends david o'connor and maria garcia",
+      expectedPeople: ["david o'connor", "maria garcia"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "the attendees are jean-pierre dubois, anna van der berg, and jo\u00e3o da silva",
+      expectedPeople: ["jean-pierre dubois", "anna van der berg", "jo\u00e3o da silva"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "send this to kevin trejos",
+      expectedPeople: ["kevin trejos"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "cc mary jones and david o'connor",
+      expectedPeople: ["mary jones", "david o'connor"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "participants include wei zhang, li wei, and aisha bint ahmed",
+      expectedPeople: ["wei zhang", "li wei", "aisha bint ahmed"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "my coworkers neta rogovsky and brandon gizzo are coming",
+      expectedPeople: ["neta rogovsky", "brandon gizzo"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    },
+    {
+      input: "email the recipients sarah connor, miles morales, peter parker",
+      expectedPeople: ["sarah connor", "miles morales", "peter parker"],
+      tags: ["lowercase_context_person", "human_list_context"]
+    }
+  ].map((testCase, index) => ({
+    id: `lowercase-context:${index}`,
+    ...testCase
+  }));
+
   const negatives = [
     "Representational State Transfer is an architectural style.",
     "Customer Support Team owns this queue.",
@@ -201,10 +279,28 @@ function buildCorpus() {
   ].map((input, index) => ({
     id: `negative:${index}`,
     input,
-    expectedPeople: []
+    expectedPeople: [],
+    tags: ["normal_work_negative"]
   }));
 
-  return [...positives, ...negatives];
+  const lowercaseNegatives = [
+    "my friends list is stored in the database",
+    "the people API returns customer records",
+    "invite users to the platform",
+    "participants include support team and product team",
+    "send this to customer support",
+    "the attendees endpoint is returning null",
+    "friends net work status is down",
+    "react state update and context provider",
+    "birthday invitation template and customer email"
+  ].map((input, index) => ({
+    id: `lowercase-context-negative:${index}`,
+    input,
+    expectedPeople: [],
+    tags: ["lowercase_context_person", "human_list_context", "normal_work_negative"]
+  }));
+
+  return [...positives, ...lowercaseContext, ...negatives, ...lowercaseNegatives];
 }
 
 function uniquePeople(entities) {
@@ -217,6 +313,29 @@ function uniqueCandidatePeople(candidates) {
 
 function normalize(text) {
   return text.replace(/\s+/g, " ").trim().toLocaleLowerCase();
+}
+
+function applyMetrics(metrics, expected, actual) {
+  for (const person of actual) {
+    if (expected.includes(person)) metrics.tp += 1;
+    else metrics.fp += 1;
+  }
+
+  for (const person of expected) {
+    if (!actual.includes(person)) metrics.fn += 1;
+  }
+}
+
+function scores(metrics) {
+  const precision = metrics.tp + metrics.fp === 0 ? 1 : metrics.tp / (metrics.tp + metrics.fp);
+  const recall = metrics.tp + metrics.fn === 0 ? 1 : metrics.tp / (metrics.tp + metrics.fn);
+  const f1 = precision + recall === 0 ? 0 : (2 * precision * recall) / (precision + recall);
+
+  return {
+    precision: round(precision),
+    recall: round(recall),
+    f1: round(f1)
+  };
 }
 
 function round(value) {

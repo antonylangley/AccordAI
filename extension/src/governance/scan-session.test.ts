@@ -138,6 +138,37 @@ describe("Accord Guard scan session", () => {
     expect(result.sanitizedText).toContain("[PERSON_1]");
   });
 
+  test("detects lowercase names in a strong human-list context", async () => {
+    const text = "write birthday invitations to my friends neta rogovsky, kevin trejos, brandon gizzo.";
+    const result = await scan(text, "conversation:lowercase-list");
+
+    expect(personSpans(text, result)).toEqual(["neta rogovsky", "kevin trejos", "brandon gizzo"]);
+    expect(result.sanitizedText).toBe("write birthday invitations to my friends [PERSON_1], [PERSON_2], [PERSON_3].");
+  });
+
+  test.each([
+    ["invite my friends david o'connor and maria garcia", ["david o'connor", "maria garcia"]],
+    ["the attendees are jean-pierre dubois, anna van der berg, and jo\u00e3o da silva", ["jean-pierre dubois", "anna van der berg", "jo\u00e3o da silva"]],
+    ["send this to kevin trejos", ["kevin trejos"]],
+    ["cc mary jones and david o'connor", ["mary jones", "david o'connor"]],
+    ["participants include wei zhang, li wei, and aisha bint ahmed", ["wei zhang", "li wei", "aisha bint ahmed"]],
+    ["my coworkers neta rogovsky and brandon gizzo are coming", ["neta rogovsky", "brandon gizzo"]],
+    ["email the recipients sarah connor, miles morales, peter parker", ["sarah connor", "miles morales", "peter parker"]]
+  ])("detects lowercase context people: %s", async (text, expectedNames) => {
+    const result = await scan(text, `conversation:lowercase:${text}`);
+
+    expect(personSpans(text, result)).toEqual(expectedNames);
+  });
+
+  test("uses the same PERSON placeholder across capitalization changes", async () => {
+    const first = await scan("Neta Rogovsky is attending.", "conversation:case-stable");
+    const second = await scan("neta rogovsky is bringing dessert.", "conversation:case-stable");
+
+    expect(first.sanitizedText).toContain("[PERSON_1]");
+    expect(second.sanitizedText).toContain("[PERSON_1]");
+    expect(second.sanitizedText).not.toContain("[PERSON_2]");
+  });
+
   test.each([
     "Representational State Transfer is an architectural style.",
     "Customer Support Team owns this queue.",
@@ -145,13 +176,28 @@ describe("Accord Guard scan session", () => {
     "The Monday Client Meeting was moved.",
     "React State Update caused a rerender.",
     "New York Office is closing.",
-    "Accord Guard is active."
+    "Accord Guard is active.",
+    "my friends list is stored in the database",
+    "the people API returns customer records",
+    "invite users to the platform",
+    "participants include support team and product team",
+    "send this to customer support",
+    "the attendees endpoint is returning null",
+    "friends net work status is down",
+    "react state update and context provider",
+    "birthday invitation template and customer email"
   ])("does not redact technical or product phrase: %s", async (text) => {
     const result = await scan(text, `conversation:negative:${text}`);
 
     expect(result.decorations.filter((decoration) => decoration.type === "PERSON")).toHaveLength(0);
   });
 });
+
+function personSpans(text: string, result: Awaited<ReturnType<typeof scan>>) {
+  return result.decorations
+    .filter((decoration) => decoration.type === "PERSON")
+    .map((decoration) => text.slice(decoration.start, decoration.end));
+}
 
 function scan(text: string, conversationKey: string) {
   return scanDraft({
