@@ -1,4 +1,5 @@
 import type { ComposerDecorationState } from "../adapters/types";
+import type { EntityCountSummary } from "@accord/governance-core";
 import type { SafeScanResult } from "../messaging/types";
 
 export type SurfacePhase = ComposerDecorationState;
@@ -10,6 +11,8 @@ export type SurfaceSnapshot = {
   draftText: string;
   whyOpen: boolean;
   attachmentNotice: boolean;
+  attachmentEntityCounts?: EntityCountSummary;
+  attachmentRedactionCount?: number;
 };
 
 export type SurfacePatch = Partial<SurfaceSnapshot>;

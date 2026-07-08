@@ -75,7 +75,7 @@ export type GovernAttachmentsPayload = {
   attachments: GuardAttachmentInput[];
 };
 
-export type GovernedAttachmentAction = "clean" | "redacted" | "blocked" | "unsupported" | "too_large" | "failed";
+export type GovernedAttachmentAction = "clean" | "redacted" | "blocked" | "unsupported" | "too_large" | "failed" | "binary";
 
 export type SafeAttachmentTelemetry = {
   surface: AISurface;

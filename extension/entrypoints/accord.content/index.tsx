@@ -5,8 +5,9 @@ import "./style.css";
 import accordMarkUrl from "../../src/assets/accord-mark.png";
 import { ChatGPTAdapter } from "../../src/adapters/chatgpt";
 import type { SurfaceAssistantResponse } from "../../src/adapters/types";
-import { isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, safeMimeType } from "../../src/attachments/policy";
+import { isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, mimeCategory, safeMimeType } from "../../src/attachments/policy";
 import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
+import type { EntityCountSummary } from "@accord/governance-core";
 import type { GovernAttachmentsResult, GuardAttachmentInput, SafeScanResult } from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
 import { runGovernedAttachmentHandoff } from "../../src/state/attachment-handoff";
@@ -60,6 +61,7 @@ export default defineContentScript({
           }}
         />
       );
+      window.requestAnimationFrame(syncGuardChrome);
     };
 
     render();
@@ -95,7 +97,14 @@ export default defineContentScript({
       syncGuardChrome();
 
       if (!text.trim()) {
-        state.set({ phase: "idle", scan: undefined, message: undefined, draftText: "" });
+        state.set({
+          phase: "idle",
+          scan: undefined,
+          message: undefined,
+          draftText: "",
+          attachmentEntityCounts: undefined,
+          attachmentRedactionCount: undefined
+        });
         adapter.setComposerDecoratedState("clear");
         adapter.clearEntityDecorations();
         return;
@@ -234,7 +243,14 @@ export default defineContentScript({
 
           if (result.batchAction !== "allow") {
             adapter.clearFileInput(selection.input);
-            state.set({ phase: "blocked", message: result.summary, attachmentNotice: true });
+            state.set({
+              phase: "blocked",
+              message: result.summary,
+              attachmentNotice: true,
+              attachmentEntityCounts: mergeEntityCounts(result),
+              attachmentRedactionCount: result.results.reduce((sum, fileResult) => sum + fileResult.redactionCount, 0),
+              draftText: adapter.getDraftText()
+            });
             return;
           }
 
@@ -253,6 +269,7 @@ export default defineContentScript({
             files: governedFiles,
             setGovernedFiles: (files) => adapter.setGovernedFiles(selection.input, files),
             verifyGovernedFiles: (files) => adapter.verifyGovernedFiles(selection.input, files),
+            verifyHostAccepted: (files) => adapter.verifyHostAttachmentAccepted(files),
             dispatchTrustedSelection: () => adapter.dispatchGovernedFileSelection(selection.input),
             clearFileInput: () => adapter.clearFileInput(selection.input),
             onState: (nextState) => state.set({ ...nextState, attachmentNotice: true, draftText: adapter.getDraftText() })
@@ -265,6 +282,8 @@ export default defineContentScript({
             phase: hasRedactions ? "redact" : "clear",
             message: result.summary,
             attachmentNotice: true,
+            attachmentEntityCounts: mergeEntityCounts(result),
+            attachmentRedactionCount: result.results.reduce((sum, fileResult) => sum + fileResult.redactionCount, 0),
             draftText: adapter.getDraftText()
           });
         })
@@ -353,10 +372,25 @@ async function buildAttachmentPayload(files: File[]): Promise<GuardAttachmentInp
       };
 
       if (file.size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES && isSupportedTextAttachment(file.name, file.type)) {
+        console.info("[Accord Guard] attachment candidate", {
+          extension: file.name.split(".").pop()?.toLocaleLowerCase() || "",
+          mimeCategory: mimeCategory(file.type),
+          size: file.size,
+          supportDecision: "read_locally"
+        });
         input.text = await file.text();
       }
 
       return input;
     })
   );
+}
+
+function mergeEntityCounts(result: GovernAttachmentsResult): EntityCountSummary {
+  return result.results.reduce<EntityCountSummary>((counts, fileResult) => {
+    for (const [type, count] of Object.entries(fileResult.entityCounts)) {
+      counts[type as keyof EntityCountSummary] = (counts[type as keyof EntityCountSummary] || 0) + count;
+    }
+    return counts;
+  }, {});
 }

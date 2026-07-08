@@ -34,6 +34,9 @@ describe("response rehydration presentation", () => {
     expect(resolvedView).toBeTruthy();
     expect(resolvedView.previousElementSibling).toBe(article);
     expect(resolvedView.querySelector(".accord-guard-response-shell")).toBeNull();
+    expect(resolvedView.querySelectorAll(".accord-guard-response-mark-button")).toHaveLength(1);
+    expect(resolvedView.querySelector(".accord-guard-response-mark-button")?.getAttribute("data-popover-y")).toBeTruthy();
+    expect(resolvedView.querySelector(".accord-guard-response-mark-button")?.getAttribute("data-popover-x")).toBeTruthy();
     expect(resolvedView.textContent).toContain("Hey John Smith");
     expect(resolvedView.textContent).toContain("Here's a simple draft:");
     expect(resolvedView.textContent).toContain("I can make it a little more polished or casual.");
@@ -56,6 +59,16 @@ describe("response rehydration presentation", () => {
     expect(copied[1]).toContain("Here's a simple draft:");
     expect(copied[1]).toContain("Hey John Smith");
     expect(copied[1]).toContain("I can make it a little more polished or casual.");
+
+    await renderResolvedAssistantResponse(article, "assistant_1", resolveText, {
+      markUrl: "accord-mark.png",
+      copyText: async (text) => {
+        copied.push(text);
+      }
+    });
+
+    expect(dom.window.document.querySelectorAll(".accord-guard-response-overlay")).toHaveLength(1);
+    expect(dom.window.document.querySelectorAll(".accord-guard-response-mark-button")).toHaveLength(1);
   });
 });
 

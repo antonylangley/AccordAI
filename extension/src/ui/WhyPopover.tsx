@@ -10,6 +10,8 @@ type WhyPopoverProps = {
 export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
   const decorations = state.scan?.decorations || [];
   const counts = countDecorations(decorations);
+  const attachmentCounts = state.attachmentEntityCounts || {};
+  const visibleCounts = Object.keys(counts).length ? counts : attachmentCounts;
   const blocked = state.phase === "blocked";
 
   return (
@@ -26,9 +28,9 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
 
       <p className="accord-guard-popover-copy">{summaryCopy(state, decorations.length)}</p>
 
-      {Object.keys(counts).length ? (
+      {Object.keys(visibleCounts).length ? (
         <div className="accord-guard-counts">
-          {Object.entries(counts).map(([type, count]) => (
+          {Object.entries(visibleCounts).map(([type, count]) => (
             <span key={type}>
               {shortEntityLabel(type as EntityDecoration["type"])} - {count}
             </span>
@@ -64,16 +66,16 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
 }
 
 function summaryCopy(state: SurfaceSnapshot, decorationCount: number) {
+  if (state.attachmentNotice) {
+    return state.message || "Supported text and code attachments are governed before upload. Unsupported files fail closed.";
+  }
+
   if (state.phase === "blocked") {
     return "This value cannot be submitted to an external AI tool. Sending blocked.";
   }
 
   if (decorationCount > 0) {
     return `${decorationCount} identifier${decorationCount === 1 ? "" : "s"} protected. They will be replaced before AI submission.`;
-  }
-
-  if (state.attachmentNotice) {
-    return state.message || "Supported text and code attachments are governed before upload. Unsupported files fail closed.";
   }
 
   if (state.phase === "scanning") return "Checking this draft locally.";

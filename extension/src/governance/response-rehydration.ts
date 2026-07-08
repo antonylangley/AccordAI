@@ -309,6 +309,7 @@ function positionResolvedView(root: HTMLElement, view: HTMLElement) {
   view.style.top = `${rootRect.top - parentRect.top + parent.scrollTop}px`;
   view.style.width = `${rootRect.width}px`;
   view.style.minHeight = `${rootRect.height}px`;
+  syncResponsePopoverPlacement(view);
 }
 
 function attachAlignmentObservers(root: HTMLElement, view: AccordResponseView) {
@@ -334,6 +335,22 @@ function attachAlignmentObservers(root: HTMLElement, view: AccordResponseView) {
     window.removeEventListener("resize", sync);
     window.removeEventListener("scroll", sync, true);
   };
+}
+
+function syncResponsePopoverPlacement(view: HTMLElement) {
+  const button = view.querySelector<HTMLElement>(".accord-guard-response-mark-button");
+  const popover = view.querySelector<HTMLElement>(".accord-guard-response-popover");
+  if (!button || !popover) return;
+
+  const buttonRect = button.getBoundingClientRect();
+  const estimatedWidth = popover.offsetWidth || 288;
+  const estimatedHeight = popover.offsetHeight || 220;
+  const margin = 12;
+  const hasRoomAbove = buttonRect.top >= estimatedHeight + margin;
+  const hasRoomRight = window.innerWidth - buttonRect.right >= estimatedWidth + margin;
+
+  button.dataset.popoverY = hasRoomAbove ? "above" : "below";
+  button.dataset.popoverX = hasRoomRight ? "right" : "left";
 }
 
 async function copyTextValue(text: string, copyText?: (text: string) => Promise<void> | void) {

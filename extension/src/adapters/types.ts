@@ -39,6 +39,7 @@ export interface AISurfaceAdapter {
   subscribeToAttachmentSelection(callback: (selection: AttachmentSelection) => void): () => void;
   setGovernedFiles(input: HTMLInputElement, files: File[]): Promise<void>;
   verifyGovernedFiles(input: HTMLInputElement, files: File[]): boolean;
+  verifyHostAttachmentAccepted(files: File[]): Promise<boolean>;
   dispatchGovernedFileSelection(input: HTMLInputElement): void;
   clearFileInput(input: HTMLInputElement): void;
   subscribeToAssistantResponses(callback: (response: SurfaceAssistantResponse) => void): () => void;

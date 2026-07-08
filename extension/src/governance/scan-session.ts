@@ -9,9 +9,10 @@ import type {
   RedactionMap
 } from "@accord/governance-core";
 import {
+  classifyAttachmentContent,
   getFileExtension,
-  isSupportedTextAttachment,
   MAX_GUARDED_TEXT_ATTACHMENT_BYTES,
+  mimeCategory,
   safeMimeType,
   splitFileName
 } from "../attachments/policy";
@@ -120,30 +121,39 @@ async function governSingleAttachment(
     lastModified: attachment.lastModified
   };
 
-  if (!isSupportedTextAttachment(attachment.originalName, attachment.mimeType)) {
+  const classification = classifyAttachmentContent(
+    {
+      name: attachment.originalName,
+      mimeType: attachment.mimeType,
+      size: attachment.size
+    },
+    attachment.text
+  );
+
+  if (classification === "unsupported_type" || classification === "unsupported_mime") {
     return {
       result: buildAttachmentResult({
         ...base,
         action: "unsupported",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: "This file type is not governed in browser mode yet. Use Accord Workspace for governed file analysis.",
+        reason: `This file type is not governed in browser mode yet. ${sanitizedFallbackName(attachment.originalName)} was not uploaded. Use Accord Workspace for governed file analysis.`,
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
         personDetection: unavailablePersonDetection(),
         surface: payload.surface,
-        blockedReasonCategory: "unsupported_type"
+        blockedReasonCategory: classification
       })
     };
   }
 
-  if (attachment.size > MAX_GUARDED_TEXT_ATTACHMENT_BYTES) {
+  if (classification === "too_large") {
     return {
       result: buildAttachmentResult({
         ...base,
         action: "too_large",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: "File is too large for browser-mode governance. Use Accord Workspace.",
+        reason: `${sanitizedFallbackName(attachment.originalName)} is too large for browser-mode governance. It was not uploaded. Use Accord Workspace.`,
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
@@ -154,13 +164,48 @@ async function governSingleAttachment(
     };
   }
 
-  if (typeof attachment.text !== "string") {
+  if (classification === "read_failed") {
     return {
       result: buildAttachmentResult({
         ...base,
         action: "failed",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: "Accord could not read this file locally. File upload blocked.",
+        reason: `Accord could not read ${sanitizedFallbackName(attachment.originalName)} locally. It was not uploaded.`,
+        riskScore: 0,
+        entityCounts: {},
+        redactionCount: 0,
+        personDetection: unavailablePersonDetection(),
+        surface: payload.surface,
+        blockedReasonCategory: "read_failed"
+      })
+    };
+  }
+
+  if (classification === "binary_content") {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "binary",
+        sanitizedName: sanitizedFallbackName(attachment.originalName),
+        reason: `${sanitizedFallbackName(attachment.originalName)} appears to contain binary data and was not uploaded.`,
+        riskScore: 0,
+        entityCounts: {},
+        redactionCount: 0,
+        personDetection: unavailablePersonDetection(),
+        surface: payload.surface,
+        blockedReasonCategory: "binary_content"
+      })
+    };
+  }
+
+  const attachmentText = attachment.text;
+  if (typeof attachmentText !== "string") {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "failed",
+        sanitizedName: sanitizedFallbackName(attachment.originalName),
+        reason: `Accord could not read ${sanitizedFallbackName(attachment.originalName)} locally. It was not uploaded.`,
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
@@ -177,8 +222,8 @@ async function governSingleAttachment(
     ...seedRedactionMap,
     ...filenameScan.scan.redactionMap
   };
-  const contentScanResult = await runGovernanceScan(attachment.text, "attachment", payload.sensitivity || "Internal", filenameSeed);
-  const contentScan = applyConversationStableRedactions(attachment.text, contentScanResult.scan, filenameSeed);
+  const contentScanResult = await runGovernanceScan(attachmentText, "attachment", payload.sensitivity || "Internal", filenameSeed);
+  const contentScan = applyConversationStableRedactions(attachmentText, contentScanResult.scan, filenameSeed);
   const contentDecision = decidePolicy(contentScan);
   const combinedEntities = [...filenameScan.scan.entities, ...contentScan.entities];
   const entityCounts = countEntities(combinedEntities);
@@ -192,7 +237,9 @@ async function governSingleAttachment(
         ...base,
         action: "blocked",
         sanitizedName: filenameScan.sanitizedName,
-        reason: hasSecret(contentScan) || hasSecret(filenameScan.scan) ? "Possible credential detected. File upload blocked." : "Unsafe file content detected. File upload blocked.",
+        reason: hasSecret(contentScan) || hasSecret(filenameScan.scan)
+          ? `Possible credential detected. ${filenameScan.sanitizedName} was not uploaded.`
+          : `Unsafe file content detected. ${filenameScan.sanitizedName} was not uploaded.`,
         riskScore: combinedRisk,
         entityCounts,
         redactionCount,
@@ -281,10 +328,22 @@ function buildAttachmentResult(input: AttachmentResultInput): GovernedAttachment
 
 function firstBlockingSummary(results: GovernedAttachmentResult[]) {
   const blocked = results.find((result) => !["clean", "redacted"].includes(result.action));
-  return blocked?.reason || "Attachment upload blocked by Accord.";
+  if (!blocked) return "Attachment upload blocked by Accord.";
+
+  if (results.length > 1) {
+    const fileWord = `${results.length}-file upload blocked.`;
+    const neither = "Neither file was uploaded.";
+    if (blocked.action === "blocked" && blocked.telemetry.blockedReasonCategory === "secret") {
+      return `${fileWord} ${blocked.sanitizedName} contains a possible credential. ${neither}`;
+    }
+    return `${fileWord} ${blocked.reason} ${neither}`;
+  }
+
+  return blocked.reason;
 }
 
 function buildAttachmentSummary(results: GovernedAttachmentResult[]) {
+  if (results.length === 1) return results[0].reason;
   const redactions = results.reduce((sum, result) => sum + result.redactionCount, 0);
   if (redactions > 0) return `${redactions} identifier${redactions === 1 ? "" : "s"} protected across ${results.length} file${results.length === 1 ? "" : "s"}.`;
   return `${results.length} file${results.length === 1 ? "" : "s"} governed locally.`;
@@ -342,14 +401,6 @@ function slugifyGovernedStem(stem: string) {
 
 function sanitizePlainStem(stem: string) {
   return slugifyGovernedStem(stem).replace(/\[(PERSON|EMAIL|PHONE|ADDRESS|ACCOUNT|SECRET|OTHER)_\d+\]/g, "redacted");
-}
-
-function mimeCategory(mimeType: string) {
-  if (!mimeType) return "unknown";
-  if (mimeType.startsWith("text/")) return "text";
-  if (mimeType.includes("json")) return "json";
-  if (mimeType.includes("xml")) return "xml";
-  return "code_or_text";
 }
 
 function sizeBucket(size: number) {

@@ -26,7 +26,19 @@ beforeEach(() => {
 });
 
 describe("Accord Guard attachment governance", () => {
-  test("A: allows clean code as an equivalent governed file", async () => {
+  test("A: allows clean text as an equivalent governed file", async () => {
+    const result = await govern([file("notes.txt", "hello world")], "attachments:clean-text");
+
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0]).toMatchObject({
+      action: "clean",
+      sanitizedName: "notes.txt",
+      reason: "notes.txt governed locally."
+    });
+    expect(result.results[0].sanitizedText).toBe("hello world");
+  });
+
+  test("allows clean code as an equivalent governed file", async () => {
     const result = await govern([file("app.ts", "export function add(a: number, b: number) {\n  return a + b;\n}")], "attachments:clean");
 
     expect(result.batchAction).toBe("allow");
@@ -37,18 +49,29 @@ describe("Accord Guard attachment governance", () => {
     expect(result.results[0].sanitizedText).toContain("return a + b");
   });
 
-  test("B: redacts PII inside source code", async () => {
+  test("B: redacts PII inside source code and returns the governed copy", async () => {
     const result = await govern(
-      [file("customer.ts", 'const customerName = "John Smith";\nconst customerEmail = "john@gmail.com";')],
+      [
+        file(
+          "customer.ts",
+          'const customer = {\n  name: "Brian McGinty",\n  email: "brian.mcginty@example.com",\n};'
+        )
+      ],
       "attachments:pii"
     );
 
     expect(result.batchAction).toBe("allow");
     expect(result.results[0].action).toBe("redacted");
+    expect(result.results[0].entityCounts).toMatchObject({
+      PERSON: 1,
+      EMAIL: 1
+    });
+    expect(result.results[0].reason).toContain("2 identifiers protected in customer.ts");
     expect(result.results[0].sanitizedText).toContain("[PERSON_1]");
     expect(result.results[0].sanitizedText).toContain("[EMAIL_1]");
-    expect(result.results[0].sanitizedText).not.toContain("John Smith");
-    expect(result.results[0].sanitizedText).not.toContain("john@gmail.com");
+    expect(result.results[0].sanitizedText).toBe('const customer = {\n  name: "[PERSON_1]",\n  email: "[EMAIL_1]",\n};');
+    expect(result.results[0].sanitizedText).not.toContain("Brian McGinty");
+    expect(result.results[0].sanitizedText).not.toContain("brian.mcginty@example.com");
   });
 
   test("C: blocks source code containing a possible credential", async () => {
@@ -60,6 +83,7 @@ describe("Accord Guard attachment governance", () => {
       sanitizedText: undefined
     });
     expect(result.summary).toContain("Possible credential detected");
+    expect(result.summary).toContain("config.ts was not uploaded");
   });
 
   test("D: governs names in filenames before host handoff", async () => {
@@ -152,6 +176,8 @@ describe("Accord Guard attachment governance", () => {
     expect(result.batchAction).toBe("block");
     expect(result.results[0].action).toBe("unsupported");
     expect(result.summary).toContain("not governed in browser mode yet");
+    expect(result.summary).toContain("report.pdf was not uploaded");
+    expect(result.summary).toContain("Use Accord Workspace");
   });
 
   test("H: fails closed for supported files over the browser-mode limit", async () => {
@@ -169,6 +195,44 @@ describe("Accord Guard attachment governance", () => {
     expect(serialized).not.toContain("John_Smith_notes");
     expect(serialized).not.toContain("Email John Smith");
     expect(serialized).not.toContain("john@gmail.com");
+  });
+
+  test("does not reject supported code solely because the browser reports generic MIME", async () => {
+    const result = await govern(
+      [file("customer.ts", 'export const customer = {\n  status: "active",\n};', "application/octet-stream")],
+      "attachments:generic-mime"
+    );
+
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0]).toMatchObject({
+      action: "clean",
+      sanitizedName: "customer.ts"
+    });
+    expect(result.results[0].telemetry.mimeCategory).toBe("code");
+  });
+
+  test("fails closed when a known extension contains binary-looking content", async () => {
+    const result = await govern([file("fake.ts", "\u0000\u0001\u0002binary", "application/octet-stream")], "attachments:binary");
+
+    expect(result.batchAction).toBe("block");
+    expect(result.results[0].action).toBe("binary");
+    expect(result.summary).toContain("appears to contain binary data");
+    expect(result.summary).toContain("fake.ts");
+  });
+
+  test("blocks the whole batch and names the attachment that caused the failure", async () => {
+    const result = await govern(
+      [
+        file("customer.ts", 'export const customer = {\n  status: "active",\n};'),
+        file("config.ts", 'const api_key = "sk-test-1234567890abcdef";')
+      ],
+      "attachments:mixed-batch"
+    );
+
+    expect(result.batchAction).toBe("block");
+    expect(result.summary).toBe("2-file upload blocked. config.ts contains a possible credential. Neither file was uploaded.");
+    expect(result.results[0].sanitizedText).toBeUndefined();
+    expect(result.results[1].sanitizedText).toBeUndefined();
   });
 });
 

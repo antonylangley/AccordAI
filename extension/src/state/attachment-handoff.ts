@@ -7,6 +7,7 @@ export type AttachmentHandoffOptions = {
   files: File[];
   setGovernedFiles: (files: File[]) => Promise<void>;
   verifyGovernedFiles: (files: File[]) => boolean;
+  verifyHostAccepted?: (files: File[]) => Promise<boolean>;
   dispatchTrustedSelection: () => void;
   clearFileInput: () => void;
   onState: (state: AttachmentHandoffState) => void;
@@ -25,5 +26,15 @@ export async function runGovernedAttachmentHandoff(options: AttachmentHandoffOpt
   }
 
   options.dispatchTrustedSelection();
+
+  if (options.verifyHostAccepted && !(await options.verifyHostAccepted(options.files))) {
+    options.clearFileInput();
+    options.onState({
+      phase: "blocked",
+      message: "Accord governed the file but ChatGPT did not accept the protected copy. File was not uploaded."
+    });
+    return false;
+  }
+
   return true;
 }

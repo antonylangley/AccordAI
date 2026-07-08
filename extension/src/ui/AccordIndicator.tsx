@@ -33,16 +33,22 @@ export function AccordIndicator({ state, markUrl, onWhy }: AccordIndicatorProps)
 }
 
 function summaryText(state: SurfaceSnapshot) {
+  if (state.phase === "blocked" && state.attachmentNotice) return "Upload blocked";
+  if (state.phase === "failed" && state.attachmentNotice) return "Upload failed";
   if (state.phase === "blocked") return "Sending blocked";
   if (state.phase === "failed") return "Check failed";
 
   const count = state.scan?.decorations.filter((decoration) => decoration.type !== "SECRET").length || 0;
   if (count > 0 && state.phase === "redact") return `${count} protected`;
+  if (state.attachmentNotice && state.attachmentRedactionCount && state.attachmentRedactionCount > 0) {
+    return `${state.attachmentRedactionCount} protected`;
+  }
   if (state.attachmentNotice) return "File note";
   return "";
 }
 
 function ariaLabel(state: SurfaceSnapshot) {
+  if (state.phase === "blocked" && state.attachmentNotice) return "Accord Guard: upload blocked";
   if (state.phase === "blocked") return "Accord Guard: sending blocked";
   if (state.phase === "scanning") return "Accord Guard: scanning";
   if (state.phase === "redact") return `Accord Guard: ${summaryText(state)}`;

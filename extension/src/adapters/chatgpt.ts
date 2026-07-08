@@ -37,6 +37,16 @@ const attachmentSelectors = [
   "[data-testid*='upload-preview']"
 ];
 
+const attachmentTriggerSelectors = [
+  "button[aria-label*='Attach']",
+  "button[aria-label*='attach']",
+  "button[aria-label*='Upload']",
+  "button[aria-label*='upload']",
+  "button[data-testid*='attachment']",
+  "button[data-testid*='upload']",
+  "label[for]"
+];
+
 export class ChatGPTAdapter implements AISurfaceAdapter {
   readonly surface = "chatgpt" as const;
   private lastComposer: HTMLElement | null = null;
@@ -46,6 +56,7 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   private lastDecorationState: ComposerDecorationState = "clear";
   private lastDecorationDraft = "";
   private trustedAttachmentInputs = new WeakSet<HTMLInputElement>();
+  private lastComposerAttachmentIntentAt = 0;
 
   isCurrentSurface() {
     return location.hostname === "chatgpt.com";
@@ -168,6 +179,12 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   }
 
   subscribeToAttachmentSelection(callback: (selection: AttachmentSelection) => void) {
+    const onPointerDown = (event: PointerEvent | MouseEvent) => {
+      if (isComposerAttachmentTrigger(event.target as Element | null, this.findComposer())) {
+        this.lastComposerAttachmentIntentAt = Date.now();
+      }
+    };
+
     const onChange = (event: Event) => {
       const input = event.target instanceof HTMLInputElement && inputIsFilePicker(event.target) ? event.target : null;
       if (!input) return;
@@ -177,6 +194,8 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
         return;
       }
 
+      if (!this.isComposerAttachmentInput(input)) return;
+
       const files = Array.from(input.files || []);
       if (!files.length) return;
 
@@ -184,11 +203,33 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
       callback({ input, files });
     };
 
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("click", onPointerDown, true);
     document.addEventListener("change", onChange, true);
 
     return () => {
+      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("click", onPointerDown, true);
       document.removeEventListener("change", onChange, true);
     };
+  }
+
+  isComposerAttachmentInput(input: HTMLInputElement) {
+    if (!inputIsFilePicker(input)) return false;
+
+    const composer = this.findComposer();
+    if (!composer) return false;
+
+    const shell = findComposerShell(composer);
+    if (shell && shell.contains(input)) return true;
+
+    const composerForm = composer.closest("form");
+    if (input.form && composerForm && input.form === composerForm) return true;
+
+    const recentComposerAttachmentIntent = Date.now() - this.lastComposerAttachmentIntentAt < 10_000;
+    if (!recentComposerAttachmentIntent) return false;
+
+    return hasAttachmentInputSemantics(input) || inputIsDetachedOrHidden(input);
   }
 
   async setGovernedFiles(input: HTMLInputElement, files: File[]) {
@@ -208,6 +249,16 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
       const expected = files[index];
       return file.name === expected.name && file.size === expected.size && file.type === expected.type;
     });
+  }
+
+  async verifyHostAttachmentAccepted(files: File[]) {
+    const deadline = Date.now() + 2500;
+    while (Date.now() < deadline) {
+      if (findAcceptedAttachmentPreview(files)) return true;
+      await delay(80);
+    }
+
+    return false;
   }
 
   dispatchGovernedFileSelection(input: HTMLInputElement) {
@@ -299,12 +350,18 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
       return;
     }
 
-    const composerRect = composer.getBoundingClientRect();
-    const shellRect = findComposerShell(composer)?.getBoundingClientRect() || composerRect;
-    const left = clamp(shellRect.left + 12, 10, window.innerWidth - 90);
-    const top = clamp(Math.min(composerRect.top, shellRect.top) - 34, 10, window.innerHeight - 48);
+    const shellRect = findComposerShell(composer)?.getBoundingClientRect() || composer.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const indicatorWidth = rootRect.width || 34;
+    const indicatorHeight = rootRect.height || 34;
+    const horizontalGap = 14;
+    const desiredLeft = shellRect.left - indicatorWidth - horizontalGap;
+    const left = clamp(desiredLeft, 8, Math.max(8, window.innerWidth - indicatorWidth - 8));
+    const centerY = shellRect.top + shellRect.height / 2;
+    const top = clamp(centerY - indicatorHeight / 2, 8, Math.max(8, window.innerHeight - indicatorHeight - 8));
 
     root.dataset.attached = "true";
+    root.dataset.edgeClamped = String(desiredLeft < 8);
     root.style.left = `${left}px`;
     root.style.top = `${top}px`;
     this.drawStoredEntityDecorations();
@@ -369,7 +426,7 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
     return attachmentSelectors.some((selector) => {
       const element = document.querySelector<HTMLElement>(selector);
       if (!element || !isVisible(element)) return false;
-      return !this.findComposer()?.contains(element);
+      return true;
     });
   }
 }
@@ -595,6 +652,54 @@ function findComposerShell(composer: HTMLElement) {
   );
 }
 
+function isComposerAttachmentTrigger(target: Element | null, composer: HTMLElement | null) {
+  if (!target || !composer) return false;
+  const shell = findComposerShell(composer);
+  if (!shell) return false;
+
+  for (const selector of attachmentTriggerSelectors) {
+    const trigger = target.closest<HTMLElement>(selector);
+    if (!trigger) continue;
+    if (shell.contains(trigger)) return true;
+
+    const labelFor = trigger instanceof HTMLLabelElement ? trigger.htmlFor : "";
+    const labeledInput = labelFor ? document.getElementById(labelFor) : null;
+    if (labeledInput instanceof HTMLInputElement && shell.contains(labeledInput)) return true;
+  }
+
+  return false;
+}
+
+function hasAttachmentInputSemantics(input: HTMLInputElement) {
+  const searchable = [
+    input.accept,
+    input.name,
+    input.id,
+    input.getAttribute("aria-label") || "",
+    input.getAttribute("data-testid") || ""
+  ]
+    .join(" ")
+    .toLocaleLowerCase();
+
+  return /\b(?:attach|attachment|file|upload)\b/.test(searchable) || input.multiple;
+}
+
+function inputIsDetachedOrHidden(input: HTMLInputElement) {
+  return !input.isConnected || !isVisible(input);
+}
+
+function findAcceptedAttachmentPreview(files: File[]) {
+  const expectedNames = files.map((file) => file.name);
+  const previews = attachmentSelectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
+  const visiblePreviews = previews.filter((element) => isVisible(element));
+  if (!visiblePreviews.length) return false;
+
+  const visibleText = visiblePreviews.map((element) => element.innerText || element.textContent || "").join("\n");
+  if (expectedNames.every((name) => visibleText.includes(name))) return true;
+
+  return visiblePreviews.length >= files.length && visibleText.trim().length === 0;
+}
+
 function getAssistantElements() {
   const elements = assistantSelectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
   return Array.from(new Set(elements)).filter((element) => isVisible(element) && !element.closest(".accord-guard-response-overlay"));
@@ -638,6 +743,10 @@ function normalizeComposerText(text: string) {
 
 function microtask() {
   return new Promise((resolve) => window.setTimeout(resolve, 0));
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 function stableElementId(element: HTMLElement) {
