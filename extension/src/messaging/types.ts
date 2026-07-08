@@ -58,6 +58,15 @@ export type MoveVaultPayload = {
 };
 
 export type RehydrateSafeResult = {
+  resolvedText: string;
+  replacements: Array<{
+    placeholder: string;
+    type: EntityType;
+    start: number;
+    end: number;
+  }>;
+  resolvedCount: number;
+  unresolvedPlaceholders: string[];
   text: string;
   replacedCount: number;
   unresolvedPlaceholderCount: number;

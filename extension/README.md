@@ -1,10 +1,10 @@
 # Accord Guard
 
-Accord Guard is the employee-facing browser-mode surface for Accord. It adds a compact governance layer inside ChatGPT so employees can keep using `https://chatgpt.com` while Accord scans typed prompts, redacts detected identifiers before governed submission, blocks credentials or prompt-injection attempts, and visually rehydrates trusted placeholders in assistant responses.
+Accord Guard is the employee-facing browser-mode surface for Accord. It adds a compact governance layer inside ChatGPT so employees can keep using `https://chatgpt.com` while Accord scans typed prompts, redacts detected identifiers before governed submission, blocks credentials or prompt-injection attempts, and automatically shows Accord-owned resolved assistant responses when trusted placeholders are returned.
 
 ## Architecture
 
-ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> `@accord/governance-core` scanner -> safe scan result with entity offsets -> inline Accord UI.
+ChatGPT page -> Accord content script -> typed extension messaging -> MV3 background service worker -> `@accord/governance-core` scanner/rehydrator -> safe scan and replacement metadata -> inline Accord UI.
 
 The existing Accord Workspace web app still owns provider requests inside the admin/control-plane product. Accord Guard does not call OpenAI, Anthropic, Gemini, or private ChatGPT APIs. It only reads and writes the supported ChatGPT page DOM.
 
@@ -19,6 +19,8 @@ Do not claim: the provider can never access raw draft text.
 Sensitive placeholder mappings live only in `chrome.storage.session` in the extension service worker. They are not returned to the content script as a map, not sent to Accord backend services, not logged, and not stored in `chrome.storage.local` or `chrome.storage.sync`.
 
 The content script receives only local decoration metadata for the current draft: entity type, start offset, end offset, and placeholder. It derives any employee-visible tooltip text from the already-visible composer draft and does not receive the complete `RedactionMap`.
+
+Assistant responses are resolved in Accord-owned UI. The original ChatGPT assistant DOM remains placeholder-based. The service worker returns only the resolved text plus replacement spans for the current response text, and Accord renders an aligned overlay over the existing assistant response region. Restored values receive violet highlights, prose blocks expose hover-only `Copy resolved block` controls, and the Accord emblem popover contains `Resolved / Protected original` plus `Copy full resolved response`.
 
 ## Known Limitations
 
@@ -197,6 +199,6 @@ Use api_key=sk-1234567890abcdef to debug this.
 
 Expected: the exact credential span receives stronger blocked highlighting, the compact emblem shows `Sending blocked`, and no submission occurs.
 
-6. Response rehydration:
+6. Response resolution:
 
-If ChatGPT responds with `[PERSON_1]`, the employee-visible DOM should show `John Smith`; the underlying ChatGPT conversation remains placeholder-based.
+If ChatGPT responds with `[PERSON_1]`, Accord automatically overlays the same response location with `John Smith` in a violet restored highlight. The original ChatGPT assistant DOM remains `[PERSON_1]`. Hover a useful prose block to copy only that block; use the Accord emblem popover to view the protected original or copy the full resolved response.

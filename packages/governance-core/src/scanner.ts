@@ -37,6 +37,12 @@ type RedactionResult = {
 
 export type RehydrationResult = {
   text: string;
+  replacements: Array<{
+    placeholder: string;
+    type: EntityType;
+    start: number;
+    end: number;
+  }>;
   replacedCount: number;
   unresolvedPlaceholderCount: number;
   unresolvedPlaceholders: string[];
@@ -379,22 +385,43 @@ export function validateEntityCandidate(candidate: EntityCandidate, fullText: st
 
 export function rehydrateResponse(responseText: string, redactionMap: RedactionMap): RehydrationResult {
   const unresolved = new Set<string>();
+  const replacements: RehydrationResult["replacements"] = [];
+  const pattern = /\[(?:PERSON|EMAIL|PHONE|ADDRESS|ACCOUNT|SECRET|OTHER)_\d+\]/g;
   let replacedCount = 0;
+  let sourceCursor = 0;
+  let text = "";
 
-  const text = responseText.replace(/\[(?:PERSON|EMAIL|PHONE|ADDRESS|ACCOUNT|SECRET|OTHER)_\d+\]/g, (placeholder) => {
+  for (const match of execMatches(responseText, pattern)) {
+    if (typeof match.index !== "number") continue;
+    const placeholder = match[0];
     const entity = redactionMap[placeholder];
+    text += responseText.slice(sourceCursor, match.index);
 
     if (!entity || entity.type === "SECRET") {
       unresolved.add(placeholder);
-      return placeholder;
+      text += placeholder;
+      sourceCursor = match.index + placeholder.length;
+      continue;
     }
 
+    const start = text.length;
+    const end = start + entity.originalText.length;
+    text += entity.originalText;
+    replacements.push({
+      placeholder,
+      type: entity.type,
+      start,
+      end
+    });
     replacedCount += 1;
-    return entity.originalText;
-  });
+    sourceCursor = match.index + placeholder.length;
+  }
+
+  text += responseText.slice(sourceCursor);
 
   return {
     text,
+    replacements,
     replacedCount,
     unresolvedPlaceholderCount: unresolved.size,
     unresolvedPlaceholders: Array.from(unresolved)

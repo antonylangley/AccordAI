@@ -94,6 +94,17 @@ describe("Accord Guard scan session", () => {
 
     expect(result.text).toBe("Hi John Smith");
     expect(result.replacedCount).toBe(1);
+    expect(result.resolvedText).toBe("Hi John Smith");
+    expect(result.resolvedCount).toBe(1);
+    expect(result.replacements).toEqual([
+      {
+        placeholder: "[PERSON_1]",
+        type: "PERSON",
+        start: 3,
+        end: 13
+      }
+    ]);
+    expect("redactionMap" in result).toBe(false);
   });
 
   test("keeps conversation sessions separated", async () => {

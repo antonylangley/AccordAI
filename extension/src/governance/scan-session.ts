@@ -31,6 +31,10 @@ export async function rehydrateAssistantText(payload: RehydrateResponsePayload):
   const result = rehydrateResponse(payload.text, redactionMap);
 
   return {
+    resolvedText: result.text,
+    replacements: result.replacements,
+    resolvedCount: result.replacedCount,
+    unresolvedPlaceholders: result.unresolvedPlaceholders,
     text: result.text,
     replacedCount: result.replacedCount,
     unresolvedPlaceholderCount: result.unresolvedPlaceholderCount

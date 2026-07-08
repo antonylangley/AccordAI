@@ -172,7 +172,8 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
     const scan = () => {
       for (const element of getAssistantElements()) {
         const text = element.innerText || element.textContent || "";
-        if (!text.includes("[") || text === seenText.get(element)) continue;
+        const hasAccordView = Boolean(element.dataset.accordGuardResponseId);
+        if ((!text.includes("[") && !hasAccordView) || text === seenText.get(element)) continue;
         seenText.set(element, text);
 
         const existing = timers.get(element);
@@ -541,7 +542,7 @@ function findComposerShell(composer: HTMLElement) {
 
 function getAssistantElements() {
   const elements = assistantSelectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
-  return Array.from(new Set(elements)).filter(isVisible);
+  return Array.from(new Set(elements)).filter((element) => isVisible(element) && !element.closest(".accord-guard-response-overlay"));
 }
 
 function dispatchHostInputEvents(element: HTMLElement) {

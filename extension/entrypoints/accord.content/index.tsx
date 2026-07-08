@@ -5,7 +5,7 @@ import "./style.css";
 import accordMarkUrl from "../../src/assets/accord-mark.png";
 import { ChatGPTAdapter } from "../../src/adapters/chatgpt";
 import type { SurfaceAssistantResponse } from "../../src/adapters/types";
-import { rehydrateTextNodes } from "../../src/governance/response-rehydration";
+import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
 import type { SafeScanResult } from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
 import { runFinalSubmissionDecision, TrustedSubmissionGate } from "../../src/state/final-submission";
@@ -212,15 +212,33 @@ export default defineContentScript({
     });
 
     const rehydrateResponse = (response: SurfaceAssistantResponse) => {
-      void rehydrateTextNodes(response.element, (text) =>
-        sendGuardMessage({
-          type: "accord.rehydrateResponse",
-          payload: {
-            surface: "chatgpt",
-            conversationKey,
-            text
-          }
-        }).then((message) => (message.ok && message.result && "text" in message.result ? message.result.text : text))
+      void renderResolvedAssistantResponse(
+        response.element,
+        response.id,
+        (text) =>
+          sendGuardMessage({
+            type: "accord.rehydrateResponse",
+            payload: {
+              surface: "chatgpt",
+              conversationKey,
+              text
+            }
+          }).then((message) => {
+            if (!message.ok || !message.result || !("resolvedText" in message.result)) {
+              return {
+                resolvedText: text,
+                replacements: [],
+                resolvedCount: 0,
+                unresolvedPlaceholders: [],
+                text,
+                replacedCount: 0,
+                unresolvedPlaceholderCount: 0
+              };
+            }
+
+            return message.result;
+          }),
+        { markUrl: accordMarkUrl }
       );
     };
 
