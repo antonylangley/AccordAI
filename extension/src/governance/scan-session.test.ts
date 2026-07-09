@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { debugPersonCandidateGenerationForTests } from "@accord/governance-core";
+import { debugPersonCandidateGenerationForTests, scanText } from "@accord/governance-core";
 import { rehydrateAssistantText, scanDraft } from "./scan-session";
 
 const store: Record<string, unknown> = {};
@@ -45,6 +45,8 @@ describe("Accord Guard scan session", () => {
     ]);
     expect(result.sanitizedText).toContain("[PERSON_1]");
     expect(result.sanitizedText).toContain("[EMAIL_1]");
+    expect(result.personDetection.nerStatus).toBe("unavailable");
+    expect(result.personDetection.model.name).toBe("none");
   });
 
   test("keeps exact repeated entities stable in one conversation", async () => {
@@ -127,6 +129,7 @@ describe("Accord Guard scan session", () => {
     ["José Luis Rodríguez signed the report.", "José Luis Rodríguez"],
     ["Anna van der Berg reviewed the memo.", "Anna van der Berg"],
     ["João da Silva called yesterday.", "João da Silva"],
+    ["Nguyễn Văn An approved the memo.", "Nguyễn Văn An"],
     ["Wei Zhang approved the release.", "Wei Zhang"]
   ])("detects exact PERSON span for %s", async (text, expectedName) => {
     const result = await scan(text, `conversation:person:${text}`);
@@ -137,6 +140,50 @@ describe("Accord Guard scan session", () => {
     expect(person).toBeDefined();
     expect(text.slice(person!.start, person!.end)).toBe(expectedName);
     expect(result.sanitizedText).toContain("[PERSON_1]");
+  });
+
+  test("accepts externally supplied Unicode PERSON candidates only when offsets exactly match", () => {
+    const text = "met maría josé garcía after the review";
+    const start = text.indexOf("maría");
+    const exactName = "maría josé garcía";
+    const exact = scanText(text, "preflight", "Internal", {
+      additionalCandidates: [
+        {
+          type: "PERSON",
+          originalText: exactName,
+          start,
+          end: start + exactName.length,
+          confidence: 0.94,
+          detector: "local_ner_candidate_test",
+          contextSignals: ["ner_person"]
+        }
+      ]
+    });
+    const mismatched = scanText(text, "preflight", "Internal", {
+      additionalCandidates: [
+        {
+          type: "PERSON",
+          originalText: "María José García",
+          start,
+          end: start + exactName.length,
+          confidence: 0.99,
+          detector: "local_ner_candidate_test",
+          contextSignals: ["ner_person"]
+        }
+      ]
+    });
+
+    expect(exact.entities).toEqual([
+      expect.objectContaining({
+        type: "PERSON",
+        originalText: exactName,
+        start,
+        end: start + exactName.length,
+        id: "[PERSON_1]"
+      })
+    ]);
+    expect(text.slice(exact.entities[0].start, exact.entities[0].end)).toBe(exactName);
+    expect(mismatched.entities).toEqual([]);
   });
 
   test("detects lowercase names in a strong human-list context", async () => {

@@ -75,7 +75,7 @@ function detectSynchronously(text: string): PersonDetectionResult {
 
   return {
     candidates: uniqueBySpan(candidates),
-    coverage: coverage("ready", candidates.length, false)
+    coverage: coverage("unavailable", candidates.length, false)
   };
 }
 

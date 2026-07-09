@@ -28,7 +28,7 @@ Assistant responses are resolved in Accord-owned UI. The original ChatGPT assist
 
 - ChatGPT only. Claude support is intentionally not part of this milestone.
 - Supported text/source-code uploads are governed in browser mode. PDF, DOCX, images, archives, and binary files fail closed with an Accord Workspace message.
-- PERSON enhancement currently uses a bundled deterministic local candidate detector in the service worker. No transformer/ONNX model is packaged in this pass, so model asset size impact is 0 bytes and there is no offscreen inference document yet.
+- PERSON enhancement currently uses a bundled deterministic local candidate detector in the service worker. No transformer/ONNX model is packaged in this pass, so `personDetection.nerStatus` reports `unavailable`, model asset size impact is 0 bytes, and there is no offscreen inference document yet. `src/person-detection/ner-normalizer.ts` is the safe bridge for future local token-classification output: it merges `B-PER` / `I-PER` / `PER` / `PERSON` tokens into exact-offset PERSON candidates before `@accord/governance-core` validates and assigns placeholders.
 - Session-scoped placeholder vaults are lost after browser restart, extension reload, or service-worker/session reset.
 - ChatGPT DOM selectors may need updates if ChatGPT changes its composer or response markup.
 - This build has not been live-verified against the current ChatGPT production DOM from this coding environment.

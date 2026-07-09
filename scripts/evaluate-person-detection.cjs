@@ -34,9 +34,11 @@ async function main() {
   const coordinatedContextMetrics = { tp: 0, fp: 0, fn: 0 };
   const detectorBreakdown = {
     nerOnlyTruePositives: 0,
+    localCandidateOnlyTruePositives: 0,
     heuristicOnlyTruePositives: 0,
     detectorAgreementTruePositives: 0
   };
+  const personDetectorStatusCounts = {};
   const falsePositives = [];
   const falseNegatives = [];
   let normalWorkPromptCount = 0;
@@ -45,6 +47,8 @@ async function main() {
   for (const testCase of corpus) {
     const heuristicScan = scanText(testCase.input, "preflight", "Internal");
     const localDetection = await detectPersonCandidates(testCase.input);
+    const status = localDetection.coverage?.nerStatus || "unknown";
+    personDetectorStatusCounts[status] = (personDetectorStatusCounts[status] || 0) + 1;
     const hybridScan = scanText(testCase.input, "preflight", "Internal", {
       additionalCandidates: localDetection.candidates
     });
@@ -74,7 +78,7 @@ async function main() {
         const localHit = localCandidates.includes(person);
         if (heuristicHit && localHit) detectorBreakdown.detectorAgreementTruePositives += 1;
         else if (heuristicHit) detectorBreakdown.heuristicOnlyTruePositives += 1;
-        else if (localHit) detectorBreakdown.nerOnlyTruePositives += 1;
+        else if (localHit) detectorBreakdown.localCandidateOnlyTruePositives += 1;
       } else {
         falsePositives.push({ id: testCase.id, text: testCase.input, person });
       }
@@ -133,6 +137,7 @@ async function main() {
       falseNegatives: coordinatedContextMetrics.fn
     },
     ...detectorBreakdown,
+    personDetectorStatusCounts,
     falsePositives,
     falseNegatives
   };
