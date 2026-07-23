@@ -7,6 +7,7 @@ import type {
   EntityType
 } from "@accord/governance-core";
 import type { AISurface } from "../adapters/types";
+import type { AttachmentExtractionKind } from "../attachments/policy";
 import type { PersonDetectionCoverage } from "../person-detection/person-detector";
 
 export type SafeRiskFlag = {
@@ -66,6 +67,10 @@ export type GuardAttachmentInput = {
   mimeType: string;
   lastModified: number;
   text?: string;
+  extractionKind?: AttachmentExtractionKind;
+  extractionReason?: string;
+  extractionWarnings?: string[];
+  extractedCharacterCount?: number;
 };
 
 export type GovernAttachmentsPayload = {
@@ -89,6 +94,9 @@ export type SafeAttachmentTelemetry = {
   entityCounts: EntityCountSummary;
   redactionCount: number;
   blockedReasonCategory?: string;
+  extractionKind?: AttachmentExtractionKind;
+  extractionWarnings?: string[];
+  extractedCharacterCount?: number;
   personDetectorStatus: PersonDetectionCoverage["nerStatus"];
   timestamp: string;
 };
@@ -107,6 +115,9 @@ export type GovernedAttachmentResult = {
   redactionCount: number;
   reason: string;
   personDetection: PersonDetectionCoverage;
+  extractionKind?: AttachmentExtractionKind;
+  extractionWarnings?: string[];
+  extractedCharacterCount?: number;
   sanitizedText?: string;
   telemetry: SafeAttachmentTelemetry;
 };

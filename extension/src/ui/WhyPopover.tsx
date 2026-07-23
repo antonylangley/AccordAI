@@ -71,7 +71,7 @@ function summaryCopy(state: SurfaceSnapshot, decorationCount: number) {
   }
 
   if (state.phase === "blocked") {
-    return "This value cannot be submitted to an external AI tool. Sending blocked.";
+    return state.message || "This value cannot be submitted to an external AI tool. Sending blocked.";
   }
 
   if (decorationCount > 0) {

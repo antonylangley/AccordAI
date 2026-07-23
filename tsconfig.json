@@ -24,6 +24,6 @@
       "@accord/governance-core/*": ["./packages/governance-core/src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next-build/types/**/*.ts"],
   "exclude": ["node_modules", "extension"]
 }

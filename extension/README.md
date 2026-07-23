@@ -20,14 +20,14 @@ Sensitive placeholder mappings live only in `chrome.storage.session` in the exte
 
 The content script receives only local decoration metadata for the current draft: entity type, start offset, end offset, and placeholder. It derives any employee-visible tooltip text from the already-visible composer draft and does not receive the complete `RedactionMap`.
 
-For supported text/code attachments, the content script temporarily reads the selected browser `File` locally and sends its text through extension messaging to the service worker for governance. The service worker returns only sanitized attachment text, sanitized filename, and safe metadata needed to construct a governed `File`. It does not return original attachment text, original filenames, or the complete `RedactionMap`.
+For supported text/code attachments, the content script temporarily reads the selected browser `File` locally and sends its text through extension messaging to the service worker for governance. For PDFs and DOCX files, the content script extracts readable document text locally first and sends only that extracted text through the same governance path. The service worker returns only sanitized attachment text, sanitized filename, and safe metadata needed to construct a governed `File`. It does not return original attachment text, original filenames, original binary document bytes, or the complete `RedactionMap`.
 
 Assistant responses are resolved in Accord-owned UI. The original ChatGPT assistant DOM remains placeholder-based. The service worker returns only the resolved text plus replacement spans for the current response text, and Accord renders an aligned overlay over the existing assistant response region. Restored values receive violet highlights, prose blocks expose hover-only `Copy resolved block` controls, and the Accord emblem popover contains `Resolved / Protected original` plus `Copy full resolved response`.
 
 ## Known Limitations
 
 - ChatGPT only. Claude support is intentionally not part of this milestone.
-- Supported text/source-code uploads are governed in browser mode. PDF, DOCX, images, archives, and binary files fail closed with an Accord Workspace message.
+- Supported text/source-code uploads are governed in browser mode. PDF and DOCX uploads are converted into governed text-copy replacements when readable text can be extracted locally. Images, archives, binary files, and unreadable/scanned documents fail closed with an explanation.
 - PERSON enhancement currently uses a bundled deterministic local candidate detector in the service worker. No transformer/ONNX model is packaged in this pass, so `personDetection.nerStatus` reports `unavailable`, model asset size impact is 0 bytes, and there is no offscreen inference document yet. `src/person-detection/ner-normalizer.ts` is the safe bridge for future local token-classification output: it merges `B-PER` / `I-PER` / `PER` / `PERSON` tokens into exact-offset PERSON candidates before `@accord/governance-core` validates and assigns placeholders.
 - Session-scoped placeholder vaults are lost after browser restart, extension reload, or service-worker/session reset.
 - ChatGPT DOM selectors may need updates if ChatGPT changes its composer or response markup.
@@ -212,13 +212,13 @@ const customerEmail = "john@gmail.com";
 
 Expected: Accord intercepts the file selection, creates a governed copy containing `[PERSON_1]` and `[EMAIL_1]`, and only the governed copy is handed to ChatGPT.
 
-8. Unsupported attachment:
+8. PDF/DOCX attachment:
 
 ```text
-report.pdf
+resume.pdf
 ```
 
-Expected: Accord blocks the browser-mode upload and tells the employee to use Accord Workspace for governed file analysis.
+Expected: Accord extracts readable text locally, governs it, and hands ChatGPT a `.governed.txt` replacement. If readable text cannot be extracted, Accord blocks the raw upload and explains that the original file was not sent to ChatGPT.
 
 6. Response resolution:
 

@@ -1,4 +1,5 @@
 export const MAX_GUARDED_TEXT_ATTACHMENT_BYTES = 256 * 1024;
+export const MAX_GUARDED_DOCUMENT_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 export const supportedTextAttachmentExtensions = new Set([
   "bash",
@@ -59,8 +60,6 @@ const genericMimeTypes = new Set([
 ]);
 const explicitlyUnsupportedMimeTypes = new Set([
   "application/gzip",
-  "application/pdf",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "application/x-7z-compressed",
@@ -76,6 +75,8 @@ export type AttachmentContentClassification =
   | "too_large"
   | "read_failed"
   | "binary_content";
+
+export type AttachmentExtractionKind = "native_text" | "pdf_text" | "docx_text";
 
 export type AttachmentDescriptor = {
   name: string;
@@ -96,7 +97,26 @@ export function isSupportedTextAttachment(name: string, mimeType: string) {
   return isCandidateTextMime(mimeType);
 }
 
-export function classifyAttachmentContent(descriptor: AttachmentDescriptor, text?: string): AttachmentContentClassification {
+export function isExtractableDocumentAttachment(name: string, mimeType: string) {
+  const extension = getFileExtension(name);
+  const category = mimeCategory(mimeType);
+  if (extension === "pdf") return !mimeType || category === "document" || category === "generic";
+  if (extension === "docx") return !mimeType || category === "document" || category === "generic";
+  return false;
+}
+
+export function classifyAttachmentContent(
+  descriptor: AttachmentDescriptor,
+  text?: string,
+  extractionKind: AttachmentExtractionKind = "native_text"
+): AttachmentContentClassification {
+  if (extractionKind === "pdf_text" || extractionKind === "docx_text") {
+    if (descriptor.size > MAX_GUARDED_DOCUMENT_ATTACHMENT_BYTES) return "too_large";
+    if (typeof text !== "string" || !text.trim()) return "read_failed";
+    if (looksLikeBinaryText(text)) return "binary_content";
+    return "supported_text";
+  }
+
   const extension = getFileExtension(descriptor.name);
   if (!supportedTextAttachmentExtensions.has(extension)) return "unsupported_type";
   if (!isCandidateTextMime(descriptor.mimeType)) return "unsupported_mime";
@@ -141,6 +161,8 @@ export function mimeCategory(mimeType: string) {
   if (!normalized) return "unknown";
   if (textMimePrefixes.some((prefix) => normalized.startsWith(prefix))) return "text";
   if (genericMimeTypes.has(normalized)) return "generic";
+  if (normalized === "application/pdf") return "document";
+  if (normalized === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return "document";
   if (normalized.includes("json")) return "json";
   if (normalized.includes("xml")) return "xml";
   if (normalized.includes("yaml")) return "yaml";

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { MAX_GUARDED_TEXT_ATTACHMENT_BYTES } from "../attachments/policy";
+import type { AttachmentExtractionKind } from "../attachments/policy";
 import { governAttachmentBatch, rehydrateAssistantText, scanDraft } from "./scan-session";
 
 const store: Record<string, unknown> = {};
@@ -170,14 +171,69 @@ describe("Accord Guard attachment governance", () => {
     expect(result.results[0].sanitizedText).not.toContain("kevin trejos");
   });
 
-  test("G: fails closed for unsupported files", async () => {
+  test("G: fails closed when PDF extraction did not run", async () => {
     const result = await govern([file("report.pdf", "", "application/pdf")], "attachments:unsupported");
 
     expect(result.batchAction).toBe("block");
     expect(result.results[0].action).toBe("unsupported");
-    expect(result.summary).toContain("not governed in browser mode yet");
+    expect(result.summary).toContain("PDF text extraction did not run");
     expect(result.summary).toContain("report.pdf was not uploaded");
-    expect(result.summary).toContain("Use Accord Workspace");
+    expect(result.summary).toContain("Select the file again");
+  });
+
+  test("governs extracted PDF text as a redacted text-copy replacement", async () => {
+    const result = await govern(
+      [
+        file(
+          "resume.pdf",
+          "Resume for Jordan Example\nEmail: jordan.example@test.com\nPhone: 555-010-2847",
+          "application/pdf",
+          2048,
+          "pdf_text"
+        )
+      ],
+      "attachments:extracted-pdf"
+    );
+
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0]).toMatchObject({
+      action: "redacted",
+      sanitizedName: "resume.governed.txt",
+      extractionKind: "pdf_text"
+    });
+    expect(result.results[0].reason).toContain("Original PDF was not uploaded");
+    expect(result.results[0].sanitizedText).toContain("Accord governed document text copy");
+    expect(result.results[0].sanitizedText).toContain("Boundary: original binary document was not uploaded to ChatGPT.");
+    expect(result.results[0].sanitizedText).toContain("[PERSON_1]");
+    expect(result.results[0].sanitizedText).toContain("[EMAIL_1]");
+    expect(result.results[0].sanitizedText).not.toContain("Jordan Example");
+    expect(result.results[0].sanitizedText).not.toContain("jordan.example@test.com");
+  });
+
+  test("blocks extracted documents when readable text extraction failed", async () => {
+    const result = await govern(
+      [
+        file(
+          "resume.pdf",
+          undefined,
+          "application/pdf",
+          2048,
+          "pdf_text",
+          "Accord could not extract readable text from this PDF in browser mode."
+        )
+      ],
+      "attachments:pdf-failed-extraction"
+    );
+
+    expect(result.batchAction).toBe("block");
+    expect(result.results[0]).toMatchObject({
+      action: "failed",
+      sanitizedName: "resume.pdf",
+      extractionKind: "pdf_text",
+      sanitizedText: undefined
+    });
+    expect(result.summary).toContain("could not extract readable text");
+    expect(result.summary).toContain("Original file was not sent to ChatGPT");
   });
 
   test("H: fails closed for supported files over the browser-mode limit", async () => {
@@ -236,14 +292,25 @@ describe("Accord Guard attachment governance", () => {
   });
 });
 
-function file(name: string, text = "", mimeType = "text/plain", size = new TextEncoder().encode(text).length) {
+function file(
+  name: string,
+  text = "",
+  mimeType = "text/plain",
+  size = new TextEncoder().encode(text).length,
+  extractionKind?: AttachmentExtractionKind,
+  extractionReason?: string
+) {
   return {
     id: crypto.randomUUID(),
     originalName: name,
     size,
     mimeType,
     lastModified: 123,
-    text: size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES ? text : undefined
+    text: extractionKind ? text : size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES ? text : undefined,
+    extractionKind,
+    extractionReason,
+    extractionWarnings: extractionKind ? [] : undefined,
+    extractedCharacterCount: extractionKind && typeof text === "string" ? text.length : undefined
   };
 }
 

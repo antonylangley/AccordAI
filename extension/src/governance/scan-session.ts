@@ -11,11 +11,13 @@ import type {
 import {
   classifyAttachmentContent,
   getFileExtension,
+  MAX_GUARDED_DOCUMENT_ATTACHMENT_BYTES,
   MAX_GUARDED_TEXT_ATTACHMENT_BYTES,
   mimeCategory,
   safeMimeType,
   splitFileName
 } from "../attachments/policy";
+import type { AttachmentExtractionKind } from "../attachments/policy";
 import type {
   GovernAttachmentsPayload,
   GovernAttachmentsResult,
@@ -127,16 +129,18 @@ async function governSingleAttachment(
       mimeType: attachment.mimeType,
       size: attachment.size
     },
-    attachment.text
+    attachment.text,
+    attachment.extractionKind || "native_text"
   );
 
   if (classification === "unsupported_type" || classification === "unsupported_mime") {
+    const unsupportedReason = unsupportedAttachmentReason(attachment.originalName);
     return {
       result: buildAttachmentResult({
         ...base,
         action: "unsupported",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: `This file type is not governed in browser mode yet. ${sanitizedFallbackName(attachment.originalName)} was not uploaded. Use Accord Workspace for governed file analysis.`,
+        reason: unsupportedReason,
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
@@ -153,12 +157,15 @@ async function governSingleAttachment(
         ...base,
         action: "too_large",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: `${sanitizedFallbackName(attachment.originalName)} is too large for browser-mode governance. It was not uploaded. Use Accord Workspace.`,
+        reason: tooLargeAttachmentReason(attachment),
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
         personDetection: unavailablePersonDetection(),
         surface: payload.surface,
+        extractionKind: attachment.extractionKind,
+        extractionWarnings: attachment.extractionWarnings,
+        extractedCharacterCount: attachment.extractedCharacterCount,
         blockedReasonCategory: "too_large"
       })
     };
@@ -170,12 +177,15 @@ async function governSingleAttachment(
         ...base,
         action: "failed",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: `Accord could not read ${sanitizedFallbackName(attachment.originalName)} locally. It was not uploaded.`,
+        reason: readFailureAttachmentReason(attachment),
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
         personDetection: unavailablePersonDetection(),
         surface: payload.surface,
+        extractionKind: attachment.extractionKind,
+        extractionWarnings: attachment.extractionWarnings,
+        extractedCharacterCount: attachment.extractedCharacterCount,
         blockedReasonCategory: "read_failed"
       })
     };
@@ -205,18 +215,22 @@ async function governSingleAttachment(
         ...base,
         action: "failed",
         sanitizedName: sanitizedFallbackName(attachment.originalName),
-        reason: `Accord could not read ${sanitizedFallbackName(attachment.originalName)} locally. It was not uploaded.`,
+        reason: readFailureAttachmentReason(attachment),
         riskScore: 0,
         entityCounts: {},
         redactionCount: 0,
         personDetection: unavailablePersonDetection(),
         surface: payload.surface,
+        extractionKind: attachment.extractionKind,
+        extractionWarnings: attachment.extractionWarnings,
+        extractedCharacterCount: attachment.extractedCharacterCount,
         blockedReasonCategory: "read_failed"
       })
     };
   }
 
   const filenameScan = await governAttachmentFilename(attachment.originalName, payload.sensitivity, seedRedactionMap);
+  const sanitizedName = governedAttachmentOutputName(filenameScan.sanitizedName, attachment.extractionKind);
   const filenameDecision = decidePolicy(filenameScan.scan);
   const filenameSeed = {
     ...seedRedactionMap,
@@ -236,15 +250,18 @@ async function governSingleAttachment(
       result: buildAttachmentResult({
         ...base,
         action: "blocked",
-        sanitizedName: filenameScan.sanitizedName,
+        sanitizedName,
         reason: hasSecret(contentScan) || hasSecret(filenameScan.scan)
-          ? `Possible credential detected. ${filenameScan.sanitizedName} was not uploaded.`
-          : `Unsafe file content detected. ${filenameScan.sanitizedName} was not uploaded.`,
+          ? `Possible credential detected. ${sanitizedName} was not uploaded.`
+          : `Unsafe file content detected. ${sanitizedName} was not uploaded.`,
         riskScore: combinedRisk,
         entityCounts,
         redactionCount,
         personDetection,
         surface: payload.surface,
+        extractionKind: attachment.extractionKind,
+        extractionWarnings: attachment.extractionWarnings,
+        extractedCharacterCount: attachment.extractedCharacterCount,
         blockedReasonCategory: hasSecret(contentScan) || hasSecret(filenameScan.scan) ? "secret" : "policy_block"
       })
     };
@@ -254,17 +271,17 @@ async function governSingleAttachment(
   const result = buildAttachmentResult({
     ...base,
     action,
-    sanitizedName: filenameScan.sanitizedName,
-    reason:
-      action === "redacted"
-        ? `${redactionCount} identifier${redactionCount === 1 ? "" : "s"} protected in ${filenameScan.sanitizedName}. Only the governed copy will be uploaded.`
-        : `${filenameScan.sanitizedName} governed locally.`,
+    sanitizedName,
+    reason: governedAttachmentReason(action, redactionCount, sanitizedName, attachment.extractionKind),
     riskScore: combinedRisk,
     entityCounts,
     redactionCount,
     personDetection,
     surface: payload.surface,
-    sanitizedText: contentScan.redactedText
+    extractionKind: attachment.extractionKind,
+    extractionWarnings: attachment.extractionWarnings,
+    extractedCharacterCount: attachment.extractedCharacterCount,
+    sanitizedText: governedAttachmentText(contentScan.redactedText, sanitizedName, attachment.extractionKind, attachment.extractionWarnings)
   });
 
   return {
@@ -320,6 +337,9 @@ function buildAttachmentResult(input: AttachmentResultInput): GovernedAttachment
       entityCounts: input.entityCounts,
       redactionCount: input.redactionCount,
       blockedReasonCategory,
+      extractionKind: input.extractionKind,
+      extractionWarnings: input.extractionWarnings,
+      extractedCharacterCount: input.extractedCharacterCount,
       personDetectorStatus: input.personDetection.nerStatus,
       timestamp: new Date().toISOString()
     }
@@ -390,6 +410,102 @@ function sanitizedFallbackName(name: string) {
   return `${sanitizePlainStem(stem) || "attachment"}${extension}`;
 }
 
+function tooLargeAttachmentReason(attachment: GuardAttachmentInput) {
+  const sanitizedName = sanitizedFallbackName(attachment.originalName);
+  if (isExtractedDocumentKind(attachment.extractionKind)) {
+    return `${sanitizedName} is too large for browser-mode document extraction. It was not uploaded.`;
+  }
+
+  return `${sanitizedName} is too large for browser-mode governance. It was not uploaded. Use Accord Workspace.`;
+}
+
+function readFailureAttachmentReason(attachment: GuardAttachmentInput) {
+  const sanitizedName = sanitizedFallbackName(attachment.originalName);
+  if (isExtractedDocumentKind(attachment.extractionKind)) {
+    const sourceLabel = attachmentSourceLabel(attachment.extractionKind);
+    return `${attachment.extractionReason || `Accord could not extract readable text from this ${sourceLabel} in browser mode.`} ${sanitizedName} was not uploaded. Original file was not sent to ChatGPT.`;
+  }
+
+  return `Accord could not read ${sanitizedName} locally. It was not uploaded.`;
+}
+
+function governedAttachmentOutputName(sanitizedName: string, extractionKind?: AttachmentExtractionKind) {
+  if (!isExtractedDocumentKind(extractionKind)) return sanitizedName;
+
+  const { stem } = splitFileName(sanitizedName);
+  return `${stem || "attachment"}.governed.txt`;
+}
+
+function governedAttachmentReason(
+  action: GovernedAttachmentAction,
+  redactionCount: number,
+  sanitizedName: string,
+  extractionKind?: AttachmentExtractionKind
+) {
+  if (isExtractedDocumentKind(extractionKind)) {
+    const sourceLabel = attachmentSourceLabel(extractionKind);
+    const protectedCopy =
+      action === "redacted"
+        ? `${redactionCount} identifier${redactionCount === 1 ? "" : "s"} protected. `
+        : "";
+    return `${protectedCopy}Original ${sourceLabel} was not uploaded. Governed text copy ${sanitizedName} will be uploaded.`;
+  }
+
+  return action === "redacted"
+    ? `${redactionCount} identifier${redactionCount === 1 ? "" : "s"} protected in ${sanitizedName}. Only the governed copy will be uploaded.`
+    : `${sanitizedName} governed locally.`;
+}
+
+function governedAttachmentText(
+  redactedText: string,
+  sanitizedName: string,
+  extractionKind?: AttachmentExtractionKind,
+  warnings: string[] = []
+) {
+  if (!isExtractedDocumentKind(extractionKind)) return redactedText;
+
+  const sourceLabel = attachmentSourceLabel(extractionKind).toUpperCase();
+  const warningText = warnings.length ? `\nExtraction notes: ${warnings.join(" ")}` : "";
+
+  return [
+    "Accord governed document text copy",
+    `Source: ${sourceLabel}`,
+    `Governed file: ${sanitizedName}`,
+    "Boundary: original binary document was not uploaded to ChatGPT.",
+    `${warningText}`,
+    "---",
+    redactedText
+  ]
+    .filter((line) => line.length > 0)
+    .join("\n");
+}
+
+function isExtractedDocumentKind(kind?: AttachmentExtractionKind): kind is "pdf_text" | "docx_text" {
+  return kind === "pdf_text" || kind === "docx_text";
+}
+
+function attachmentSourceLabel(kind: AttachmentExtractionKind) {
+  return kind === "pdf_text" ? "PDF" : "DOCX";
+}
+
+function unsupportedAttachmentReason(name: string) {
+  const sanitizedName = sanitizedFallbackName(name);
+  const extension = getFileExtension(name);
+  if (extension === "pdf") {
+    return `PDF text extraction did not run. ${sanitizedName} was not uploaded. Select the file again so Accord can create a governed text copy.`;
+  }
+
+  if (["doc", "docx"].includes(extension)) {
+    return `Document text extraction did not run. ${sanitizedName} was not uploaded. Select the file again so Accord can create a governed text copy.`;
+  }
+
+  if (["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(extension)) {
+    return `Image redaction is not active in browser mode yet. ${sanitizedName} was not uploaded. Use Accord Workspace for governed image analysis.`;
+  }
+
+  return `This file type is not governed in browser mode yet. ${sanitizedName} was not uploaded. Use Accord Workspace for governed file analysis.`;
+}
+
 function slugifyGovernedStem(stem: string) {
   return stem
     .replace(/\s+/g, "_")
@@ -407,6 +523,7 @@ function sizeBucket(size: number) {
   if (size <= 10 * 1024) return "0-10kb";
   if (size <= 100 * 1024) return "10-100kb";
   if (size <= MAX_GUARDED_TEXT_ATTACHMENT_BYTES) return "100-256kb";
+  if (size <= MAX_GUARDED_DOCUMENT_ATTACHMENT_BYTES) return "256kb-5mb";
   return "over_limit";
 }
 

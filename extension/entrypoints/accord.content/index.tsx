@@ -5,11 +5,13 @@ import "./style.css";
 import accordMarkUrl from "../../src/assets/accord-mark.png";
 import { ChatGPTAdapter } from "../../src/adapters/chatgpt";
 import type { SurfaceAssistantResponse } from "../../src/adapters/types";
-import { isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, mimeCategory, safeMimeType } from "../../src/attachments/policy";
+import { extractGovernableAttachmentText } from "../../src/attachments/extract-text";
+import { isExtractableDocumentAttachment, isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, mimeCategory, safeMimeType } from "../../src/attachments/policy";
 import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
 import type { EntityCountSummary } from "@accord/governance-core";
 import type { GovernAttachmentsResult, GuardAttachmentInput, SafeScanResult } from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
+import { attachmentSendBlockReason, type AttachmentGateStatus } from "../../src/state/attachment-send-gate";
 import { runGovernedAttachmentHandoff } from "../../src/state/attachment-handoff";
 import { runFinalSubmissionDecision, TrustedSubmissionGate } from "../../src/state/final-submission";
 import { createSurfaceState } from "../../src/state/surface-state";
@@ -71,6 +73,7 @@ export default defineContentScript({
     const scanSeq = { current: 0 };
     let liveScanTimer: number | undefined;
     let conversationKey = adapter.getConversationKey();
+    let attachmentGateStatus: AttachmentGateStatus = "none";
     window.addEventListener("resize", syncGuardChrome);
     window.addEventListener("scroll", syncGuardChrome, true);
 
@@ -163,6 +166,26 @@ export default defineContentScript({
       }
 
       submission.prevent();
+      const attachmentBlockReason = attachmentSendBlockReason({
+        gateStatus: attachmentGateStatus,
+        hasHostAttachments: adapter.hasAttachments(),
+        attachmentNotice: state.getSnapshot().attachmentNotice,
+        phase: state.getSnapshot().phase,
+        message: state.getSnapshot().message
+      });
+
+      if (attachmentBlockReason) {
+        state.set({
+          phase: "blocked",
+          message: attachmentBlockReason,
+          attachmentNotice: true,
+          draftText: adapter.getDraftText()
+        });
+        adapter.setComposerDecoratedState("blocked");
+        adapter.clearEntityDecorations();
+        return;
+      }
+
       state.set({ phase: "scanning", message: "Running final Accord scan...", draftText: adapter.getDraftText() });
       adapter.setComposerDecoratedState("scanning");
       adapter.clearEntityDecorations();
@@ -219,6 +242,7 @@ export default defineContentScript({
     });
 
     const unsubscribeAttachments = adapter.subscribeToAttachmentSelection((selection) => {
+      attachmentGateStatus = "pending";
       state.set({ phase: "scanning", message: "Scanning file...", draftText: adapter.getDraftText(), attachmentNotice: true });
 
       void syncConversationKey()
@@ -242,6 +266,7 @@ export default defineContentScript({
           const result = message.result as GovernAttachmentsResult;
 
           if (result.batchAction !== "allow") {
+            attachmentGateStatus = "blocked";
             adapter.clearFileInput(selection.input);
             state.set({
               phase: "blocked",
@@ -260,7 +285,7 @@ export default defineContentScript({
             }
 
             return new File([fileResult.sanitizedText], fileResult.sanitizedName, {
-              type: safeMimeType(fileResult.mimeType, fileResult.sanitizedName),
+              type: hostAttachmentMimeType(fileResult.mimeType, fileResult.sanitizedName),
               lastModified: fileResult.lastModified
             });
           });
@@ -272,10 +297,14 @@ export default defineContentScript({
             verifyHostAccepted: (files) => adapter.verifyHostAttachmentAccepted(files),
             dispatchTrustedSelection: () => adapter.dispatchGovernedFileSelection(selection.input),
             clearFileInput: () => adapter.clearFileInput(selection.input),
-            onState: (nextState) => state.set({ ...nextState, attachmentNotice: true, draftText: adapter.getDraftText() })
+            onState: (nextState) => {
+              attachmentGateStatus = "blocked";
+              state.set({ ...nextState, attachmentNotice: true, draftText: adapter.getDraftText() });
+            }
           });
 
           if (!verified) return;
+          attachmentGateStatus = "governed";
 
           const hasRedactions = result.results.some((fileResult) => fileResult.redactionCount > 0);
           state.set({
@@ -288,6 +317,7 @@ export default defineContentScript({
           });
         })
         .catch((error: unknown) => {
+          attachmentGateStatus = "blocked";
           adapter.clearFileInput(selection.input);
           const message = error instanceof Error ? error.message : "Accord could not govern this attachment.";
           state.set({ phase: "failed", message, attachmentNotice: true });
@@ -336,6 +366,9 @@ export default defineContentScript({
 
     const attachmentTimer = window.setInterval(() => {
       const attachmentNotice = adapter.hasAttachments();
+      if (!attachmentNotice && attachmentGateStatus === "governed") {
+        attachmentGateStatus = "none";
+      }
       if (state.getSnapshot().attachmentNotice !== attachmentNotice) {
         state.set({ attachmentNotice });
       }
@@ -379,6 +412,25 @@ async function buildAttachmentPayload(files: File[]): Promise<GuardAttachmentInp
           supportDecision: "read_locally"
         });
         input.text = await file.text();
+        input.extractionKind = "native_text";
+        input.extractedCharacterCount = input.text.length;
+      } else if (isExtractableDocumentAttachment(file.name, file.type)) {
+        console.info("[Accord Guard] attachment candidate", {
+          extension: file.name.split(".").pop()?.toLocaleLowerCase() || "",
+          mimeCategory: mimeCategory(file.type),
+          size: file.size,
+          supportDecision: "extract_text_copy"
+        });
+        const extraction = await extractGovernableAttachmentText(file);
+        input.extractionKind = extraction.kind;
+        input.extractionWarnings = extraction.warnings;
+
+        if (extraction.status === "extracted") {
+          input.text = extraction.text;
+          input.extractedCharacterCount = extraction.text.length;
+        } else {
+          input.extractionReason = extraction.reason;
+        }
       }
 
       return input;
@@ -393,4 +445,9 @@ function mergeEntityCounts(result: GovernAttachmentsResult): EntityCountSummary 
     }
     return counts;
   }, {});
+}
+
+function hostAttachmentMimeType(mimeType: string, name: string) {
+  const safeType = safeMimeType(mimeType, name);
+  return safeType.startsWith("text/") ? safeType : "text/plain";
 }
