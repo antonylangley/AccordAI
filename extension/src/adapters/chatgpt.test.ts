@@ -69,6 +69,23 @@ describe("ChatGPT adapter", () => {
 
     await expect(adapter.verifyHostAttachmentAccepted([new File(["safe"], "customer.ts", { type: "application/typescript" })])).resolves.toBe(true);
   });
+
+  test("verifies host attachment acceptance from ChatGPT library preview text", async () => {
+    document.body.innerHTML = `
+      <div id="prompt-textarea" contenteditable="true" role="textbox"></div>
+      <section>
+        <p>Library / <strong>customer.governed.txt</strong></p>
+      </section>
+    `;
+    setRect(document.querySelector("#prompt-textarea") as HTMLElement, { left: 120, top: 500, width: 620, height: 40 });
+    setRect(document.querySelector("section") as HTMLElement, { left: 120, top: 120, width: 260, height: 180 });
+    setRect(document.querySelector("p") as HTMLElement, { left: 128, top: 128, width: 220, height: 24 });
+    setRect(document.querySelector("strong") as HTMLElement, { left: 180, top: 128, width: 160, height: 24 });
+
+    const adapter = new ChatGPTAdapter();
+
+    await expect(adapter.verifyHostAttachmentAccepted([new File(["safe"], "customer.governed.txt", { type: "text/plain" })])).resolves.toBe(true);
+  });
 });
 
 function installDomGlobals(dom: JSDOM) {
@@ -79,6 +96,7 @@ function installDomGlobals(dom: JSDOM) {
   globalThis.HTMLInputElement = dom.window.HTMLInputElement;
   globalThis.HTMLLabelElement = dom.window.HTMLLabelElement;
   globalThis.File = dom.window.File;
+  globalThis.NodeFilter = dom.window.NodeFilter;
 }
 
 function setViewport(width: number, height: number) {

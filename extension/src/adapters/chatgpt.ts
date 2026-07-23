@@ -692,12 +692,36 @@ function findAcceptedAttachmentPreview(files: File[]) {
   const expectedNames = files.map((file) => file.name);
   const previews = attachmentSelectors.flatMap((selector) => Array.from(document.querySelectorAll<HTMLElement>(selector)));
   const visiblePreviews = previews.filter((element) => isVisible(element));
-  if (!visiblePreviews.length) return false;
+  const broadVisibleText = getVisiblePageTextOutsideAccord();
 
   const visibleText = visiblePreviews.map((element) => element.innerText || element.textContent || "").join("\n");
   if (expectedNames.every((name) => visibleText.includes(name))) return true;
+  if (expectedNames.every((name) => broadVisibleText.includes(name))) return true;
 
   return visiblePreviews.length >= files.length && visibleText.trim().length === 0;
+}
+
+function getVisiblePageTextOutsideAccord() {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT, {
+    acceptNode(node) {
+      const element = node instanceof HTMLElement ? node : null;
+      if (!element || element.closest("#accord-guard-root, .accord-guard-response-overlay")) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return isVisible(element) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+    }
+  });
+
+  const chunks: string[] = [];
+  let current = walker.nextNode();
+  while (current) {
+    const element = current as HTMLElement;
+    const text = element.innerText || element.textContent || "";
+    if (text.trim()) chunks.push(text);
+    current = walker.nextNode();
+  }
+
+  return chunks.join("\n");
 }
 
 function getAssistantElements() {

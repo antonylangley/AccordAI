@@ -347,17 +347,10 @@ function syncResponsePopoverPlacement(view: HTMLElement) {
   const estimatedHeight = popover.offsetHeight || 220;
   const margin = 12;
   const hasRoomAbove = buttonRect.top >= estimatedHeight + margin;
-  const preferredLeft = buttonRect.left - estimatedWidth - margin;
-  const maxLeft = Math.max(margin, window.innerWidth - estimatedWidth - margin);
-  const left = clamp(preferredLeft, margin, maxLeft);
-  const preferredTop = hasRoomAbove ? buttonRect.top - estimatedHeight - 8 : buttonRect.bottom + 8;
-  const maxTop = Math.max(margin, window.innerHeight - estimatedHeight - margin);
-  const top = clamp(preferredTop, margin, maxTop);
+  const hasRoomLeft = buttonRect.left >= estimatedWidth + margin;
 
   button.dataset.popoverY = hasRoomAbove ? "above" : "below";
-  button.dataset.popoverX = preferredLeft >= margin ? "left" : "left-clamped";
-  popover.style.left = `${left}px`;
-  popover.style.top = `${top}px`;
+  button.dataset.popoverX = hasRoomLeft ? "left" : "right";
 }
 
 async function copyTextValue(text: string, copyText?: (text: string) => Promise<void> | void) {
@@ -425,8 +418,4 @@ function normalizeWhitespace(text: string) {
 function isUsefulCopyBlock(text: string) {
   if (text.length < 12) return false;
   return /[.!?]$/.test(text) || text.length >= 32;
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, value));
 }

@@ -41,9 +41,9 @@ function summaryText(state: SurfaceSnapshot) {
   const count = state.scan?.decorations.filter((decoration) => decoration.type !== "SECRET").length || 0;
   if (count > 0 && state.phase === "redact") return `${count} protected`;
   if (state.attachmentNotice && state.attachmentRedactionCount && state.attachmentRedactionCount > 0) {
-    return `${state.attachmentRedactionCount} protected`;
+    return "Upload protected";
   }
-  if (state.attachmentNotice) return "File note";
+  if (state.attachmentNotice) return "Upload governed";
   return "";
 }
 
@@ -51,6 +51,10 @@ function ariaLabel(state: SurfaceSnapshot) {
   if (state.phase === "blocked" && isAttachmentState(state)) return "Accord Guard: upload blocked";
   if (state.phase === "blocked") return "Accord Guard: sending blocked";
   if (state.phase === "scanning") return "Accord Guard: scanning";
+  if (state.attachmentNotice && state.attachmentRedactionCount && state.attachmentRedactionCount > 0) {
+    return "Accord Guard: upload protected";
+  }
+  if (state.attachmentNotice) return "Accord Guard: upload governed";
   if (state.phase === "redact") return `Accord Guard: ${summaryText(state)}`;
   return "Accord Guard active";
 }
