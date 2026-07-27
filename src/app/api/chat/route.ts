@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ChatGatewayInputError, runChatGateway } from "@/lib/chat/gateway";
 import { getModelOptions } from "@/lib/chat/model-registry";
 import { getChatProvider, getProviderConfiguration, ProviderUnavailableError } from "@/lib/chat/providers";
+import { persistChatGatewayRun } from "@/lib/db/accord-store";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const response = await runChatGateway(body);
+    await persistChatGatewayRun(body, response);
 
     return NextResponse.json(response, {
       headers: {

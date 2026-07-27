@@ -1,4 +1,4 @@
-import { LockKeyhole, ShieldCheck } from "lucide-react";
+import { BrainCircuit, CircleDot, Database, LockKeyhole, ShieldCheck } from "lucide-react";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EventTable } from "@/components/ui/event-table";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,9 +7,28 @@ import { ProviderUsageChart } from "@/components/charts/provider-usage-chart";
 import { RiskCategoryBars } from "@/components/charts/risk-category-bars";
 import { RiskDistributionChart } from "@/components/charts/risk-distribution-chart";
 import { UsageLineChart } from "@/components/charts/usage-line-chart";
-import { dashboardStats, governanceEvents } from "@/lib/mock-data";
+import { governanceEvents } from "@/lib/mock-data";
+import { getAccordDatabaseSnapshot } from "@/lib/db/accord-store";
 
-export default function DashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  const databaseSnapshot = await getAccordDatabaseSnapshot();
+  const stats = databaseSnapshot.stats;
+  const recentEvents = databaseSnapshot.recentEvents.length ? databaseSnapshot.recentEvents.slice(0, 4) : governanceEvents.slice(0, 4);
+  const memoryItems = databaseSnapshot.memory.length
+    ? databaseSnapshot.memory
+    : [
+        {
+          id: "supabase_setup",
+          title: "Supabase setup pending",
+          kind: "setup",
+          summary: "Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY, then run the Accord Supabase migration to activate persisted workspace memory.",
+          createdAt: "",
+          updatedAt: ""
+        }
+      ];
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -18,7 +37,7 @@ export default function DashboardPage() {
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {dashboardStats.map((stat) => (
+        {stats.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </section>
@@ -54,6 +73,58 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      <section className="grid gap-5 xl:grid-cols-[0.82fr_1.18fr]">
+        <article className="rounded-2xl border border-accord-border bg-white p-5 shadow-accord-panel">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-accord-violet">
+                Workspace memory
+              </p>
+              <h2 className="mt-2 text-xl font-semibold tracking-[-0.02em] text-accord-text">Supabase-backed context</h2>
+            </div>
+            <div className="rounded-full border border-accord-border bg-accord-soft p-2 text-accord-violet">
+              <Database className="h-5 w-5" aria-hidden="true" />
+            </div>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Accord now has a server-side place to remember product context, governed chat metadata, and audit events
+            across fresh sessions without storing raw prompts or responses.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+                databaseSnapshot.databaseEnabled
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700"
+              }`}
+            >
+              <CircleDot className="h-3.5 w-3.5" aria-hidden="true" />
+              {databaseSnapshot.databaseEnabled ? "Supabase connected" : "Supabase setup pending"}
+            </span>
+            <span className="rounded-full border border-accord-border bg-accord-soft px-3 py-1 text-xs font-semibold text-slate-600">
+              Raw content disabled
+            </span>
+          </div>
+        </article>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          {memoryItems.map((item) => (
+            <article key={item.id} className="rounded-2xl border border-accord-border bg-white p-4 shadow-accord-panel">
+              <div className="flex items-center gap-2">
+                <span className="rounded-xl bg-accord-violet/10 p-2 text-accord-violet">
+                  <BrainCircuit className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <span className="rounded-full bg-accord-soft px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                  {item.kind.replace("_", " ")}
+                </span>
+              </div>
+              <h3 className="mt-4 text-sm font-semibold text-accord-text">{item.title}</h3>
+              <p className="mt-2 line-clamp-5 text-xs leading-5 text-slate-500">{item.summary}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className="grid gap-5 xl:grid-cols-2">
         <ChartCard title="AI usage over time" description="Requests routed through Accord by day.">
           <UsageLineChart />
@@ -78,7 +149,7 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
-        <EventTable events={governanceEvents.slice(0, 4)} compact />
+        <EventTable events={recentEvents} compact />
       </section>
     </div>
   );
