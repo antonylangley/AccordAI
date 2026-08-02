@@ -28,6 +28,17 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
 
       <p className="accord-guard-popover-copy">{summaryCopy(state, decorations.length)}</p>
 
+      {state.scan?.policy?.triggered && state.scan.policy.rule ? (
+        <div className="accord-guard-policy-box">
+          <p className="accord-guard-policy-kicker">Company policy</p>
+          <p className="accord-guard-policy-title">
+            {state.scan.policy.rule.sourcePolicyName} {state.scan.policy.rule.sourceSection}
+          </p>
+          <p className="accord-guard-policy-copy">{policyActionCopy(state.scan.policy.executionAction)}</p>
+          {decorations.length ? <p className="accord-guard-policy-link">View protected version locally below.</p> : null}
+        </div>
+      ) : null}
+
       {Object.keys(visibleCounts).length ? (
         <div className="accord-guard-counts">
           {Object.entries(visibleCounts).map(([type, count]) => (
@@ -81,6 +92,13 @@ function summaryCopy(state: SurfaceSnapshot, decorationCount: number) {
   if (state.phase === "scanning") return "Checking this draft locally.";
   if (state.phase === "failed") return state.message || "Accord could not verify this send.";
   return "Text governance is active on this AI surface.";
+}
+
+function policyActionCopy(action: string) {
+  if (action === "block") return "Accord is blocking this submission before it leaves the browser.";
+  if (action === "redact") return "Accord is transforming this submission with local redaction before sending.";
+  if (action === "warn") return "Accord is warning before submission and recording safe metadata.";
+  return "Accord found a matching rule and no further action is required.";
 }
 
 function countDecorations(decorations: EntityDecoration[]) {

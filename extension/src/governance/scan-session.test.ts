@@ -110,6 +110,18 @@ describe("Accord Guard scan session", () => {
     expect("redactionMap" in result).toBe(false);
   });
 
+  test("rehydrates a new ChatGPT conversation from the recent governed draft vault", async () => {
+    await scan("Write an email to Jordan Example at jordan.example@test.com.", "draft:new-chat");
+    const result = await rehydrateAssistantText({
+      surface: "chatgpt",
+      conversationKey: "conversation:new-chat",
+      text: "Dear [PERSON_1], I will email [EMAIL_1]."
+    });
+
+    expect(result.text).toBe("Dear Jordan Example, I will email jordan.example@test.com.");
+    expect(result.replacedCount).toBe(2);
+  });
+
   test("keeps conversation sessions separated", async () => {
     await scan("Tell John Smith the report is ready.", "conversation:a");
     const result = await rehydrateAssistantText({

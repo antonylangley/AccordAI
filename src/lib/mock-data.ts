@@ -25,6 +25,7 @@ export type Stat = {
 export type GovernanceEvent = {
   id: string;
   time: string;
+  occurredAt?: string;
   department: string;
   user: string;
   provider: ProviderName;

@@ -1,6 +1,7 @@
 import { defineBackground } from "wxt/utils/define-background";
 import { governAttachmentBatch, moveVault, rehydrateAssistantText, scanDraft } from "../src/governance/scan-session";
 import type { AccordGuardMessage, AccordGuardResponse } from "../src/messaging/types";
+import { recordGuardTelemetry } from "../src/telemetry/client";
 
 export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((message: AccordGuardMessage, _sender, sendResponse) => {
@@ -38,6 +39,9 @@ async function handleMessage(message: AccordGuardMessage): Promise<AccordGuardRe
       };
     case "accord.moveVault":
       await moveVault(message.payload);
+      return { ok: true };
+    case "accord.recordTelemetry":
+      await recordGuardTelemetry(message.payload);
       return { ok: true };
     default:
       return { ok: false, error: "Unknown Accord Guard message." };

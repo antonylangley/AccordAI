@@ -9,7 +9,7 @@ import { extractGovernableAttachmentText } from "../../src/attachments/extract-t
 import { isExtractableDocumentAttachment, isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, mimeCategory, safeMimeType } from "../../src/attachments/policy";
 import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
 import type { EntityCountSummary } from "@accord/governance-core";
-import type { GovernAttachmentsResult, GuardAttachmentInput, SafeScanResult } from "../../src/messaging/types";
+import type { GovernAttachmentsResult, GuardAttachmentInput, GuardTelemetryPayload, SafeScanResult } from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
 import { attachmentSendBlockReason, type AttachmentGateStatus } from "../../src/state/attachment-send-gate";
 import { runGovernedAttachmentHandoff } from "../../src/state/attachment-handoff";
@@ -74,6 +74,16 @@ export default defineContentScript({
     let liveScanTimer: number | undefined;
     let conversationKey = adapter.getConversationKey();
     let attachmentGateStatus: AttachmentGateStatus = "none";
+    const recordTelemetry = (payload: Omit<GuardTelemetryPayload, "surface" | "conversationKey">) => {
+      void sendGuardMessage({
+        type: "accord.recordTelemetry",
+        payload: {
+          surface: "chatgpt",
+          conversationKey,
+          ...payload
+        }
+      });
+    };
     window.addEventListener("resize", syncGuardChrome);
     window.addEventListener("scroll", syncGuardChrome, true);
 
@@ -161,6 +171,8 @@ export default defineContentScript({
 
     const unsubscribeDraft = adapter.subscribeToDraft(runLiveScan);
     const unsubscribeSubmit = adapter.subscribeToSubmit((submission) => {
+      const submittedDraftText = adapter.getDraftText();
+
       if (trustedGate.consumeIfAuthorized()) {
         return;
       }
@@ -179,20 +191,34 @@ export default defineContentScript({
           phase: "blocked",
           message: attachmentBlockReason,
           attachmentNotice: true,
-          draftText: adapter.getDraftText()
+          draftText: submittedDraftText
         });
         adapter.setComposerDecoratedState("blocked");
         adapter.clearEntityDecorations();
+        recordTelemetry({
+          eventType: "message_blocked",
+          action: "block",
+          riskScore: 70,
+          riskLevel: "high",
+          flags: ["Attachment gate blocked send"],
+          messageLengthBucket: messageLengthBucket(submittedDraftText.length),
+          metadata: {
+            reasonCategory: "attachment_gate",
+            reason: attachmentBlockReason
+          }
+        });
         return;
       }
 
-      state.set({ phase: "scanning", message: "Running final Accord scan...", draftText: adapter.getDraftText() });
+      state.set({ phase: "scanning", message: "Running final Accord scan...", draftText: submittedDraftText });
       adapter.setComposerDecoratedState("scanning");
       adapter.clearEntityDecorations();
 
       void syncConversationKey()
-        .then(() =>
-          runFinalSubmissionDecision({
+        .then(() => {
+          let finalScan: SafeScanResult | undefined;
+
+          return runFinalSubmissionDecision({
             readDraft: () => adapter.getDraftText(),
             scan: (text) =>
               sendGuardMessage({
@@ -221,6 +247,9 @@ export default defineContentScript({
               await adapter.submit();
             },
             onState: (nextState) => {
+              if (nextState.scan) {
+                finalScan = nextState.scan;
+              }
               const draftText = adapter.getDraftText();
               state.set({ ...nextState, draftText });
               if (nextState.phase) {
@@ -232,12 +261,45 @@ export default defineContentScript({
                 adapter.clearEntityDecorations();
               }
             }
-          })
-        )
+          }).then((outcome) => {
+            const eventType = outcome === "submitted" ? "message_sent_to_ai" : outcome === "blocked" ? "message_blocked" : "extension_error";
+            const scan = finalScan;
+
+            recordTelemetry({
+              eventType,
+              action: scan?.action || (outcome === "blocked" ? "block" : outcome === "failed" ? "failed" : "allow"),
+              riskScore: scan?.riskScore || 0,
+              riskLevel: scan?.riskLevel || "low",
+              flags: scan ? flagLabels(scan) : [],
+              entityCounts: scan?.entityCounts || {},
+              redactionCount: scan?.detectedEntityCount || 0,
+              messageLengthBucket: messageLengthBucket(submittedDraftText.length),
+              ...policyTelemetryFields(scan, "prompt"),
+              metadata: {
+                outcome,
+                scanId: scan?.scanId || null,
+                redacted: scan?.action === "redact"
+              }
+            });
+
+            return outcome;
+          });
+        })
         .catch((error: unknown) => {
           const message = error instanceof Error ? error.message : "Accord could not complete the final scan.";
           state.set({ phase: "failed", message });
           adapter.setComposerDecoratedState("failed");
+          recordTelemetry({
+            eventType: "extension_error",
+            action: "failed",
+            riskScore: 0,
+            riskLevel: "low",
+            messageLengthBucket: messageLengthBucket(submittedDraftText.length),
+            metadata: {
+              reasonCategory: "final_scan_error",
+              reason: message
+            }
+          });
         });
     });
 
@@ -266,6 +328,7 @@ export default defineContentScript({
           const result = message.result as GovernAttachmentsResult;
 
           if (result.batchAction !== "allow") {
+            recordTelemetry(attachmentTelemetryPayload(result, "attachment_blocked"));
             attachmentGateStatus = "blocked";
             adapter.clearFileInput(selection.input);
             state.set({
@@ -305,6 +368,7 @@ export default defineContentScript({
 
           if (!verified) return;
           attachmentGateStatus = "governed";
+          recordTelemetry(attachmentTelemetryPayload(result, "attachment_governed"));
 
           const hasRedactions = result.results.some((fileResult) => fileResult.redactionCount > 0);
           state.set({
@@ -321,6 +385,17 @@ export default defineContentScript({
           adapter.clearFileInput(selection.input);
           const message = error instanceof Error ? error.message : "Accord could not govern this attachment.";
           state.set({ phase: "failed", message, attachmentNotice: true });
+          recordTelemetry({
+            eventType: "attachment_blocked",
+            action: "failed",
+            riskScore: 0,
+            riskLevel: "low",
+            attachmentCount: selection.files.length,
+            metadata: {
+              reasonCategory: "attachment_governance_error",
+              reason: message
+            }
+          });
         });
     });
 
@@ -351,6 +426,20 @@ export default defineContentScript({
                 replacedCount: 0,
                 unresolvedPlaceholderCount: 0
               };
+            }
+
+            if (message.result.resolvedCount > 0) {
+              recordTelemetry({
+                eventType: "assistant_response_rehydrated",
+                action: "allow",
+                riskScore: 0,
+                riskLevel: "low",
+                redactionCount: message.result.resolvedCount,
+                metadata: {
+                  responseId: response.id,
+                  unresolvedPlaceholderCount: message.result.unresolvedPlaceholderCount
+                }
+              });
             }
 
             return message.result;
@@ -450,4 +539,85 @@ function mergeEntityCounts(result: GovernAttachmentsResult): EntityCountSummary 
 function hostAttachmentMimeType(mimeType: string, name: string) {
   const safeType = safeMimeType(mimeType, name);
   return safeType.startsWith("text/") ? safeType : "text/plain";
+}
+
+function flagLabels(scan: SafeScanResult) {
+  return scan.flags.map((flag) => flag.label || flag.type);
+}
+
+function messageLengthBucket(length: number) {
+  if (length <= 0) return "empty";
+  if (length <= 250) return "0-250";
+  if (length <= 1000) return "251-1000";
+  if (length <= 4000) return "1001-4000";
+  return "4000+";
+}
+
+function attachmentTelemetryPayload(
+  result: GovernAttachmentsResult,
+  eventType: Extract<GuardTelemetryPayload["eventType"], "attachment_governed" | "attachment_blocked">
+): Omit<GuardTelemetryPayload, "surface" | "conversationKey"> {
+  const redactionCount = result.results.reduce((sum, fileResult) => sum + fileResult.redactionCount, 0);
+  const riskScore = result.results.reduce((score, fileResult) => Math.max(score, fileResult.riskScore), 0);
+  const entityCounts = mergeEntityCounts(result);
+  const actions = Array.from(new Set(result.results.map((fileResult) => fileResult.action)));
+  const blockedReasons = Array.from(
+    new Set(
+      result.results
+        .map((fileResult) => fileResult.telemetry.blockedReasonCategory)
+        .filter((item): item is string => typeof item === "string" && item.length > 0)
+    )
+  );
+  const hasRedactions = redactionCount > 0;
+  const action =
+    eventType === "attachment_blocked"
+      ? "blocked"
+      : hasRedactions
+        ? "redacted"
+        : "clean";
+
+  return {
+    eventType,
+    action,
+    riskScore,
+    riskLevel: riskLevelFromScore(riskScore),
+    flags: blockedReasons.length ? blockedReasons : hasRedactions ? ["Attachment redacted"] : ["Attachment governed"],
+    entityCounts,
+    redactionCount,
+    attachmentCount: result.results.length,
+    ...policyTelemetryFields(result.results.find((fileResult) => fileResult.policy?.triggered), "attachment"),
+    metadata: {
+      batchAction: result.batchAction,
+      actionList: actions.join(","),
+      blockedReasonCategories: blockedReasons.join(",") || null,
+      summary: result.summary
+    }
+  };
+}
+
+function policyTelemetryFields(source: SafeScanResult | GovernAttachmentsResult["results"][number] | undefined, contentType: "prompt" | "attachment") {
+  const policy = source?.policy;
+  if (!policy?.triggered || !policy.rule) return {};
+
+  return {
+    organizationId: "test-company",
+    employeeUserId: "browser-extension-user",
+    ruleId: policy.rule.id,
+    ruleKey: policy.rule.ruleKey,
+    ruleVersion: policy.rule.version,
+    policyBundleVersion: policy.bundleVersion,
+    policyAction: policy.policyAction,
+    policySeverity: policy.rule.severity,
+    aiProvider: "chatgpt",
+    destinationType: policy.rule.destinationType,
+    contentType,
+    detectedCategories: policy.detectedCategories
+  };
+}
+
+function riskLevelFromScore(score: number): GuardTelemetryPayload["riskLevel"] {
+  if (score >= 85) return "critical";
+  if (score >= 60) return "high";
+  if (score >= 35) return "medium";
+  return "low";
 }

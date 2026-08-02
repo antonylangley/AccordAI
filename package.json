@@ -8,10 +8,10 @@
     "lint": "next lint",
     "eval:redaction": "node scripts/evaluate-redaction.cjs",
     "eval:person": "node scripts/evaluate-person-detection.cjs",
-    "guard:dev": "pnpm --filter @accord/guard dev",
-    "guard:build": "pnpm --filter @accord/guard build",
-    "guard:typecheck": "pnpm --filter @accord/guard typecheck",
-    "guard:test": "pnpm --filter @accord/guard test"
+    "guard:dev": "npm --prefix extension run dev",
+    "guard:build": "npm --prefix extension run build",
+    "guard:typecheck": "npm --prefix extension run typecheck",
+    "guard:test": "npm --prefix extension run test"
   },
   "dependencies": {
     "@accord/governance-core": "workspace:*",

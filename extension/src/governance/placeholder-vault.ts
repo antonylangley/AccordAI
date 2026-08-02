@@ -7,6 +7,12 @@ type StoredVault = {
   updatedAt: number;
 };
 
+type StoredRecentVault = StoredVault & {
+  conversationKey: string;
+};
+
+const recentVaultMaxAgeMs = 10 * 60 * 1000;
+
 export class PlaceholderVault {
   async load(surface: AISurface, conversationKey: string): Promise<RedactionMap> {
     const key = storageKey(surface, conversationKey);
@@ -20,15 +26,34 @@ export class PlaceholderVault {
     if (!Object.keys(safeAdditions).length) return;
 
     const current = await this.load(surface, conversationKey);
+    const merged = {
+      ...current,
+      ...safeAdditions
+    };
+
     await storageSet({
       [storageKey(surface, conversationKey)]: {
-        redactionMap: {
-          ...current,
-          ...safeAdditions
-        },
+        redactionMap: merged,
         updatedAt: Date.now()
-      } satisfies StoredVault
+      } satisfies StoredVault,
+      [recentStorageKey(surface)]: {
+        conversationKey,
+        redactionMap: merged,
+        updatedAt: Date.now()
+      } satisfies StoredRecentVault
     });
+  }
+
+  async loadRecentDraft(surface: AISurface, conversationKey: string): Promise<RedactionMap> {
+    if (!conversationKey.startsWith("conversation:")) return {};
+
+    const key = recentStorageKey(surface);
+    const result = await storageGet(key);
+    const vault = result[key] as StoredRecentVault | undefined;
+    if (!vault?.redactionMap || !vault.conversationKey.startsWith("draft:")) return {};
+    if (Date.now() - vault.updatedAt > recentVaultMaxAgeMs) return {};
+
+    return vault.redactionMap;
   }
 
   async move({ surface, fromConversationKey, toConversationKey }: MoveVaultPayload) {
@@ -54,6 +79,10 @@ export class PlaceholderVault {
 
 export function storageKey(surface: AISurface, conversationKey: string) {
   return `accord.guard.vault.${surface}.${conversationKey.replace(/[^a-zA-Z0-9:_-]/g, "_")}`;
+}
+
+function recentStorageKey(surface: AISurface) {
+  return `accord.guard.vault.${surface}.recentDraft`;
 }
 
 function withoutSecrets(redactionMap: RedactionMap): RedactionMap {

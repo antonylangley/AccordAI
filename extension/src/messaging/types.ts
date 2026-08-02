@@ -9,6 +9,7 @@ import type {
 import type { AISurface } from "../adapters/types";
 import type { AttachmentExtractionKind } from "../attachments/policy";
 import type { PersonDetectionCoverage } from "../person-detection/person-detector";
+import type { AppliedPolicyDecision } from "../policy/types";
 
 export type SafeRiskFlag = {
   type: ChatFlagType;
@@ -36,6 +37,7 @@ export type SafeScanResult = {
   flags: SafeRiskFlag[];
   explanation: string;
   personDetection: PersonDetectionCoverage;
+  policy?: AppliedPolicyDecision;
   sanitizedText?: string;
 };
 
@@ -58,6 +60,41 @@ export type MoveVaultPayload = {
   surface: AISurface;
   fromConversationKey: string;
   toConversationKey: string;
+};
+
+export type GuardTelemetryEventType =
+  | "message_sent_to_ai"
+  | "message_blocked"
+  | "attachment_governed"
+  | "attachment_blocked"
+  | "assistant_response_rehydrated"
+  | "extension_error";
+
+export type GuardTelemetryPayload = {
+  eventType: GuardTelemetryEventType;
+  surface: AISurface;
+  conversationKey: string;
+  action?: string;
+  riskScore?: number;
+  riskLevel?: "low" | "medium" | "high" | "critical";
+  flags?: string[];
+  entityCounts?: EntityCountSummary;
+  redactionCount?: number;
+  attachmentCount?: number;
+  messageLengthBucket?: string;
+  metadata?: Record<string, string | number | boolean | null>;
+  organizationId?: string;
+  employeeUserId?: string;
+  ruleId?: string;
+  ruleKey?: string;
+  ruleVersion?: number;
+  policyBundleVersion?: number;
+  policyAction?: string;
+  policySeverity?: string;
+  aiProvider?: string;
+  destinationType?: string;
+  contentType?: string;
+  detectedCategories?: string[];
 };
 
 export type GuardAttachmentInput = {
@@ -118,6 +155,7 @@ export type GovernedAttachmentResult = {
   extractionKind?: AttachmentExtractionKind;
   extractionWarnings?: string[];
   extractedCharacterCount?: number;
+  policy?: AppliedPolicyDecision;
   sanitizedText?: string;
   telemetry: SafeAttachmentTelemetry;
 };
@@ -147,7 +185,8 @@ export type AccordGuardMessage =
   | { type: "accord.scanDraft"; payload: ScanDraftPayload }
   | { type: "accord.governAttachments"; payload: GovernAttachmentsPayload }
   | { type: "accord.rehydrateResponse"; payload: RehydrateResponsePayload }
-  | { type: "accord.moveVault"; payload: MoveVaultPayload };
+  | { type: "accord.moveVault"; payload: MoveVaultPayload }
+  | { type: "accord.recordTelemetry"; payload: GuardTelemetryPayload };
 
 export type AccordGuardResponse =
   | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult }

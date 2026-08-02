@@ -1,14 +1,22 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { riskCategories } from "@/lib/mock-data";
 
-export function RiskCategoryBars() {
+export type RiskCategoryChartPoint = {
+  name: string;
+  events: number;
+};
+
+export function RiskCategoryBars({ data }: { data: RiskCategoryChartPoint[] }) {
+  if (!data.some((item) => item.events > 0)) {
+    return <EmptyChartState label="No live risk categories yet." />;
+  }
+
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={riskCategories}
+          data={data}
           layout="vertical"
           margin={{ left: 78, right: 16, top: 8, bottom: 0 }}
         >
@@ -26,6 +34,14 @@ export function RiskCategoryBars() {
           <Bar dataKey="events" name="Events" fill="#4F6BFF" radius={[0, 7, 7, 0]} />
         </BarChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+function EmptyChartState({ label }: { label: string }) {
+  return (
+    <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-accord-border bg-accord-soft/60 text-sm text-accord-muted">
+      {label}
     </div>
   );
 }

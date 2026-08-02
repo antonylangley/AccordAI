@@ -38,10 +38,22 @@ const steps = [
 ];
 
 const privacyFeatures = [
-  ["Metadata by default", "Measure usage, providers, decisions, and risk without broad content retention."],
-  ["Redacted previews", "Show only the context reviewers need, with identifiers masked before routing."],
-  ["Policy exceptions", "Escalate risky requests with business justification and scoped review workflows."],
-  ["Audit trails", "Reconstruct decisions with clean evidence designed for compliance teams."]
+  [
+    "Sensitive values stay local",
+    "Original names, email addresses, phone numbers, account numbers, and other protected values remain on the employee's device during redaction and restoration."
+  ],
+  [
+    "No raw conversation logging",
+    "Accord does not store employee prompts, AI responses, detected values, replacement mappings, or conversation histories by default."
+  ],
+  [
+    "Minimum necessary telemetry",
+    "The administrator dashboard receives only what governance needs: when an intervention occurred, which policy matched, its risk level, the application involved, and the action taken."
+  ],
+  [
+    "No employee conversation archive",
+    "Administrators can understand organizational AI risk without reading what employees are saying to AI."
+  ]
 ];
 
 const useCases = [
@@ -217,10 +229,15 @@ export default function LandingPage() {
                 Privacy-first governance
               </p>
               <h2 className="mt-3 text-4xl font-semibold leading-tight text-accord-text">
-                Designed to govern AI without turning into surveillance.
+                Private by design, not private because we promise.
               </h2>
               <p className="mt-4 text-lg leading-8 text-accord-muted">
-                Accord keeps the evidence governance teams need while limiting broad raw-content retention.
+                Accord is built to minimize what it collects from the beginning. Sensitive values are detected in the
+                browser and replaced with stable placeholders before protected prompts reach the AI provider.
+              </p>
+              <p className="mt-4 text-lg leading-8 text-accord-muted">
+                When the response returns, Accord restores those values locally so employees still get useful answers
+                while admins receive only the governance metadata they need.
               </p>
               <div className="mt-8 overflow-hidden rounded-[1.75rem] border border-accord-border bg-white p-2 shadow-sm">
                 <Image
@@ -245,6 +262,11 @@ export default function LandingPage() {
                 </article>
               ))}
             </div>
+          </div>
+          <div className="mt-8 rounded-2xl border border-accord-border bg-white px-7 py-6 text-center" data-reveal>
+            <p className="text-lg font-semibold leading-relaxed text-accord-text">
+              Accord gives organizations visibility into AI risk without visibility into employees&apos; conversations.
+            </p>
           </div>
         </div>
       </section>

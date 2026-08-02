@@ -4,10 +4,12 @@ import { usePathname } from "next/navigation";
 import { ChatHoverNav } from "./chat-hover-nav";
 import { Sidebar } from "./sidebar";
 import { TopNav } from "./top-nav";
+import { cn } from "@/lib/utils";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const chatMode = pathname === "/chat";
+  const wideMode = pathname === "/policies";
 
   if (chatMode) {
     return (
@@ -24,7 +26,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="min-w-0 flex-1">
           <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 py-7 md:px-6 lg:px-8">{children}</main>
+          <main className={cn("mx-auto w-full px-4 py-7 md:px-6 lg:px-8", wideMode ? "max-w-[108rem]" : "max-w-7xl")}>
+            {children}
+          </main>
         </div>
       </div>
     </div>

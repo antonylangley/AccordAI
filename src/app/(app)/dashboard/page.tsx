@@ -1,4 +1,4 @@
-import { BrainCircuit, CircleDot, Database, LockKeyhole, ShieldCheck } from "lucide-react";
+import { BrainCircuit, CircleDot, Database, LockKeyhole, MessagesSquare, ShieldCheck, UploadCloud } from "lucide-react";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EventTable } from "@/components/ui/event-table";
 import { PageHeader } from "@/components/ui/page-header";
@@ -7,7 +7,6 @@ import { ProviderUsageChart } from "@/components/charts/provider-usage-chart";
 import { RiskCategoryBars } from "@/components/charts/risk-category-bars";
 import { RiskDistributionChart } from "@/components/charts/risk-distribution-chart";
 import { UsageLineChart } from "@/components/charts/usage-line-chart";
-import { governanceEvents } from "@/lib/mock-data";
 import { getAccordDatabaseSnapshot } from "@/lib/db/accord-store";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +14,17 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage() {
   const databaseSnapshot = await getAccordDatabaseSnapshot();
   const stats = databaseSnapshot.stats;
-  const recentEvents = databaseSnapshot.recentEvents.length ? databaseSnapshot.recentEvents.slice(0, 4) : governanceEvents.slice(0, 4);
+  const recentEvents = databaseSnapshot.recentEvents.slice(0, 4);
+  const riskTotal = databaseSnapshot.charts.riskDistribution.reduce((sum, item) => sum + item.count, 0);
+  const lowMediumCount = databaseSnapshot.charts.riskDistribution
+    .filter((item) => item.name === "Low" || item.name === "Medium")
+    .reduce((sum, item) => sum + item.count, 0);
+  const lowMediumPercent = riskTotal ? Math.round((lowMediumCount / riskTotal) * 100) : 0;
+  const postureCards = [
+    [`${lowMediumPercent}%`, "Low or medium risk", "Live governed events"],
+    ["0", "Raw content stores", "Tenant default remains disabled"],
+    [databaseSnapshot.extensionTelemetryEnabled ? "Live" : "Setup", "Telemetry source", "Chrome extension and dashboard"]
+  ];
   const memoryItems = databaseSnapshot.memory.length
     ? databaseSnapshot.memory
     : [
@@ -28,6 +37,12 @@ export default async function DashboardPage() {
           updatedAt: ""
         }
       ];
+  const extensionMetricCards = [
+    ["Messages sent to AI", databaseSnapshot.extensionMetrics.messagesSent, "Submitted through ChatGPT after Accord checks", MessagesSquare],
+    ["Messages blocked", databaseSnapshot.extensionMetrics.messagesBlocked, "Stopped before external AI submission", ShieldCheck],
+    ["Policy violations", databaseSnapshot.extensionMetrics.policyViolations, "Warn, redact, or block outcomes", LockKeyhole],
+    ["Governed uploads", databaseSnapshot.extensionMetrics.governedUploads, "Files replaced or blocked by the extension", UploadCloud]
+  ] as const;
 
   return (
     <div className="space-y-8">
@@ -52,11 +67,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          {[
-            ["92%", "Low or medium risk", "Requests cleared by policy"],
-            ["0", "Raw content stores", "Tenant default remains disabled"],
-            ["184ms", "Median scan time", "Pre-flight policy evaluation"]
-          ].map(([value, label, detail]) => (
+          {postureCards.map(([value, label, detail]) => (
             <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.055] p-4">
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-semibold">{value}</p>
@@ -101,6 +112,16 @@ export default async function DashboardPage() {
               <CircleDot className="h-3.5 w-3.5" aria-hidden="true" />
               {databaseSnapshot.databaseEnabled ? "Supabase connected" : "Supabase setup pending"}
             </span>
+            <span
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${
+                databaseSnapshot.extensionTelemetryEnabled
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700"
+              }`}
+            >
+              <CircleDot className="h-3.5 w-3.5" aria-hidden="true" />
+              {databaseSnapshot.extensionTelemetryEnabled ? "Extension telemetry active" : "Extension migration pending"}
+            </span>
             <span className="rounded-full border border-accord-border bg-accord-soft px-3 py-1 text-xs font-semibold text-slate-600">
               Raw content disabled
             </span>
@@ -125,18 +146,57 @@ export default async function DashboardPage() {
         </div>
       </section>
 
+      <section className="rounded-2xl border border-accord-border bg-white p-5 shadow-accord-panel">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-accord-violet">
+              Chrome extension telemetry
+            </p>
+            <h2 className="mt-2 text-xl font-semibold tracking-[-0.02em] text-accord-text">Test company activity</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+              Accord Guard reports governed ChatGPT activity through the server API into Supabase. Metrics are metadata
+              only: no raw prompts, raw responses, or source files.
+            </p>
+          </div>
+          <div className="rounded-full border border-accord-border bg-accord-soft px-3 py-1 text-xs font-semibold text-slate-600">
+            {databaseSnapshot.extensionMetrics.activeUsers} active extension user
+            {databaseSnapshot.extensionMetrics.activeUsers === 1 ? "" : "s"}
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {extensionMetricCards.map(([label, value, detail, Icon]) => (
+            <article key={label} className="rounded-2xl border border-accord-border bg-accord-soft/60 p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-semibold tracking-[-0.02em] text-accord-text">{value.toLocaleString("en-US")}</p>
+                <span className="rounded-xl bg-white p-2 text-accord-violet shadow-sm">
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </div>
+              <p className="mt-3 text-sm font-semibold text-accord-text">{label}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p>
+            </article>
+          ))}
+        </div>
+        <div className="mt-4 rounded-2xl border border-accord-border bg-white p-4 text-sm text-slate-600">
+          <span className="font-semibold text-accord-text">
+            {databaseSnapshot.extensionMetrics.protectedIdentifiers.toLocaleString("en-US")} protected identifiers
+          </span>{" "}
+          have been counted across extension-governed messages and uploads.
+        </div>
+      </section>
+
       <section className="grid gap-5 xl:grid-cols-2">
         <ChartCard title="AI usage over time" description="Requests routed through Accord by day.">
-          <UsageLineChart />
+          <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
         </ChartCard>
         <ChartCard title="Risk level distribution" description="Policy outcomes across all reviewed model calls.">
-          <RiskDistributionChart />
+          <RiskDistributionChart data={databaseSnapshot.charts.riskDistribution} />
         </ChartCard>
         <ChartCard title="Provider usage" description="Approved provider traffic for this tenant.">
-          <ProviderUsageChart />
+          <ProviderUsageChart data={databaseSnapshot.charts.providerUsage} />
         </ChartCard>
         <ChartCard title="Top risk categories" description="Flagged events grouped by policy category.">
-          <RiskCategoryBars />
+          <RiskCategoryBars data={databaseSnapshot.charts.riskCategories} />
         </ChartCard>
       </section>
 

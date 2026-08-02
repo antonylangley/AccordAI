@@ -9,13 +9,22 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { usageOverTime } from "@/lib/mock-data";
 
-export function UsageLineChart() {
+export type UsageLineChartPoint = {
+  day: string;
+  requests: number;
+  flagged: number;
+};
+
+export function UsageLineChart({ data }: { data: UsageLineChartPoint[] }) {
+  if (!data.some((item) => item.requests > 0 || item.flagged > 0)) {
+    return <EmptyChartState label="No live usage events yet." />;
+  }
+
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={usageOverTime} margin={{ left: -16, right: 10, top: 10, bottom: 0 }}>
+        <LineChart data={data} margin={{ left: -16, right: 10, top: 10, bottom: 0 }}>
           <CartesianGrid stroke="#E8EDF6" strokeDasharray="3 5" vertical={false} />
           <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 11 }} />
           <YAxis tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 11 }} />
@@ -41,6 +50,14 @@ export function UsageLineChart() {
           />
         </LineChart>
       </ResponsiveContainer>
+    </div>
+  );
+}
+
+function EmptyChartState({ label }: { label: string }) {
+  return (
+    <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-accord-border bg-accord-soft/60 text-sm text-accord-muted">
+      {label}
     </div>
   );
 }

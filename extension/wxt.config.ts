@@ -12,7 +12,7 @@ export default defineConfig({
       "128": "icons/accord-icon-128.png"
     },
     permissions: ["storage"],
-    host_permissions: ["https://chatgpt.com/*"],
+    host_permissions: ["https://chatgpt.com/*", "http://127.0.0.1:3000/*", "http://localhost:3000/*"],
     action: {
       default_title: "Accord Guard",
       default_icon: {

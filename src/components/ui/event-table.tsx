@@ -49,6 +49,13 @@ export function EventTable({ events, compact = false, selectedId, onSelect }: Ev
             </tr>
           </thead>
           <tbody className="divide-y divide-accord-border/70">
+            {!events.length ? (
+              <tr>
+                <td colSpan={compact ? 6 : 8} className="px-4 py-8 text-center text-sm text-accord-muted">
+                  No live governance events yet.
+                </td>
+              </tr>
+            ) : null}
             {events.map((event) => {
               const rowContent = compact ? (
                 <>

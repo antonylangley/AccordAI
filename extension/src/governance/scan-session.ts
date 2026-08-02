@@ -31,6 +31,9 @@ import type {
   ScanDraftPayload
 } from "../messaging/types";
 import { detectPersonCandidates, type PersonDetectionCoverage } from "../person-detection/person-detector";
+import { getActivePolicyBundle } from "../policy/bundle-client";
+import { evaluatePolicyBundle } from "../policy/evaluator";
+import type { AppliedPolicyDecision } from "../policy/types";
 import { PlaceholderVault } from "./placeholder-vault";
 
 const vault = new PlaceholderVault();
@@ -39,13 +42,18 @@ export async function scanDraft(payload: ScanDraftPayload): Promise<SafeScanResu
   const seedRedactionMap = await vault.load(payload.surface, payload.conversationKey);
   const { scan, personDetection } = await runGovernanceScan(payload.text, "preflight", payload.sensitivity || "Internal", seedRedactionMap);
   const stabilizedScan = applyConversationStableRedactions(payload.text, scan, seedRedactionMap);
-  const decision = decidePolicy(stabilizedScan);
+  const scannerDecision = decidePolicy(stabilizedScan);
+  const policy = await evaluateActivePolicy(stabilizedScan, {
+    contentType: "prompt",
+    sanitizedTextAvailable: stabilizedScan.redactedText !== payload.text && stabilizedScan.redactions.length > 0
+  });
+  const decision = mergeScannerAndPolicyDecision(scannerDecision, policy);
 
   if (payload.authoritative && decision.action !== "block") {
     await vault.merge(payload.surface, payload.conversationKey, stabilizedScan.redactionMap);
   }
 
-  return toSafeScanResult(stabilizedScan, decision, payload.includeSanitizedText, personDetection);
+  return toSafeScanResult(stabilizedScan, decision, payload.includeSanitizedText, personDetection, policy);
 }
 
 export async function governAttachmentBatch(payload: GovernAttachmentsPayload): Promise<GovernAttachmentsResult> {
@@ -92,7 +100,14 @@ export async function governAttachmentBatch(payload: GovernAttachmentsPayload): 
 
 export async function rehydrateAssistantText(payload: RehydrateResponsePayload): Promise<RehydrateSafeResult> {
   const redactionMap = await vault.load(payload.surface, payload.conversationKey);
-  const result = rehydrateResponse(payload.text, redactionMap);
+  let result = rehydrateResponse(payload.text, redactionMap);
+
+  if (result.replacedCount === 0 && result.unresolvedPlaceholderCount > 0) {
+    const recentDraftMap = await vault.loadRecentDraft(payload.surface, payload.conversationKey);
+    if (Object.keys(recentDraftMap).length) {
+      result = rehydrateResponse(payload.text, recentDraftMap);
+    }
+  }
 
   return {
     resolvedText: result.text,
@@ -239,11 +254,47 @@ async function governSingleAttachment(
   const contentScanResult = await runGovernanceScan(attachmentText, "attachment", payload.sensitivity || "Internal", filenameSeed);
   const contentScan = applyConversationStableRedactions(attachmentText, contentScanResult.scan, filenameSeed);
   const contentDecision = decidePolicy(contentScan);
+  const combinedFlags = [...filenameScan.scan.flags, ...contentScan.flags];
   const combinedEntities = [...filenameScan.scan.entities, ...contentScan.entities];
   const entityCounts = countEntities(combinedEntities);
   const redactionCount = new Set(combinedEntities.map((entity) => entity.id)).size;
   const combinedRisk = Math.max(filenameScan.scan.riskScore, contentScan.riskScore);
   const personDetection = mergePersonDetection(filenameScan.personDetection, contentScanResult.personDetection);
+  const policy = await evaluateActivePolicy(
+    {
+      ...contentScan,
+      flags: combinedFlags,
+      entities: combinedEntities,
+      entityCounts,
+      riskScore: combinedRisk
+    },
+    {
+      contentType: "attachment",
+      sanitizedTextAvailable: redactionCount > 0 && (contentScan.redactedText !== attachmentText || filenameScan.scan.redactedText !== filenameScan.sanitizedName),
+      redactionCount
+    }
+  );
+
+  if (policy.triggered && policy.executionAction === "block") {
+    return {
+      result: buildAttachmentResult({
+        ...base,
+        action: "blocked",
+        sanitizedName,
+        reason: policy.explanation,
+        riskScore: Math.max(combinedRisk, 70),
+        entityCounts,
+        redactionCount,
+        personDetection,
+        policy,
+        surface: payload.surface,
+        extractionKind: attachment.extractionKind,
+        extractionWarnings: attachment.extractionWarnings,
+        extractedCharacterCount: attachment.extractedCharacterCount,
+        blockedReasonCategory: "policy_block"
+      })
+    };
+  }
 
   if (filenameDecision.action === "block" || contentDecision.action === "block") {
     return {
@@ -258,6 +309,7 @@ async function governSingleAttachment(
         entityCounts,
         redactionCount,
         personDetection,
+        policy: policy.triggered ? policy : undefined,
         surface: payload.surface,
         extractionKind: attachment.extractionKind,
         extractionWarnings: attachment.extractionWarnings,
@@ -277,6 +329,7 @@ async function governSingleAttachment(
     entityCounts,
     redactionCount,
     personDetection,
+    policy: policy.triggered ? policy : undefined,
     surface: payload.surface,
     extractionKind: attachment.extractionKind,
     extractionWarnings: attachment.extractionWarnings,
@@ -544,7 +597,8 @@ function toSafeScanResult(
   scan: ChatScanResult,
   decision: ChatPolicyDecision,
   includeSanitizedText: boolean,
-  personDetection: PersonDetectionCoverage
+  personDetection: PersonDetectionCoverage,
+  policy?: AppliedPolicyDecision
 ): SafeScanResult {
   const detectedEntityCount = scan.redactions.length;
 
@@ -568,8 +622,9 @@ function toSafeScanResult(
       stage: flag.stage,
       evidence: flag.evidence
     })),
-    explanation: buildExplanation(decision, detectedEntityCount),
+    explanation: buildExplanation(decision, detectedEntityCount, policy),
     personDetection,
+    policy: policy?.triggered ? policy : undefined,
     sanitizedText: includeSanitizedText ? scan.redactedText : undefined
   };
 }
@@ -581,7 +636,66 @@ function riskLevel(score: number): SafeScanResult["riskLevel"] {
   return "low";
 }
 
-function buildExplanation(decision: ChatPolicyDecision, detectedEntityCount: number) {
+async function evaluateActivePolicy(
+  scan: ChatScanResult,
+  options: {
+    contentType: "prompt" | "attachment";
+    sanitizedTextAvailable: boolean;
+    redactionCount?: number;
+  }
+) {
+  const bundle = await getActivePolicyBundle();
+
+  return evaluatePolicyBundle(
+    bundle,
+    {
+      flags: scan.flags,
+      entityCounts: scan.entityCounts,
+      riskScore: scan.riskScore,
+      redactionCount: options.redactionCount ?? scan.redactions.length,
+      sanitizedTextAvailable: options.sanitizedTextAvailable
+    },
+    {
+      aiProvider: "chatgpt",
+      destinationType: "personal",
+      contentType: options.contentType,
+      userScope: "all",
+      departmentScope: "all"
+    }
+  );
+}
+
+function mergeScannerAndPolicyDecision(scannerDecision: ChatPolicyDecision, policy: AppliedPolicyDecision): ChatPolicyDecision {
+  if (!policy.triggered) return scannerDecision;
+
+  const policyAction = policy.executionAction === "redact" ? "redact" : policy.executionAction;
+  const action = higherPriorityAction(scannerDecision.action, policyAction);
+
+  return {
+    action,
+    reason: action === policyAction ? policy.explanation : scannerDecision.reason,
+    requiresReview: scannerDecision.requiresReview || policy.executionAction === "block" || policy.executionAction === "warn",
+    providerCalled: false,
+    redacted: scannerDecision.redacted || policy.executionAction === "redact"
+  };
+}
+
+function higherPriorityAction(first: ChatPolicyDecision["action"], second: ChatPolicyDecision["action"]): ChatPolicyDecision["action"] {
+  const weights: Record<ChatPolicyDecision["action"], number> = {
+    block: 4,
+    redact: 3,
+    warn: 2,
+    allow: 1
+  };
+
+  return weights[second] > weights[first] ? second : first;
+}
+
+function buildExplanation(decision: ChatPolicyDecision, detectedEntityCount: number, policy?: AppliedPolicyDecision) {
+  if (policy?.triggered && decision.action !== "allow") {
+    return policy.explanation;
+  }
+
   if (decision.action === "block") {
     return decision.reason || "Possible credential or unsafe instruction detected. This message cannot be sent.";
   }
