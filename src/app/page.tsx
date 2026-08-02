@@ -7,7 +7,6 @@ import {
   FileText,
   HeartPulse,
   Landmark,
-  LockKeyhole,
   MessageSquareText,
   Scale,
   ShieldCheck,
@@ -68,16 +67,12 @@ export default function LandingPage() {
   return (
     <main className="landing-page relative overflow-hidden bg-[#fbfcff] text-accord-text">
       <LandingScrollReveal />
-      <section className="landing-hero relative min-h-screen overflow-hidden border-b border-accord-border/70 bg-white">
+      <section className="landing-hero relative overflow-hidden border-b border-accord-border/70 bg-white">
         <div
           aria-hidden="true"
-          className="landing-hero-bg absolute inset-0 bg-white bg-[url('/accord-hero-visual.png')] bg-[length:100%_auto] bg-top bg-no-repeat"
+          className="landing-hero-bg absolute inset-0 bg-white bg-[url('/accord-hero-visual.png')] bg-[length:108%_auto] bg-[position:78%_68%] bg-no-repeat"
         />
         <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-35" />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.72)_35%,rgba(255,255,255,0.08)_72%),linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.02)_42%,rgba(251,252,255,0.88)_62%,#fbfcff_100%)]"
-        />
 
         <nav className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <AccordLogo lockup framed compact />
@@ -103,8 +98,8 @@ export default function LandingPage() {
           </Link>
         </nav>
 
-        <div className="relative z-10 mx-auto flex min-h-[calc(100vh-84px)] max-w-7xl items-center px-6 pb-20 pt-10">
-          <div className="landing-hero-copy max-w-3xl">
+        <div className="landing-hero-copy relative z-10 mx-auto flex max-w-7xl items-start px-6 pb-[220px] pt-3">
+          <div className="max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-accord-border bg-white/86 px-3 py-1.5 text-sm font-medium text-accord-primary shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               AI governance without surveillance
@@ -153,40 +148,40 @@ export default function LandingPage() {
 
       <section id="how" className="landing-section relative z-10 border-b border-accord-border/70 bg-white/94 px-6 py-24 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl">
-        <div className="mx-auto max-w-3xl text-center" data-reveal>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
-            How it works
-          </p>
-          <h2 className="mt-3 text-4xl font-semibold leading-tight text-accord-text">
-            A governance layer that fits between teams and models.
-          </h2>
-          <p className="mt-4 text-lg leading-8 text-accord-muted">
-            Accord makes the approved path feel easy for employees and evidence-ready for governance teams.
-          </p>
-        </div>
+          <div className="mx-auto max-w-3xl text-center" data-reveal>
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
+              How it works
+            </p>
+            <h2 className="mt-3 text-4xl font-semibold leading-tight text-accord-text">
+              A governance layer that fits between teams and models.
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-accord-muted">
+              Accord makes the approved path feel easy for employees and evidence-ready for governance teams.
+            </p>
+          </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-3">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            return (
-              <article
-                key={step.title}
-                className="scroll-card group relative overflow-hidden rounded-3xl border border-accord-border bg-white p-6 shadow-accord-panel"
-                data-reveal
-              >
-                <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-accord-primary/40 to-transparent" />
-                <div className="flex items-center justify-between">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f2ff] text-accord-primary ring-1 ring-accord-primary/10">
-                    <Icon className="h-5 w-5" aria-hidden="true" />
-                  </span>
-                  <span className="font-mono text-[11px] font-semibold text-accord-muted">0{index + 1}</span>
-                </div>
-                <h3 className="mt-8 text-lg font-semibold text-accord-text">{step.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-accord-muted">{step.description}</p>
-              </article>
-            );
-          })}
-        </div>
+          <div className="mt-12 grid gap-5 md:grid-cols-3">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <article
+                  key={step.title}
+                  className="scroll-card group relative overflow-hidden rounded-3xl border border-accord-border bg-white p-6 shadow-accord-panel"
+                  data-reveal
+                >
+                  <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-accord-primary/40 to-transparent" />
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f1f2ff] text-accord-primary ring-1 ring-accord-primary/10">
+                      <Icon className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <span className="font-mono text-[11px] font-semibold text-accord-muted">0{index + 1}</span>
+                  </div>
+                  <h3 className="mt-8 text-lg font-semibold text-accord-text">{step.title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-accord-muted">{step.description}</p>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -222,32 +217,18 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl rounded-[2rem] border border-accord-border bg-[linear-gradient(135deg,#ffffff_0%,#f8f9ff_60%,#eef2ff_100%)] p-6 shadow-accord-panel md:p-10">
           <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr]">
             <div data-reveal>
-              <div className="mb-5 inline-flex rounded-2xl bg-white p-3 text-accord-primary shadow-sm ring-1 ring-accord-border">
-                <LockKeyhole className="h-6 w-6" aria-hidden="true" />
-              </div>
               <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
                 Privacy-first governance
               </p>
               <h2 className="mt-3 text-4xl font-semibold leading-tight text-accord-text">
-                Private by design, not private because we promise.
+                Private by design—not private because we promise.
               </h2>
               <p className="mt-4 text-lg leading-8 text-accord-muted">
-                Accord is built to minimize what it collects from the beginning. Sensitive values are detected in the
-                browser and replaced with stable placeholders before protected prompts reach the AI provider.
+                Accord is designed to minimize the information it collects from the beginning. Sensitive values are
+                detected inside the browser and replaced with stable placeholders before a protected prompt reaches
+                the AI provider. When the response returns, Accord restores those values locally so the employee
+                still receives a useful result.
               </p>
-              <p className="mt-4 text-lg leading-8 text-accord-muted">
-                When the response returns, Accord restores those values locally so employees still get useful answers
-                while admins receive only the governance metadata they need.
-              </p>
-              <div className="mt-8 overflow-hidden rounded-[1.75rem] border border-accord-border bg-white p-2 shadow-sm">
-                <Image
-                  src="/accord-clay-mark.jpg"
-                  width={1024}
-                  height={1024}
-                  alt="Tactile Accord mark"
-                  className="aspect-[1.45/1] w-full rounded-[1.35rem] object-cover object-center"
-                />
-              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               {privacyFeatures.map(([title, detail]) => (
@@ -271,16 +252,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="use-cases" className="landing-section relative z-10 overflow-hidden bg-accord-night px-6 py-24 text-white">
-        <div className="absolute inset-0 dark-grid opacity-70" />
-        <div className="absolute right-[-10rem] top-[-10rem] h-80 w-80 rounded-full bg-accord-primary/20 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl">
+      <section id="use-cases" className="landing-section relative z-10 border-y border-accord-border bg-white px-6 py-24">
+        <div className="mx-auto max-w-7xl">
           <div className="max-w-2xl" data-reveal>
-            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-violet">
+            <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-accord-primary">
               Use cases
             </p>
-            <h2 className="mt-3 text-4xl font-semibold leading-tight">For teams with real governance obligations.</h2>
-            <p className="mt-4 text-lg leading-8 text-slate-400">
+            <h2 className="mt-3 text-4xl font-semibold leading-tight text-accord-text">For teams with real governance obligations.</h2>
+            <p className="mt-4 text-lg leading-8 text-accord-muted">
               Accord gives regulated and data-sensitive teams a safer default path for AI adoption.
             </p>
           </div>
@@ -289,14 +268,14 @@ export default function LandingPage() {
             {useCases.map(([label, detail, Icon]) => (
               <article
                 key={label as string}
-                className="scroll-card rounded-3xl border border-white/10 bg-white/[0.055] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.16)] backdrop-blur"
+                className="scroll-card rounded-3xl border border-accord-border bg-white p-5 shadow-accord-panel"
                 data-reveal
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-accord-violet ring-1 ring-white/10">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#f1f2ff] text-accord-primary">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </div>
-                <h3 className="mt-5 font-semibold text-white">{label as string}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{detail as string}</p>
+                <h3 className="mt-5 font-semibold text-accord-text">{label as string}</h3>
+                <p className="mt-3 text-sm leading-6 text-accord-muted">{detail as string}</p>
               </article>
             ))}
           </div>
