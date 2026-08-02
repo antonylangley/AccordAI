@@ -21,11 +21,11 @@ export function LandingScrollReveal() {
       }
     });
 
-    root.classList.add("scroll-reveal-ready");
+    root.classList.add("scroll-reveal-ready", "landing-scrollbar-hidden");
 
     if (!("IntersectionObserver" in window)) {
       elements.forEach((element) => element.classList.add("is-visible"));
-      return () => root.classList.remove("scroll-reveal-ready");
+      return () => root.classList.remove("scroll-reveal-ready", "landing-scrollbar-hidden");
     }
 
     const observer = new IntersectionObserver(
@@ -54,7 +54,7 @@ export function LandingScrollReveal() {
 
     return () => {
       observer.disconnect();
-      root.classList.remove("scroll-reveal-ready");
+      root.classList.remove("scroll-reveal-ready", "landing-scrollbar-hidden");
     };
   }, []);
 

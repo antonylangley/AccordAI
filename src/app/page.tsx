@@ -67,10 +67,10 @@ export default function LandingPage() {
   return (
     <main className="landing-page relative overflow-hidden bg-[#fbfcff] text-accord-text">
       <LandingScrollReveal />
-      <section className="landing-hero relative overflow-hidden border-b border-accord-border/70 bg-white">
+      <section className="landing-hero relative min-h-[112vh] overflow-hidden border-b border-accord-border/70 bg-white">
         <div
           aria-hidden="true"
-          className="landing-hero-bg absolute inset-0 bg-white bg-[url('/accord-hero-visual.png')] bg-[length:108%_auto] bg-[position:78%_68%] bg-no-repeat"
+          className="landing-hero-bg absolute inset-0 bg-white bg-[url('/accord-hero-visual-people-2x.png')] bg-[length:2172px_auto] bg-[position:center_232px] bg-no-repeat"
         />
         <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-35" />
 
@@ -89,6 +89,9 @@ export default function LandingPage() {
             <a href="#use-cases" className="transition hover:text-accord-text">
               Use cases
             </a>
+            <Link href="/contact" className="transition hover:text-accord-text">
+              Contact
+            </Link>
           </div>
           <Link
             href="/dashboard"
@@ -98,7 +101,7 @@ export default function LandingPage() {
           </Link>
         </nav>
 
-        <div className="landing-hero-copy relative z-10 mx-auto flex max-w-7xl items-start px-6 pb-[220px] pt-3">
+        <div className="landing-hero-copy relative z-10 mx-auto flex max-w-7xl items-start px-6 pb-[340px] pt-3">
           <div className="max-w-3xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-accord-border bg-white/86 px-3 py-1.5 text-sm font-medium text-accord-primary shadow-sm backdrop-blur">
               <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -124,6 +127,12 @@ export default function LandingPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-accord-border bg-white/88 px-5 py-3 text-sm font-semibold text-accord-text shadow-sm backdrop-blur transition hover:border-accord-primary/30"
               >
                 Try governed chat
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-accord-border bg-white/72 px-5 py-3 text-sm font-semibold text-accord-muted shadow-sm backdrop-blur transition hover:border-accord-primary/30 hover:text-accord-text"
+              >
+                Book a demo
               </Link>
             </div>
             <div className="mt-8 grid max-w-xl grid-cols-3 gap-3 text-sm">
@@ -301,13 +310,19 @@ export default function LandingPage() {
             Start with a control plane that employees can use, compliance can trust, and admins can audit without
             storing raw conversations by default.
           </p>
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
-              href="/dashboard"
+              href="/contact"
               className="inline-flex items-center gap-2 rounded-xl bg-accord-night px-5 py-3 text-sm font-semibold text-white shadow-accord-soft transition hover:bg-accord-elevated"
             >
-              Open Accord
+              Book a demo
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-accord-border bg-white px-5 py-3 text-sm font-semibold text-accord-text shadow-sm transition hover:border-accord-primary/30"
+            >
+              Open Accord
             </Link>
           </div>
         </div>

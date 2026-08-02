@@ -23,6 +23,18 @@ html {
   scroll-padding-top: 5rem;
 }
 
+html.landing-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html.landing-scrollbar-hidden::-webkit-scrollbar,
+html.landing-scrollbar-hidden body::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
+}
+
 * {
   box-sizing: border-box;
 }
