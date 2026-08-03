@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const chatMode = pathname === "/chat";
-  const wideMode = pathname === "/policies";
+  const wideMode = pathname === "/policies" || pathname === "/dashboard";
 
   if (chatMode) {
     return (

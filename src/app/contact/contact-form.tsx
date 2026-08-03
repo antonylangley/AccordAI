@@ -35,7 +35,7 @@ export function ContactForm() {
       .join("\n");
 
     window.location.href = `mailto:${recipientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    setStatus(`Opening your email app with ${recipientEmail} as the recipient.`);
+    setStatus("Your demo request is ready in your email app.");
   }
 
   return (
@@ -111,9 +111,7 @@ export function ContactForm() {
       </label>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm leading-6 text-accord-muted">
-          Sends to <span className="font-semibold text-accord-text">{recipientEmail}</span>.
-        </p>
+        <p className="text-sm leading-6 text-accord-muted">Your request opens as a prepared email so you can review it before sending.</p>
         <button
           type="submit"
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-accord-night px-5 py-3 text-sm font-semibold text-white shadow-accord-soft transition hover:bg-accord-elevated"

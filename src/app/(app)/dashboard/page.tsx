@@ -1,7 +1,6 @@
 import { BrainCircuit, CircleDot, Database, LockKeyhole, MessagesSquare, ShieldCheck, UploadCloud } from "lucide-react";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EventTable } from "@/components/ui/event-table";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { ProviderUsageChart } from "@/components/charts/provider-usage-chart";
 import { RiskCategoryBars } from "@/components/charts/risk-category-bars";
@@ -45,10 +44,11 @@ export default async function DashboardPage() {
   ] as const;
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Overview"
-        description="Aggregate AI usage, policy events, and audit-ready metadata for Northstar Financial. Raw content storage remains disabled."
+    <div className="space-y-7">
+      <OverviewHeader
+        databaseEnabled={databaseSnapshot.databaseEnabled}
+        extensionTelemetryEnabled={databaseSnapshot.extensionTelemetryEnabled}
+        activeUsers={databaseSnapshot.extensionMetrics.activeUsers}
       />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -57,13 +57,13 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-4 rounded-2xl border border-accord-border bg-accord-night p-5 text-white shadow-accord-panel lg:grid-cols-[1fr_1.4fr]">
+      <section className="grid gap-8 rounded-[1.5rem] border border-accord-border bg-accord-night p-7 text-white shadow-accord-panel xl:grid-cols-[minmax(0,1fr)_minmax(560px,1.35fr)] xl:items-start">
         <div>
           <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-accord-violet">Policy posture</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em]">Governance health is stable.</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">
-            Accord is routing approved model usage with metadata-first logging, redacted evidence, and no broad
-            employee content retention.
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em]">Governance health is stable.</h2>
+          <p className="mt-3 max-w-4xl text-[15px] leading-7 text-slate-300">
+            Accord is collecting policy metadata from governed browser activity while keeping raw prompts, raw
+            responses, and source files out of dashboard storage by default.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
@@ -201,7 +201,7 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-accord-text">Recent flagged activity</h2>
             <p className="mt-1 text-sm text-slate-500">
@@ -211,6 +211,63 @@ export default async function DashboardPage() {
         </div>
         <EventTable events={recentEvents} compact />
       </section>
+    </div>
+  );
+}
+
+function OverviewHeader({
+  databaseEnabled,
+  extensionTelemetryEnabled,
+  activeUsers
+}: {
+  databaseEnabled: boolean;
+  extensionTelemetryEnabled: boolean;
+  activeUsers: number;
+}) {
+  return (
+    <header className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.9fr)] 2xl:items-end">
+      <div>
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-accord-primary">
+          Northstar Financial / Governance overview
+        </p>
+        <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-accord-text">Overview</h1>
+        <p className="mt-3 max-w-4xl text-base leading-7 text-accord-muted">
+          Monitor Accord Guard activity, policy outcomes, extension telemetry, and audit-ready metadata without storing
+          raw employee conversations.
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <OverviewHeaderStatus label="Database" value={databaseEnabled ? "Supabase live" : "Setup pending"} tone={databaseEnabled ? "success" : "warning"} />
+        <OverviewHeaderStatus
+          label="Telemetry"
+          value={extensionTelemetryEnabled ? "Extension active" : "Migration pending"}
+          tone={extensionTelemetryEnabled ? "success" : "warning"}
+        />
+        <OverviewHeaderStatus label="Users" value={`${activeUsers} active`} tone={activeUsers ? "success" : "default"} />
+      </div>
+    </header>
+  );
+}
+
+function OverviewHeaderStatus({
+  label,
+  value,
+  tone = "default"
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "success" | "warning";
+}) {
+  const dotClass = tone === "success" ? "bg-emerald-400" : tone === "warning" ? "bg-amber-400" : "bg-accord-primary";
+
+  return (
+    <div className="rounded-2xl border border-accord-border bg-white/80 px-4 py-3 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-slate-400">{label}</p>
+      <div className="mt-2 flex items-center gap-2">
+        <span className={`h-2 w-2 rounded-full ${dotClass}`} />
+        <p className="text-sm font-semibold text-accord-text">{value}</p>
+      </div>
     </div>
   );
 }

@@ -6,9 +6,9 @@ import { ContactForm } from "./contact-form";
 export const dynamic = "force-dynamic";
 
 const highlights = [
-  "Chrome extension governance for ChatGPT and approved AI tools",
-  "Supabase-backed telemetry without raw prompt or response storage",
-  "Policy bundles that admins can publish and Accord Guard can enforce"
+  "AI tools employees already use",
+  "Company policies turned into enforceable rules",
+  "Privacy-preserving administrator visibility"
 ];
 
 export default function ContactPage() {
@@ -46,11 +46,11 @@ export default function ContactPage() {
             Book a demo
           </div>
           <h1 className="mt-6 max-w-2xl text-5xl font-semibold leading-[1.04] text-accord-text md:text-6xl">
-            See how Accord governs AI without watching every conversation.
+            See how Accord turns policy into protection.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-accord-muted">
-            Send a note and we&apos;ll route it straight to Antony. The demo can focus on the browser extension,
-            dashboard telemetry, policy authoring, or the Supabase-backed governance loop.
+            Tell us about your organization&apos;s AI tools, policies, and governance goals. We&apos;ll tailor the
+            demonstration to your workflow.
           </p>
 
           <div className="mt-8 space-y-3">
@@ -71,7 +71,7 @@ export default function ContactPage() {
                 <p className="font-semibold text-accord-text">Privacy-first by default</p>
                 <p className="mt-1 text-sm leading-6 text-accord-muted">
                   The form sends basic contact details only. Accord&apos;s product principle still holds: governance
-                  metadata, redacted previews, and no raw AI conversation storage by default.
+                  metadata by default, local sensitive-data protection, and no raw AI conversation storage by default.
                 </p>
               </div>
             </div>
