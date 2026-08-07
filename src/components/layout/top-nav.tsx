@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Bell, ChevronDown, Command, Search } from "lucide-react";
 
 export function TopNav() {
@@ -20,14 +21,14 @@ export function TopNav() {
             </span>
           </div>
         </div>
-        <button
-          type="button"
+        <Link
+          href="/settings"
           className="hidden h-9 items-center gap-2 rounded-xl border border-accord-border bg-white/80 px-3 text-sm font-medium text-accord-text shadow-sm md:flex"
-          aria-label="Current tenant Northstar Financial"
+          aria-label="Current workspace settings"
         >
-          Northstar Financial
+          Workspace
           <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden="true" />
-        </button>
+        </Link>
         <button
           type="button"
           className="rounded-xl border border-accord-border bg-white/80 p-2 text-accord-muted shadow-sm"
@@ -35,13 +36,13 @@ export function TopNav() {
         >
           <Bell className="h-4 w-4" aria-hidden="true" />
         </button>
-        <button
-          type="button"
+        <Link
+          href="/login"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-accord-primary to-accord-blue text-xs font-semibold text-white shadow-accord-glow"
-          aria-label="User menu"
+          aria-label="Sign in or manage account"
         >
-          NF
-        </button>
+          A
+        </Link>
       </div>
     </header>
   );

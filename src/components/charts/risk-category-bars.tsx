@@ -18,20 +18,26 @@ export function RiskCategoryBars({ data }: { data: RiskCategoryChartPoint[] }) {
         <BarChart
           data={data}
           layout="vertical"
-          margin={{ left: 78, right: 16, top: 8, bottom: 0 }}
+          margin={{ left: 74, right: 18, top: 12, bottom: 0 }}
         >
-          <CartesianGrid stroke="#E8EDF6" strokeDasharray="3 5" horizontal={false} />
-          <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 11 }} />
+          <defs>
+            <linearGradient id="accordRiskBars" x1="0" x2="1" y1="0" y2="0">
+              <stop offset="0%" stopColor="#625BFF" />
+              <stop offset="100%" stopColor="#8B7CFF" />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="#E8EDF6" strokeDasharray="4 7" horizontal={false} />
+          <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} allowDecimals={false} />
           <YAxis
             dataKey="name"
             type="category"
             tickLine={false}
             axisLine={false}
-            tick={{ fill: "#64748B", fontSize: 11 }}
+            tick={{ fill: "#64748B", fontSize: 12 }}
             width={110}
           />
-          <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E3E8F2", boxShadow: "0 12px 32px rgba(7,18,37,0.08)" }} />
-          <Bar dataKey="events" name="Events" fill="#4F6BFF" radius={[0, 7, 7, 0]} />
+          <Tooltip contentStyle={{ borderRadius: 16, border: "1px solid #E3E8F2", boxShadow: "0 18px 42px rgba(7,18,37,0.12)" }} />
+          <Bar dataKey="events" name="Events" fill="url(#accordRiskBars)" radius={[0, 10, 10, 0]} barSize={32} />
         </BarChart>
       </ResponsiveContainer>
     </div>

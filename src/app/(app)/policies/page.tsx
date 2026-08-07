@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { Archive, BadgeCheck, Clock3, FileText, PencilLine, Plus, RotateCcw, Trash2, UploadCloud } from "lucide-react";
+import { Archive, BadgeCheck, ChevronDown, Clock3, FileText, PencilLine, Plus, RotateCcw, Trash2, UploadCloud } from "lucide-react";
 import {
   createPolicyRuleFromForm,
   deletePolicyRule,
@@ -12,12 +12,13 @@ import {
 } from "@/lib/db/accord-store";
 import { cn } from "@/lib/utils";
 import { PolicyImportPanel } from "./policy-import-panel";
-
-const companySlug = "test-company";
+import { getAccordOrganizationContext } from "@/lib/auth/organization";
 
 export const dynamic = "force-dynamic";
 
 export default async function PoliciesPage() {
+  const organization = await getAccordOrganizationContext({ autoCreate: true });
+  const companySlug = organization.companySlug;
   const snapshot = await getPolicyAdminSnapshot(companySlug);
   const draftRules = snapshot.rules.filter((rule) => rule.status === "draft");
   const activeApprovedRules = snapshot.rules.filter((rule) => rule.status === "approved" && rule.active);
@@ -30,55 +31,22 @@ export default async function PoliciesPage() {
   const archivedRules = snapshot.rules.filter((rule) => rule.status === "archived");
 
   return (
-    <div className="space-y-7">
-      <PolicyHeader latestBundleVersion={snapshot.latestBundle?.version} pendingPublishCount={pendingPublishCount} />
+    <div className="app-geist space-y-7">
+      <PolicyHeader companyName={organization.companyName} latestBundleVersion={snapshot.latestBundle?.version} pendingPublishCount={pendingPublishCount} />
 
-      <section className="rounded-[1.5rem] border border-accord-border bg-accord-night p-7 text-white shadow-accord-panel">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-start">
-          <div>
-            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-accord-violet">Policy enforcement loop</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white">
-              {snapshot.latestBundle ? `Published bundle v${snapshot.latestBundle.version}` : "No published bundle yet"}
-            </h2>
-            <p className="mt-3 max-w-5xl text-[15px] leading-7 text-slate-300">
-              Approved rules are packaged into a signed policy bundle. The extension downloads the published bundle, caches it locally, and records only rule metadata when a decision is applied.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-            <p className="text-sm font-semibold text-white">Current deployment</p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              {pendingPublishCount
-                ? `${pendingPublishCount} policy change${pendingPublishCount === 1 ? "" : "s"} waiting for the next bundle.`
-                : "Policy bundle is current for Accord Guard."}
-            </p>
-            {snapshot.canMutate ? (
-              <form action={publishBundleAction} className="mt-4">
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white px-4 py-3 text-sm font-semibold text-accord-night shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
-                >
-                  <UploadCloud className="h-4 w-4" aria-hidden="true" />
-                  Publish bundle
-                </button>
-              </form>
-            ) : (
-              <div className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold text-slate-200">
-                <BadgeCheck className="h-4 w-4 text-emerald-300" aria-hidden="true" />
-                Bundle active
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <PolicyCount label="Draft" value={draftRules.length} />
-          <PolicyCount label="Pending publish" value={pendingPublishCount} />
-          <PolicyCount label="Published rules" value={publishedApprovedRules.length} />
-          <PolicyCount label="Previous versions" value={previousVersionRules.length} />
-          <PolicyCount label="Bundle rules" value={snapshot.latestBundle?.ruleCount || 0} />
-        </div>
-      </section>
+      <PolicyCommandPanel
+        companySlug={companySlug}
+        canMutate={snapshot.canMutate}
+        latestBundleVersion={snapshot.latestBundle?.version}
+        pendingPublishCount={pendingPublishCount}
+        counts={[
+          { label: "Draft", value: draftRules.length, detail: "Unapproved rules" },
+          { label: "Pending", value: pendingPublishCount, detail: "Need publish" },
+          { label: "Published", value: publishedApprovedRules.length, detail: "Active in Guard" },
+          { label: "Previous", value: previousVersionRules.length, detail: "Review only" },
+          { label: "Bundle rules", value: snapshot.latestBundle?.ruleCount || 0, detail: "Last shipped" }
+        ]}
+      />
 
       {pendingPublishCount ? (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-800 shadow-sm">
@@ -95,8 +63,8 @@ export default async function PoliciesPage() {
         </section>
       ) : null}
 
-      <section className="grid items-start gap-6 2xl:grid-cols-[minmax(820px,1fr)_minmax(380px,0.42fr)]">
-        <PolicyRuleForm disabled={!snapshot.canMutate} />
+      <section className="grid items-start gap-6 2xl:grid-cols-[minmax(760px,1.25fr)_minmax(390px,0.5fr)]">
+        <PolicyRuleForm disabled={!snapshot.canMutate} companySlug={companySlug} />
 
         <div className="space-y-6">
           <RuleBucket
@@ -110,16 +78,18 @@ export default async function PoliciesPage() {
         </div>
       </section>
 
-      <RuleBucket
-        title="Published approved rules"
-        description="These active rules are included in the current Accord Guard bundle."
-        emptyLabel="No rules in the current published bundle yet."
-        rules={publishedApprovedRules}
-        actionsEnabled={snapshot.canMutate}
-      />
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+        <RuleBucket
+          title="Published rules"
+          description="Active controls included in the current Accord Guard bundle."
+          emptyLabel="No rules in the current published bundle yet."
+          rules={publishedApprovedRules}
+          actionsEnabled={snapshot.canMutate}
+        />
+        <RuleBucket title="Draft rules" emptyLabel="No draft rules yet." rules={draftRules} editable actionsEnabled={snapshot.canMutate} />
+      </section>
 
       <section className="space-y-5">
-        <RuleBucket title="Draft rules" emptyLabel="No draft rules yet." rules={draftRules} editable actionsEnabled={snapshot.canMutate} />
         <RuleBucket
           title="Previous versions"
           description="Older approved versions stay visible for review but are not included in new bundles."
@@ -142,7 +112,7 @@ export default async function PoliciesPage() {
 
 async function createRuleAction(formData: FormData) {
   "use server";
-  await createPolicyRuleFromForm(formData, companySlug);
+  await createPolicyRuleFromForm(formData, companySlugFromForm(formData));
   revalidatePath("/policies");
 }
 
@@ -188,26 +158,38 @@ async function deleteRuleAction(formData: FormData) {
   revalidatePath("/policies");
 }
 
-async function publishBundleAction() {
+async function publishBundleAction(formData: FormData) {
   "use server";
-  await publishPolicyBundle(companySlug);
+  await publishPolicyBundle(companySlugFromForm(formData));
   revalidatePath("/policies");
 }
 
+function companySlugFromForm(formData: FormData) {
+  return (
+    String(formData.get("companySlug") || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80) || "test-company"
+  );
+}
+
 function PolicyHeader({
+  companyName,
   latestBundleVersion,
   pendingPublishCount
 }: {
+  companyName: string;
   latestBundleVersion?: number;
   pendingPublishCount: number;
 }) {
   return (
     <header className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,0.9fr)] 2xl:items-end">
       <div>
-        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-accord-primary">Northstar Financial / Policy authoring</p>
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-accord-primary">{companyName} / Policy authoring</p>
         <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-accord-text">Policies</h1>
         <p className="mt-3 max-w-4xl text-base leading-7 text-accord-muted">
-          Define the rules Accord Guard enforces in browser mode: approve policy logic, publish bundles, and keep an audit-ready history without storing raw prompts.
+          Turn policy documents into enforceable browser controls for Accord Guard.
         </p>
       </div>
 
@@ -217,6 +199,77 @@ function PolicyHeader({
         <HeaderStatus label="Changes" value={pendingPublishCount ? `${pendingPublishCount} pending` : "Current"} tone={pendingPublishCount ? "warning" : "success"} />
       </div>
     </header>
+  );
+}
+
+function PolicyCommandPanel({
+  companySlug,
+  canMutate,
+  latestBundleVersion,
+  pendingPublishCount,
+  counts
+}: {
+  companySlug: string;
+  canMutate: boolean;
+  latestBundleVersion?: number;
+  pendingPublishCount: number;
+  counts: Array<{ label: string; value: number; detail: string }>;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[1.6rem] border border-accord-border bg-white shadow-accord-panel">
+      <div className="grid gap-6 border-b border-accord-border bg-gradient-to-br from-white via-white to-[#f3f4ff] p-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.34fr)] xl:items-center">
+        <div>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-accord-primary">Current Guard bundle</p>
+          <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-accord-text">
+            {latestBundleVersion ? `Bundle v${latestBundleVersion}` : "No bundle published"}
+          </h2>
+          <p className="mt-3 max-w-4xl text-[15px] leading-7 text-accord-muted">
+            Approved rules ship as a compact bundle for the extension. The dashboard stores rule metadata and bundle history, not raw prompts.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-accord-border bg-white/85 p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-accord-text">Deployment</p>
+              <p className="mt-1 text-sm leading-6 text-accord-muted">
+                {pendingPublishCount ? `${pendingPublishCount} change${pendingPublishCount === 1 ? "" : "s"} waiting.` : "Current for Accord Guard."}
+              </p>
+            </div>
+            <span
+              className={cn(
+                "mt-1 h-2.5 w-2.5 rounded-full shadow-[0_0_18px_rgba(98,91,255,0.55)]",
+                pendingPublishCount ? "bg-amber-400" : "bg-accord-primary"
+              )}
+            />
+          </div>
+
+          {canMutate ? (
+            <form action={publishBundleAction} className="mt-4">
+              <input type="hidden" name="companySlug" value={companySlug} />
+              <button
+                type="submit"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accord-night px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5"
+              >
+                <UploadCloud className="h-4 w-4" aria-hidden="true" />
+                Publish bundle
+              </button>
+            </form>
+          ) : (
+            <div className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#f1f2ff] px-4 py-3 text-sm font-semibold text-accord-primary">
+              <BadgeCheck className="h-4 w-4" aria-hidden="true" />
+              Bundle active
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
+        {counts.map((count) => (
+          <PolicyCount key={count.label} {...count} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -239,37 +292,42 @@ function HeaderStatus({ label, value, tone = "default" }: { label: string; value
   );
 }
 
-function PolicyCount({ label, value }: { label: string; value: number }) {
+function PolicyCount({ label, value, detail }: { label: string; value: number; detail: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4">
-      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-slate-400">{label}</p>
-      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-white">{value}</p>
+    <div className="rounded-2xl border border-accord-border bg-accord-soft/70 px-5 py-4">
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-accord-muted">{label}</p>
+      <p className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-accord-text">{value}</p>
+      <p className="mt-2 text-xs font-medium text-accord-muted">{detail}</p>
     </div>
   );
 }
 
-function PolicyRuleForm({ disabled }: { disabled: boolean }) {
+function PolicyRuleForm({ disabled, companySlug }: { disabled: boolean; companySlug: string }) {
   if (disabled) return <PolicyAuthoringSetup />;
 
   return (
     <section className="rounded-[1.6rem] border border-accord-border bg-white/95 p-7 shadow-accord-panel 2xl:p-8">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_240px] xl:items-start">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
         <div className="flex items-start gap-4">
           <div className="rounded-2xl bg-[#f1f2ff] p-3 text-accord-primary">
             <Plus className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
             <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.13em] text-accord-primary">Policy authoring</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-accord-text">Create policy rule</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em] text-accord-text">Create rules</h2>
             <p className="mt-2 max-w-3xl text-base leading-7 text-accord-muted">
-              New rules get their own key from the rule name. Type an existing key only when you intentionally want to create a new version.
+              Import an existing policy document or write one control directly. Everything starts as a draft.
             </p>
           </div>
         </div>
 
         <div className="rounded-2xl border border-accord-border bg-accord-mist p-4">
           <p className="text-sm font-semibold text-accord-text">Authoring flow</p>
-          <p className="mt-2 text-sm leading-6 text-accord-muted">Save draft, approve, then publish the bundle when the set is ready.</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-accord-muted">
+            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-accord-border">Draft</span>
+            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-accord-border">Approve</span>
+            <span className="rounded-full bg-white px-2.5 py-1 ring-1 ring-accord-border">Publish</span>
+          </div>
         </div>
       </div>
 
@@ -280,13 +338,14 @@ function PolicyRuleForm({ disabled }: { disabled: boolean }) {
       <div className="mt-8 border-t border-accord-border pt-7">
         <div>
           <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.13em] text-slate-400">Manual entry</p>
-          <h3 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-accord-text">Write a rule directly</h3>
+          <h3 className="mt-2 text-2xl font-semibold tracking-[-0.035em] text-accord-text">Manual rule</h3>
           <p className="mt-2 max-w-3xl text-[15px] leading-7 text-accord-muted">
-            Use this when you already know the policy control. Imported rules and manual rules both save as drafts first.
+            Use this when the policy control is already clear.
           </p>
         </div>
 
         <form action={createRuleAction} className="mt-6 grid gap-6">
+          <input type="hidden" name="companySlug" value={companySlug} />
           <PolicyFields />
           <button
             type="submit"
@@ -483,18 +542,20 @@ function RuleBucket({
   actionsEnabled?: boolean;
 }) {
   return (
-    <section className="rounded-[1.35rem] border border-accord-border bg-white/95 p-6 shadow-accord-panel">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold tracking-[-0.02em] text-accord-text">{title}</h2>
-        <span className="rounded-full bg-[#f1f2ff] px-3 py-1 text-xs font-semibold text-accord-primary">{rules.length}</span>
+    <section className="overflow-hidden rounded-[1.35rem] border border-accord-border bg-white/95 shadow-accord-panel">
+      <div className="flex items-start justify-between gap-4 border-b border-accord-border bg-gradient-to-r from-white to-[#f4f2ff] px-6 py-5">
+        <div>
+          <h2 className="text-xl font-semibold tracking-[-0.02em] text-accord-text">{title}</h2>
+          {description ? <p className="mt-2 text-[15px] leading-6 text-accord-muted">{description}</p> : null}
+        </div>
+        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-accord-primary shadow-sm ring-1 ring-accord-border">{rules.length}</span>
       </div>
-      {description ? <p className="mt-2 text-[15px] leading-6 text-accord-muted">{description}</p> : null}
 
-      <div className="mt-5 grid gap-4">
+      <div className="grid gap-4 p-5">
         {rules.length ? (
           rules.map((rule) => <PolicyRuleCard key={rule.id} rule={rule} editable={editable && actionsEnabled} actionsEnabled={actionsEnabled} />)
         ) : (
-          <p className="rounded-2xl border border-dashed border-accord-border bg-accord-mist p-5 text-sm text-accord-muted">
+          <p className="rounded-2xl border border-dashed border-accord-border bg-accord-mist/80 p-5 text-sm text-accord-muted">
             {emptyLabel}
           </p>
         )}
@@ -505,80 +566,137 @@ function RuleBucket({
 
 function PolicyRuleCard({ rule, editable, actionsEnabled }: { rule: AccordPolicyRule; editable: boolean; actionsEnabled: boolean }) {
   return (
-    <article className="rounded-2xl border border-accord-border bg-white p-5 shadow-sm">
-      <div className="grid gap-5 xl:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.25fr)_auto] xl:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={rule.status} />
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">rule v{rule.version}</span>
-            {rule.status === "approved" ? (
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-xs font-semibold",
-                  rule.publishedInLatestBundle && "bg-emerald-50 text-emerald-700",
-                  rule.active && !rule.publishedInLatestBundle && "bg-amber-50 text-amber-700",
-                  !rule.active && "bg-slate-100 text-slate-500"
-                )}
-              >
-                {rule.publishedInLatestBundle
-                  ? `published in bundle v${rule.publishedInBundleVersion}`
-                  : rule.active
-                    ? "pending publish"
-                    : "previous rule version"}
-              </span>
-            ) : null}
-          </div>
+    <details className="group w-full max-w-[30rem] rounded-2xl border border-accord-border bg-white shadow-sm transition-[max-width,border-color,box-shadow] duration-300 open:max-w-none open:border-accord-primary/30 open:shadow-accord-panel">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-4 p-4 outline-none transition hover:bg-accord-mist/50 sm:p-5 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0 max-w-[28rem]">
+          <RuleStatusRow rule={rule} />
           <h3 className="mt-3 text-[17px] font-semibold leading-6 text-accord-text">{rule.name}</h3>
           <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400">{rule.ruleKey}</p>
-          <p className="mt-1 text-[13px] leading-6 text-accord-muted">
-            {rule.sourcePolicyName} {rule.sourceSection}
-          </p>
         </div>
 
-        <div className="min-w-0">
-          <p className="text-[15px] leading-7 text-slate-600">{rule.employeeExplanation}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {rule.dataCategories.slice(0, 6).map((category) => (
-              <span key={category} className="rounded-full bg-[#f1f2ff] px-2.5 py-1 text-[12px] font-semibold text-accord-primary">
-                {category.replace(/_/g, " ")}
-              </span>
-            ))}
+        <div className="ml-auto flex shrink-0 items-center gap-3">
+          <span className="hidden rounded-full bg-accord-mist px-3 py-1 text-xs font-semibold text-accord-muted group-open:hidden sm:inline-flex">
+            View details
+          </span>
+          <span className="hidden rounded-full bg-[#f1f2ff] px-3 py-1 text-xs font-semibold text-accord-primary group-open:inline-flex">
+            Hide details
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition duration-300 group-open:rotate-180" aria-hidden="true" />
+        </div>
+      </summary>
+
+      <div className="grid grid-rows-[0fr] overflow-hidden px-5 transition-[grid-template-rows] duration-300 ease-out group-open:grid-rows-[1fr]">
+        <div className="min-h-0 overflow-hidden">
+          <div className="border-t border-accord-border py-5">
+            <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(260px,0.38fr)] xl:items-start">
+              <div className="space-y-5">
+                <div>
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Employee explanation</p>
+                  <p className="mt-2 text-[15px] leading-7 text-slate-600">{rule.employeeExplanation}</p>
+                </div>
+
+                <div>
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Supporting excerpt</p>
+                  <p className="mt-2 rounded-2xl border border-accord-border bg-accord-mist/70 p-4 text-sm leading-7 text-slate-600">
+                    {rule.supportingExcerpt}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Data categories</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {rule.dataCategories.map((category) => (
+                      <span key={category} className="rounded-full bg-[#f1f2ff] px-2.5 py-1 text-[12px] font-semibold text-accord-primary">
+                        {category.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <aside className="rounded-2xl border border-accord-border bg-accord-mist/70 p-4">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">Rule details</p>
+                <div className="mt-4 grid gap-3">
+                  <RuleMeta label="Source" value={`${rule.sourcePolicyName} ${rule.sourceSection}`} />
+                  <RuleMeta label="Provider" value={rule.aiProvider} />
+                  <RuleMeta label="Destination" value={rule.destinationType} />
+                  <RuleMeta label="Action" value={rule.action} />
+                  <RuleMeta label="Fallback" value={rule.fallbackAction} />
+                  <RuleMeta label="Severity" value={rule.severity} />
+                  <RuleMeta label="Effective" value={rule.effectiveDate} />
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {actionsEnabled && rule.status === "draft" ? (
+                    <>
+                      <RuleActionButton action={approveRuleAction} ruleId={rule.id} label="Approve" icon="approve" />
+                      <RuleActionButton action={rejectRuleAction} ruleId={rule.id} label="Reject" />
+                    </>
+                  ) : null}
+                  {actionsEnabled && rule.status === "approved" ? <RuleActionButton action={archiveRuleAction} ruleId={rule.id} label="Archive" icon="archive" /> : null}
+                  {actionsEnabled && rule.status === "archived" ? (
+                    <>
+                      <RuleActionButton action={restoreRuleAction} ruleId={rule.id} label="Restore draft" icon="restore" />
+                      <RuleActionButton action={deleteRuleAction} ruleId={rule.id} label="Delete" icon="delete" tone="danger" />
+                    </>
+                  ) : null}
+                </div>
+              </aside>
+            </div>
+
+            {editable ? (
+              <details className="mt-5 rounded-xl border border-accord-border bg-white p-4">
+                <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-accord-text">
+                  <PencilLine className="h-4 w-4" aria-hidden="true" />
+                  Edit draft
+                </summary>
+                <form action={updateDraftRuleAction} className="mt-4 grid gap-4">
+                  <input type="hidden" name="ruleId" value={rule.id} />
+                  <PolicyFields rule={rule} />
+                  <button type="submit" className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-accord-text shadow-sm ring-1 ring-accord-border">
+                    Save draft changes
+                  </button>
+                </form>
+              </details>
+            ) : null}
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-2 xl:justify-end">
-          {actionsEnabled && rule.status === "draft" ? (
-            <>
-              <RuleActionButton action={approveRuleAction} ruleId={rule.id} label="Approve" icon="approve" />
-              <RuleActionButton action={rejectRuleAction} ruleId={rule.id} label="Reject" />
-            </>
-          ) : null}
-          {actionsEnabled && rule.status === "approved" ? <RuleActionButton action={archiveRuleAction} ruleId={rule.id} label="Archive" icon="archive" /> : null}
-          {actionsEnabled && rule.status === "archived" ? (
-            <>
-              <RuleActionButton action={restoreRuleAction} ruleId={rule.id} label="Restore draft" icon="restore" />
-              <RuleActionButton action={deleteRuleAction} ruleId={rule.id} label="Delete" icon="delete" tone="danger" />
-            </>
-          ) : null}
-        </div>
       </div>
+    </details>
+  );
+}
 
-      {editable ? (
-        <details className="mt-4 rounded-xl border border-accord-border bg-accord-mist p-4">
-          <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-accord-text">
-            <PencilLine className="h-4 w-4" aria-hidden="true" />
-            Edit draft
-          </summary>
-          <form action={updateDraftRuleAction} className="mt-4 grid gap-4">
-            <input type="hidden" name="ruleId" value={rule.id} />
-            <PolicyFields rule={rule} />
-            <button type="submit" className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-accord-text shadow-sm ring-1 ring-accord-border">
-              Save draft changes
-            </button>
-          </form>
-        </details>
+function RuleStatusRow({ rule }: { rule: AccordPolicyRule }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <StatusPill status={rule.status} />
+      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">rule v{rule.version}</span>
+      {rule.status === "approved" ? (
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-semibold",
+            rule.publishedInLatestBundle && "bg-[#f1f2ff] text-accord-primary",
+            rule.active && !rule.publishedInLatestBundle && "bg-amber-50 text-amber-700",
+            !rule.active && "bg-slate-100 text-slate-500"
+          )}
+        >
+          {rule.publishedInLatestBundle
+            ? `published in bundle v${rule.publishedInBundleVersion}`
+            : rule.active
+              ? "pending publish"
+              : "previous rule version"}
+        </span>
       ) : null}
-    </article>
+    </div>
+  );
+}
+
+function RuleMeta({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-accord-border/70 pb-2 last:border-b-0 last:pb-0">
+      <span className="text-xs font-semibold text-slate-400">{label}</span>
+      <span className="text-right text-sm font-semibold text-accord-text">{value.replace(/_/g, " ")}</span>
+    </div>
   );
 }
 
@@ -621,7 +739,7 @@ function StatusPill({ status }: { status: PolicyRuleStatus }) {
     <span
       className={cn(
         "rounded-full px-2.5 py-1 text-xs font-semibold",
-        status === "approved" && "bg-emerald-50 text-emerald-700",
+        status === "approved" && "bg-[#f1f2ff] text-accord-primary",
         status === "draft" && "bg-amber-50 text-amber-700",
         status === "rejected" && "bg-rose-50 text-rose-700",
         status === "archived" && "bg-slate-100 text-slate-600"

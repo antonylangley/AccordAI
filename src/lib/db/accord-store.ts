@@ -259,17 +259,17 @@ const seedMemoryItems = [
   }
 ];
 
-export async function getAccordDatabaseSnapshot(): Promise<AccordDatabaseSnapshot> {
+export async function getAccordDatabaseSnapshot(companySlug = "test-company"): Promise<AccordDatabaseSnapshot> {
   try {
     const supabase = getSupabaseServerClient();
     if (!supabase) return fallbackSnapshot();
 
     await seedWorkspaceMemory(supabase);
-    await seedTestCompany(supabase).catch(() => false);
+    await seedTestCompany(supabase, companySlug, companySlug === "test-company" ? "Test Company" : titleFromSlug(companySlug)).catch(() => false);
     const memory = await getWorkspaceMemoryRows(supabase);
-    const extensionMetrics = await getExtensionTelemetryMetrics(supabase);
-    const recentEvents = await getRecentEvents(supabase, 8);
-    const charts = await getDashboardChartData(supabase);
+    const extensionMetrics = await getExtensionTelemetryMetrics(supabase, companySlug);
+    const recentEvents = await getRecentEvents(supabase, 8, companySlug);
+    const charts = await getDashboardChartData(supabase, companySlug);
     const stats = await buildDatabaseStats(supabase, extensionMetrics);
 
     return {
@@ -777,7 +777,7 @@ export async function getLatestPublishedPolicyBundle(companySlug = "test-company
   return toPolicyBundle(result.data as Record<string, unknown>);
 }
 
-function getSupabaseServerClient() {
+export function getSupabaseServerClient() {
   if (supabaseClient) return supabaseClient;
 
   const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -1137,10 +1137,10 @@ async function getWorkspaceMemoryRows(supabase: SupabaseClient): Promise<Workspa
   }));
 }
 
-async function getRecentEvents(supabase: SupabaseClient, limit: number): Promise<GovernanceEvent[]> {
+async function getRecentEvents(supabase: SupabaseClient, limit: number, companySlug: string): Promise<GovernanceEvent[]> {
   const [chatEvents, extensionEvents] = await Promise.all([
     getRecentGovernanceEventRows(supabase, limit),
-    getRecentExtensionEventRows(supabase, limit)
+    getRecentExtensionEventRows(supabase, limit, companySlug)
   ]);
 
   return [...extensionEvents, ...chatEvents]
@@ -1177,10 +1177,11 @@ async function getRecentGovernanceEventRows(supabase: SupabaseClient, limit: num
   }));
 }
 
-async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: number): Promise<GovernanceEvent[]> {
+async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: number, companySlug: string): Promise<GovernanceEvent[]> {
   const { data, error } = await supabase
     .from("accord_extension_events")
     .select("id,created_at,event_type,action,risk_score,risk_level,flags,redaction_count,attachment_count,message_length_bucket,metadata")
+    .eq("company_slug", companySlug)
     .or("event_type.eq.message_blocked,event_type.eq.attachment_blocked,action.eq.redact,action.eq.warn,action.eq.block,action.eq.redacted,action.eq.blocked")
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -1214,13 +1215,14 @@ async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: numb
   });
 }
 
-async function getDashboardChartData(supabase: SupabaseClient): Promise<DashboardChartData> {
+async function getDashboardChartData(supabase: SupabaseClient, companySlug: string): Promise<DashboardChartData> {
   try {
     const start = startOfLocalDay(daysAgo(6));
     const [extensionResult, governanceResult, chatMessagesResult] = await Promise.all([
       supabase
         .from("accord_extension_events")
         .select("created_at,event_type,action,risk_score,risk_level,flags")
+        .eq("company_slug", companySlug)
         .gte("created_at", start.toISOString())
         .order("created_at", { ascending: true })
         .limit(1000),
@@ -1410,7 +1412,7 @@ async function buildDatabaseStats(supabase: SupabaseClient, extensionMetrics: { 
   });
 }
 
-async function getExtensionTelemetryMetrics(supabase: SupabaseClient): Promise<{
+async function getExtensionTelemetryMetrics(supabase: SupabaseClient, companySlug: string): Promise<{
   enabled: boolean;
   metrics: ExtensionTelemetryMetrics;
 }> {
@@ -1421,12 +1423,12 @@ async function getExtensionTelemetryMetrics(supabase: SupabaseClient): Promise<{
 
   try {
     const [sent, blocked, violations, uploads, users, redactions] = await Promise.all([
-      countExtensionEvents(supabase, "message_sent_to_ai"),
-      countExtensionEvents(supabase, "message_blocked"),
-      countExtensionViolations(supabase),
-      countExtensionUploads(supabase),
-      countExtensionUsers(supabase),
-      sumExtensionRedactions(supabase)
+      countExtensionEvents(supabase, companySlug, "message_sent_to_ai"),
+      countExtensionEvents(supabase, companySlug, "message_blocked"),
+      countExtensionViolations(supabase, companySlug),
+      countExtensionUploads(supabase, companySlug),
+      countExtensionUsers(supabase, companySlug),
+      sumExtensionRedactions(supabase, companySlug)
     ]);
 
     return {
@@ -1445,41 +1447,50 @@ async function getExtensionTelemetryMetrics(supabase: SupabaseClient): Promise<{
   }
 }
 
-async function countExtensionEvents(supabase: SupabaseClient, eventType: ExtensionTelemetryEventType) {
+async function countExtensionEvents(supabase: SupabaseClient, companySlug: string, eventType: ExtensionTelemetryEventType) {
   const { count, error } = await supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug)
     .eq("event_type", eventType);
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionViolations(supabase: SupabaseClient) {
+async function countExtensionViolations(supabase: SupabaseClient, companySlug: string) {
   const { count, error } = await supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug)
     .in("action", ["warn", "redact", "block", "redacted", "blocked"]);
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionUploads(supabase: SupabaseClient) {
+async function countExtensionUploads(supabase: SupabaseClient, companySlug: string) {
   const { count, error } = await supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug)
     .in("event_type", ["attachment_governed", "attachment_blocked"]);
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionUsers(supabase: SupabaseClient) {
-  const { count, error } = await supabase.from("accord_extension_users").select("id", { count: "exact", head: true });
+async function countExtensionUsers(supabase: SupabaseClient, companySlug: string) {
+  const { count, error } = await supabase
+    .from("accord_extension_users")
+    .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug);
   if (error) throw error;
   return count || 0;
 }
 
-async function sumExtensionRedactions(supabase: SupabaseClient) {
-  const { data, error } = await supabase.from("accord_extension_events").select("redaction_count");
+async function sumExtensionRedactions(supabase: SupabaseClient, companySlug: string) {
+  const { data, error } = await supabase
+    .from("accord_extension_events")
+    .select("redaction_count")
+    .eq("company_slug", companySlug);
   if (error) throw error;
 
   return (data || []).reduce((sum, row) => {

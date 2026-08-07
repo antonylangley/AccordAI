@@ -1,9 +1,10 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   CartesianGrid,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,31 +25,46 @@ export function UsageLineChart({ data }: { data: UsageLineChartPoint[] }) {
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ left: -16, right: 10, top: 10, bottom: 0 }}>
-          <CartesianGrid stroke="#E8EDF6" strokeDasharray="3 5" vertical={false} />
-          <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 11 }} />
-          <YAxis tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 11 }} />
+        <AreaChart data={data} margin={{ left: -18, right: 8, top: 18, bottom: 0 }}>
+          <defs>
+            <linearGradient id="accordRequests" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#625BFF" stopOpacity={0.22} />
+              <stop offset="72%" stopColor="#625BFF" stopOpacity={0.035} />
+              <stop offset="100%" stopColor="#625BFF" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid stroke="#E8EDF6" strokeDasharray="4 7" vertical={false} />
+          <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} dy={8} />
+          <YAxis tickLine={false} axisLine={false} tick={{ fill: "#64748B", fontSize: 12 }} allowDecimals={false} />
           <Tooltip
-            cursor={{ stroke: "#CBD5E1", strokeDasharray: "3 5" }}
-            contentStyle={{ borderRadius: 12, border: "1px solid #E3E8F2", boxShadow: "0 12px 32px rgba(7,18,37,0.08)" }}
+            cursor={{ stroke: "#625BFF", strokeDasharray: "4 6", strokeOpacity: 0.35 }}
+            contentStyle={{
+              borderRadius: 16,
+              border: "1px solid #E3E8F2",
+              boxShadow: "0 18px 42px rgba(7,18,37,0.12)",
+              color: "#071225"
+            }}
           />
+          <Area type="monotone" dataKey="requests" fill="url(#accordRequests)" stroke="none" />
           <Line
             type="monotone"
             dataKey="requests"
             name="Requests"
-            stroke="#4F6BFF"
-            strokeWidth={3}
+            stroke="#625BFF"
+            strokeWidth={3.5}
             dot={false}
+            activeDot={{ r: 5, stroke: "#FFFFFF", strokeWidth: 2, fill: "#625BFF" }}
           />
           <Line
             type="monotone"
             dataKey="flagged"
             name="Flagged"
-            stroke="#F97316"
-            strokeWidth={2}
+            stroke="#07101D"
+            strokeWidth={2.4}
             dot={false}
+            activeDot={{ r: 4, stroke: "#FFFFFF", strokeWidth: 2, fill: "#07101D" }}
           />
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

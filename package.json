@@ -15,8 +15,10 @@
   },
   "dependencies": {
     "@accord/governance-core": "workspace:*",
+    "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "^2.110.8",
     "clsx": "^2.1.1",
+    "geist": "^1.7.2",
     "lucide-react": "^0.468.0",
     "next": "^14.2.5",
     "react": "^18.3.1",

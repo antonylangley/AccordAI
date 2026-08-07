@@ -1,0 +1,129 @@
+
+> accord-frontend-prototype@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.6s
+ ○ Compiling /policies ...
+ ✓ Compiled /policies in 3.8s (709 modules)
+ ✓ Compiled in 329ms (307 modules)
+ GET /policies 200 in 5501ms
+ GET /policies 200 in 1309ms
+ GET /policies 200 in 311ms
+ GET /policies 200 in 476ms
+ GET /policies 200 in 275ms
+ GET /policies 200 in 236ms
+ GET /policies 200 in 340ms
+ GET /policies 200 in 314ms
+ GET /policies 200 in 233ms
+ POST /policies 500 in 241ms
+ GET /policies 200 in 286ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 2.9s (1758 modules)
+ GET /policies 200 in 300ms
+ GET /dashboard 200 in 3962ms
+ GET /dashboard 200 in 324ms
+ GET /policies 200 in 471ms
+ GET /policies 200 in 226ms
+ GET /policies 200 in 182ms
+ GET /policies 200 in 127ms
+ GET /policies 200 in 124ms
+ GET /policies 200 in 379ms
+ GET /policies 200 in 1270ms
+ GET /policies 200 in 1144ms
+ GET /policies 200 in 315ms
+ ○ Compiling /audit-reports ...
+ ✓ Compiled /audit-reports in 600ms (1776 modules)
+ ✓ Compiled in 316ms (840 modules)
+ POST /policies 500 in 399ms
+ ✓ Compiled in 282ms (932 modules)
+ GET /policies 200 in 658ms
+ ✓ Compiled in 189ms (932 modules)
+ ✓ Compiled in 156ms (932 modules)
+ ✓ Compiled in 154ms (932 modules)
+ ✓ Compiled in 484ms (1772 modules)
+ ○ Compiling /_error ...
+ GET /policies 500 in 86ms
+ GET /policies 500 in 85ms
+ GET /dashboard 500 in 76ms
+ GET /policies 500 in 69ms
+ GET /policies 500 in 73ms
+ GET /policies 500 in 96ms
+ GET /policies 500 in 19ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 719ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 718ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 717ms
+ GET /api/guard/policy-bundle?companySlug=test-company 500 in 765ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 9ms
+ GET /policies 200 in 38ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 17ms
+ GET /policies 200 in 30ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 500 in 8ms
+ GET /policies 200 in 23ms
+ GET /dashboard 500 in 59ms
+ GET /policies 500 in 51ms
+ GET /policies 500 in 56ms
+ GET /policies 500 in 58ms
+ GET /policies 500 in 43ms
+ GET /policies 500 in 46ms
+ ✓ Compiled /_not-found in 463ms (2018 modules)
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 595ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 595ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 595ms
+ GET /dashboard 200 in 178ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 180ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 174ms
+ GET /policies 200 in 226ms
+ GET /_next/static/webpack/9ff69c8915519da4.webpack.hot-update.json 404 in 76ms
+ GET /policies 200 in 602ms
+ GET /policies 200 in 381ms
+ GET /policies 200 in 601ms
+ GET /dashboard 200 in 469ms
+ GET /policies 200 in 229ms
+ GET /policies 200 in 152ms
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 172ms
+ GET /policies 200 in 184ms
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 1013ms
+ GET /policies 200 in 201ms
+ GET /policies 200 in 243ms
+ ✓ Compiled in 740ms (1999 modules)
+ GET /policies 200 in 345ms
+ GET /policies 200 in 894ms
+ GET /policies 200 in 257ms
+ GET /policies 200 in 308ms
+ ✓ Compiled in 546ms (1999 modules)
+ GET /policies 200 in 266ms
+ GET /policies 200 in 1192ms
+ ✓ Compiled /api/guard/policy-bundle in 242ms (1003 modules)
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 1378ms
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 831ms
+ ✓ Compiled /api/guard/telemetry in 234ms (1005 modules)
+ POST /api/guard/telemetry 500 in 657ms
+ ✓ Compiled /audit-reports in 474ms (977 modules)
+ GET /policies 200 in 1223ms
+ GET /policies 200 in 394ms
+ ○ Compiling /chat ...
+ ✓ Compiled /chat in 1060ms (2108 modules)
+ ✓ Compiled in 273ms (1077 modules)
+ GET /policies 200 in 251ms
+ GET /policies 200 in 342ms
+ GET /policies 200 in 352ms
+ ✓ Compiled in 437ms (973 modules)
+ GET /policies 200 in 299ms
+ ✓ Compiled in 416ms (973 modules)
+ GET /policies 200 in 713ms
+ ✓ Compiled /api/guard/policy-bundle in 277ms (1003 modules)
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 581ms
+ ✓ Compiled /api/guard/telemetry in 167ms (1005 modules)
+ POST /api/guard/telemetry 500 in 799ms
+ GET /policies 200 in 317ms
+ GET /policies 200 in 212ms
+ GET /api/guard/policy-bundle?companySlug=test-company 200 in 263ms
+ GET /policies 200 in 329ms
+ GET /policies?ts=20260801T1739222301 200 in 181ms
+ GET /api/guard/policy-bundle?companySlug=test-company&ts=20260801T1739223004 200 in 118ms
+[?25h

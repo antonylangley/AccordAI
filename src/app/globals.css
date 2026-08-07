@@ -94,6 +94,71 @@ textarea {
   outline-offset: 2px;
 }
 
+.app-geist,
+.dashboard-geist {
+  font-family: var(--font-geist-sans), var(--font-sans), "Helvetica Neue", Arial, sans-serif;
+  font-feature-settings: "ss01" 1, "cv05" 1, "kern" 1;
+  font-optical-sizing: auto;
+  font-weight: 430;
+  letter-spacing: -0.018em;
+}
+
+.app-geist .font-mono,
+.dashboard-geist .font-mono {
+  font-family: var(--font-geist-mono), var(--font-mono), ui-monospace, monospace;
+}
+
+.app-geist h1,
+.dashboard-geist h1 {
+  font-weight: 680;
+  letter-spacing: -0.058em;
+}
+
+.app-geist h2,
+.dashboard-geist h2 {
+  font-weight: 640;
+  letter-spacing: -0.04em;
+}
+
+.app-geist h3,
+.dashboard-geist h3 {
+  font-weight: 620;
+  letter-spacing: -0.032em;
+}
+
+.app-geist p,
+.app-geist span,
+.app-geist td,
+.app-geist th,
+.app-geist button,
+.app-geist summary,
+.dashboard-geist p,
+.dashboard-geist span,
+.dashboard-geist td,
+.dashboard-geist th,
+.dashboard-geist button,
+.dashboard-geist summary {
+  font-family: inherit;
+}
+
+.app-geist .dashboard-eyebrow,
+.dashboard-geist .dashboard-eyebrow {
+  font-weight: 700;
+  letter-spacing: 0.105em;
+}
+
+.app-geist .dashboard-number,
+.dashboard-geist .dashboard-number {
+  font-weight: 670;
+  letter-spacing: -0.06em;
+}
+
+.app-geist .dashboard-label,
+.dashboard-geist .dashboard-label {
+  font-weight: 660;
+  letter-spacing: 0.075em;
+}
+
 .noise-mask {
   mask-image: linear-gradient(180deg, black, transparent);
 }

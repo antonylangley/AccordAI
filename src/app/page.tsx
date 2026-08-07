@@ -84,20 +84,24 @@ export default function LandingPage() {
 
 function Hero() {
   return (
-    <section className="landing-hero relative min-h-[104vh] overflow-hidden bg-white">
+    <section className="landing-hero relative min-h-[116vh] overflow-hidden bg-white">
       <div
         role="img"
         aria-label="Clay Accord landscape with people around a large Accord mark"
-        className="landing-hero-bg absolute inset-0 bg-[url('/accord-hero-visual-people-2x.png')] bg-[length:2300px_auto] bg-[position:center_318px] bg-no-repeat"
+        className="landing-hero-bg absolute inset-0 bg-[url('/accord-hero-visual-people-2x.png')] bg-[length:2580px_auto] bg-[position:right_318px] bg-no-repeat"
       />
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-[66%] bg-[linear-gradient(180deg,rgba(222,212,255,0.98)_0%,rgba(226,216,255,0.82)_38%,rgba(241,238,255,0.35)_66%,rgba(255,255,255,0)_100%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[76%] bg-[linear-gradient(180deg,rgba(222,212,255,0.96)_0%,rgba(226,216,255,0.78)_33%,rgba(241,238,255,0.30)_66%,rgba(255,255,255,0)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-[30rem] bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(255,255,255,0.82)_62%,#fff_100%)]"
       />
       <div aria-hidden="true" className="absolute inset-0 bg-grid opacity-35" />
       <SiteNav />
 
-      <div className="landing-hero-copy relative z-10 mx-auto flex w-full max-w-[1500px] items-start px-6 pb-[330px] pt-[98px] lg:px-10 xl:px-12">
+      <div className="landing-hero-copy relative z-10 mx-auto flex w-full max-w-[1500px] items-start px-6 pb-[390px] pt-[98px] lg:px-10 xl:px-12">
         <div className="max-w-[94rem]" data-reveal>
           <h1 className="text-[clamp(3.05rem,4.55vw,5.25rem)] font-medium leading-[1.02] tracking-[-0.055em] text-[#050b16]">
             <span className="block">Your company already has an AI policy.</span>
@@ -179,7 +183,7 @@ function SiteNav() {
 
 function AudienceStrip() {
   return (
-    <section className="border-y border-black/5 bg-white px-6 py-14 md:py-16">
+    <section className="border-b border-black/5 bg-white px-6 pb-14 pt-20 md:pb-16 md:pt-24">
       <div className="mx-auto max-w-[1500px]">
         <p className="text-center text-xl font-medium text-black">Built for teams handling sensitive data</p>
         <div className="audience-wheel mt-9" aria-label="Teams Accord is built for">

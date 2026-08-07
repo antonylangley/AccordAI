@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { GeistMono } from "geist/font/mono";
+import { GeistSans } from "geist/font/sans";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -26,7 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${plexSans.variable} ${plexMono.variable} font-sans`}>{children}</body>
+      <body className={`${plexSans.variable} ${plexMono.variable} ${GeistSans.variable} ${GeistMono.variable} font-sans`}>
+        {children}
+      </body>
     </html>
   );
 }

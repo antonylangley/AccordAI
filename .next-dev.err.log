@@ -1,0 +1,97 @@
+ ⨯ src\lib\db\accord-store.ts (578:21) @ publishPolicyBundle
+ ⨯ Error: Policy tables are not ready. Run the latest Supabase migration.
+    at publishPolicyBundle (./src/lib/db/accord-store.ts:332:23)
+    at async $$ACTION_5 (policies/page.tsx:299:5)
+digest: "3418472736"
+[0m [90m 576 |[39m[0m
+[0m [90m 577 |[39m   [36mconst[39m ready [33m=[39m [36mawait[39m ensurePolicyStore(supabase[33m,[39m companySlug)[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 578 |[39m   [36mif[39m ([33m![39mready) [36mthrow[39m [36mnew[39m [33mError[39m([32m"Policy tables are not ready. Run the latest Supabase migration."[39m)[33m;[39m[0m
+[0m [90m     |[39m                     [31m[1m^[22m[39m[0m
+[0m [90m 579 |[39m[0m
+[0m [90m 580 |[39m   [36mconst[39m rulesResult [33m=[39m [36mawait[39m supabase[0m
+[0m [90m 581 |[39m     [33m.[39m[36mfrom[39m([32m"accord_policy_rules"[39m)[0m
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⨯ src\lib\db\accord-store.ts (521:21) @ createPolicyRuleFromForm
+ ⨯ Error: Policy tables are not ready. Run the latest Supabase migration.
+    at createPolicyRuleFromForm (./src/lib/db/accord-store.ts:288:23)
+    at async $$ACTION_0 (policies/page.tsx:270:5)
+digest: "4084416261"
+[0m [90m 519 |[39m[0m
+[0m [90m 520 |[39m   [36mconst[39m ready [33m=[39m [36mawait[39m ensurePolicyStore(supabase[33m,[39m companySlug)[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 521 |[39m   [36mif[39m ([33m![39mready) [36mthrow[39m [36mnew[39m [33mError[39m([32m"Policy tables are not ready. Run the latest Supabase migration."[39m)[33m;[39m[0m
+[0m [90m     |[39m                     [31m[1m^[22m[39m[0m
+[0m [90m 522 |[39m[0m
+[0m [90m 523 |[39m   [36mconst[39m draft [33m=[39m policyRuleDraftFromForm(formData[33m,[39m companySlug)[33m;[39m[0m
+[0m [90m 524 |[39m   [36mconst[39m result [33m=[39m [36mawait[39m supabase[33m.[39m[36mfrom[39m([32m"accord_policy_rules"[39m)[33m.[39minsert({[0m
+ ⨯ ./src/app/(app)/policies/page.tsx
+Error: 
+  [31mx[0m Expected ',', got 'actionsEnabled'
+     ,-[[36;1;4mC:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\src\app\(app)\policies\page.tsx[0m:283:1]
+ [2m283[0m |   status,
+ [2m284[0m |   rules,
+ [2m285[0m |   editable = false
+ [2m286[0m |   actionsEnabled = true
+     : [31;1m  ^^^^^^^^^^^^^^[0m
+ [2m287[0m | }: {
+ [2m288[0m |   title: string;
+ [2m289[0m |   status: PolicyRuleStatus;
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/(app)/policies/page.tsx
+ ⨯ ./src/app/(app)/policies/page.tsx
+Error: 
+  [31mx[0m Expected ',', got 'actionsEnabled'
+     ,-[[36;1;4mC:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\src\app\(app)\policies\page.tsx[0m:283:1]
+ [2m283[0m |   status,
+ [2m284[0m |   rules,
+ [2m285[0m |   editable = false
+ [2m286[0m |   actionsEnabled = true
+     : [31;1m  ^^^^^^^^^^^^^^[0m
+ [2m287[0m | }: {
+ [2m288[0m |   title: string;
+ [2m289[0m |   status: PolicyRuleStatus;
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/(app)/policies/page.tsx
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz'
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, rename 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz_' -> 'C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\.next\cache\webpack\client-development-fallback\0.pack.gz'
+ ⨯ ./src/app/(app)/policies/page.tsx
+Error: 
+  [31mx[0m Expected ',', got 'actionsEnabled'
+     ,-[[36;1;4mC:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\src\app\(app)\policies\page.tsx[0m:283:1]
+ [2m283[0m |   status,
+ [2m284[0m |   rules,
+ [2m285[0m |   editable = false
+ [2m286[0m |   actionsEnabled = true
+     : [31;1m  ^^^^^^^^^^^^^^[0m
+ [2m287[0m | }: {
+ [2m288[0m |   title: string;
+ [2m289[0m |   status: PolicyRuleStatus;
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/app/(app)/policies/page.tsx
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
