@@ -1,0 +1,156 @@
+diff --git a/src/app/login/page.tsx b/src/app/login/page.tsx
+index 528a21f..0d119dc 100644
+--- a/src/app/login/page.tsx
++++ b/src/app/login/page.tsx
+@@ -13,92 +13,74 @@ export default async function LoginPage({
+   const context = await getAccordOrganizationContext();
+ 
+   return (
+-    <main className="min-h-screen bg-[#f7f7fb] px-6 py-8 text-accord-text">
+-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl flex-col">
+-        <nav className="flex items-center justify-between">
+-          <Link href="/" aria-label="Back to Accord home">
+-            <AccordLogo lockup framed compact />
+-          </Link>
+-          <Link
+-            href="/"
+-            className="rounded-full border border-accord-border bg-white px-4 py-2 text-sm font-semibold text-accord-text shadow-sm"
+-          >
+-            Back home
+-          </Link>
+-        </nav>
++    <main className="app-geist flex min-h-screen flex-col bg-accord-panel px-6 py-6 text-accord-text">
++      <nav className="flex items-center justify-between">
++        <Link href="/" aria-label="Back to Accord home">
++          <AccordLogo lockup framed compact />
++        </Link>
++        <Link
++          href="/"
++          className="inline-flex h-8 items-center rounded-md border border-accord-border bg-accord-panel px-3 text-[13px] font-medium text-accord-text transition-colors hover:border-accord-faint"
++        >
++          Back home
++        </Link>
++      </nav>
+ 
+-        <section className="grid flex-1 items-center gap-10 py-16 lg:grid-cols-[0.85fr_1fr]">
+-          <div>
+-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-accord-primary">
+-              Accord workspace
+-            </p>
+-            <h1 className="mt-5 text-5xl font-semibold tracking-[-0.055em] text-accord-text md:text-6xl">
+-              Sign in to your governance console.
+-            </h1>
+-            <p className="mt-5 max-w-xl text-lg leading-8 text-accord-muted">
+-              Connect dashboard data, policy bundles, and Accord Guard extension telemetry to the right organization.
+-            </p>
+-
+-            <div className="mt-8 rounded-3xl border border-accord-border bg-white p-5 shadow-accord-panel">
+-              <div className="flex gap-3">
+-                <span className="mt-1 rounded-2xl bg-emerald-50 p-2 text-emerald-600">
+-                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+-                </span>
+-                <div>
+-                  <p className="font-semibold text-accord-text">Privacy-first by default</p>
+-                  <p className="mt-1 text-sm leading-6 text-accord-muted">
+-                    Accounts control access to metadata, policy decisions, redacted previews, and bundle history. Raw prompts and raw responses remain out of dashboard storage.
+-                  </p>
+-                </div>
+-              </div>
++      <section className="flex flex-1 items-center justify-center py-12">
++        <div className="w-full max-w-sm">
++          <div className="rounded-lg border border-accord-border bg-accord-panel">
++            <div className="border-b border-accord-border px-5 py-4">
++              <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-400">Accord workspace</p>
++              <h1 className="mt-1.5 text-lg font-semibold tracking-[-0.02em] text-accord-text">Sign in to Accord</h1>
++              <p className="mt-1 text-[13px] leading-5 text-accord-muted">
++                Google is recommended for company workspaces. GitHub is available for development teams.
++              </p>
+             </div>
+-          </div>
+ 
+-          <div className="rounded-[2rem] border border-accord-border bg-white p-8 shadow-accord-panel">
+-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-accord-primary">
+-              Authentication
+-            </p>
+-            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-accord-text">
+-              Continue to Accord
+-            </h2>
+-            <p className="mt-3 text-sm leading-6 text-accord-muted">
+-              Google is the recommended login for company workspaces. GitHub is available for development teams.
+-            </p>
++            <div className="px-5 py-5">
++              {searchParams?.error ? (
++                <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] leading-5 text-amber-800">
++                  {friendlyAuthError(searchParams.error)}
++                </div>
++              ) : null}
+ 
+-            {searchParams?.error ? (
+-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+-                {friendlyAuthError(searchParams.error)}
+-              </div>
+-            ) : null}
++              {!context.authConfigured ? (
++                <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] leading-5 text-amber-800">
++                  Add <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
++                  <code className="font-mono text-xs">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> to enable OAuth login.
++                </div>
++              ) : null}
+ 
+-            {!context.authConfigured ? (
+-              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+-                Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to enable OAuth login.
++              <div className="grid gap-2">
++                <a
++                  href="/auth/login?provider=google"
++                  className="inline-flex h-9 items-center justify-center rounded-md bg-accord-night px-4 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy"
++                >
++                  Continue with Google
++                </a>
++                <a
++                  href="/auth/login?provider=github"
++                  className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-accord-border bg-accord-panel px-4 text-[13px] font-medium text-accord-text transition-colors hover:border-accord-faint"
++                >
++                  <Github className="h-3.5 w-3.5" aria-hidden="true" />
++                  Continue with GitHub
++                </a>
+               </div>
+-            ) : null}
+ 
+-            <div className="mt-6 grid gap-3">
+-              <a
+-                href="/auth/login?provider=google"
+-                className="inline-flex items-center justify-center rounded-2xl bg-accord-night px-5 py-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5"
+-              >
+-                Continue with Google
+-              </a>
+-              <a
+-                href="/auth/login?provider=github"
+-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-accord-border bg-white px-5 py-4 text-sm font-semibold text-accord-text shadow-sm transition hover:-translate-y-0.5"
+-              >
+-                <Github className="h-4 w-4" aria-hidden="true" />
+-                Continue with GitHub
+-              </a>
++              <p className="mt-4 text-xs leading-5 text-accord-muted">
++                First login creates a starter organization. Invite-only onboarding replaces this once the account model
++                is locked.
++              </p>
+             </div>
+-
+-            <p className="mt-6 text-xs leading-5 text-accord-muted">
+-              First login creates a starter organization for now. We can replace that with invite-only onboarding once the customer/account model is locked.
+-            </p>
+           </div>
+-        </section>
+-      </div>
++
++          <p className="mt-4 flex items-start justify-center gap-1.5 px-2 text-center text-xs leading-5 text-accord-muted">
++            <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden="true" />
++            Accounts control access to metadata, policy decisions, and redacted previews — raw prompts and responses
++            stay out of dashboard storage.
++          </p>
++        </div>
++      </section>
+     </main>
+   );
+ }
