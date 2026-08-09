@@ -1,8 +1,11 @@
 import "server-only";
 
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServerAuthClient } from "@/lib/auth/supabase-server";
 import { getSupabaseServerClient } from "@/lib/db/accord-store";
+
+export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
+export type OrganizationMemberStatus = "active" | "invited" | "suspended";
 
 export type AccordOrganizationContext = {
   authenticated: boolean;
@@ -11,8 +14,24 @@ export type AccordOrganizationContext = {
   userEmail?: string;
   companySlug: string;
   companyName: string;
-  role: "owner" | "admin" | "member" | "viewer" | "demo";
+  role: OrganizationRole | "demo";
   onboardingRequired: boolean;
+};
+
+export type AccordOrganizationMember = {
+  id: string;
+  email: string;
+  role: OrganizationRole;
+  status: OrganizationMemberStatus;
+  isCurrentUser: boolean;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type OrganizationMemberResult = {
+  ok: boolean;
+  message: string;
 };
 
 const demoOrganization: AccordOrganizationContext = {
@@ -74,6 +93,161 @@ export async function getAccordOrganizationContext({
   return ensureDefaultOrganization(user);
 }
 
+export async function ensureUserOrganization(user: User): Promise<AccordOrganizationContext> {
+  const existing = await getFirstMembership(user);
+  if (existing) return existing;
+
+  return ensureDefaultOrganization(user);
+}
+
+export async function getOrganizationMembers(
+  companySlug: string,
+  currentUserId?: string
+): Promise<AccordOrganizationMember[]> {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
+    .from("accord_company_members")
+    .select("id,user_id,email,role,status,created_at,updated_at")
+    .eq("company_slug", companySlug)
+    .order("status", { ascending: true })
+    .order("role", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error || !Array.isArray(data)) return [];
+
+  return data.map((member) => {
+    const userId = typeof member.user_id === "string" ? member.user_id : undefined;
+
+    return {
+      id: typeof member.id === "string" ? member.id : `${companySlug}-${member.email || "member"}`,
+      email: typeof member.email === "string" && member.email ? member.email : "No email on file",
+      role: normalizeMemberRole(member.role),
+      status: normalizeMemberStatus(member.status),
+      isCurrentUser: Boolean(userId && currentUserId && userId === currentUserId),
+      userId,
+      createdAt: typeof member.created_at === "string" ? member.created_at : undefined,
+      updatedAt: typeof member.updated_at === "string" ? member.updated_at : undefined
+    };
+  });
+}
+
+export async function addOrganizationMemberFromForm(formData: FormData): Promise<OrganizationMemberResult> {
+  const email = normalizeEmail(formData.get("email"));
+  const role = normalizeMemberRole(formData.get("role"));
+
+  return addOrganizationMember({ email, role });
+}
+
+export async function addOrganizationMember({
+  email,
+  role
+}: {
+  email: string;
+  role: OrganizationRole;
+}): Promise<OrganizationMemberResult> {
+  const organization = await getAccordOrganizationContext({ autoCreate: true });
+  if (!organization.authenticated) {
+    return { ok: false, message: "Sign in before adding organization members." };
+  }
+
+  if (!canManageOrganization(organization.role)) {
+    return { ok: false, message: "Only owners and admins can add organization members." };
+  }
+
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !normalizedEmail.includes("@")) {
+    return { ok: false, message: "Enter a valid work email." };
+  }
+
+  if (organization.userEmail && normalizeEmail(organization.userEmail) === normalizedEmail) {
+    return { ok: false, message: "You are already a member of this organization." };
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, message: "Supabase is not configured for organization management." };
+  }
+
+  const existingAuthUser = await findAuthUserByEmail(supabase, normalizedEmail);
+  const now = new Date().toISOString();
+
+  if (existingAuthUser?.id) {
+    const { data: existingMember } = await supabase
+      .from("accord_company_members")
+      .select("id")
+      .eq("company_slug", organization.companySlug)
+      .eq("user_id", existingAuthUser.id)
+      .maybeSingle();
+
+    if (existingMember?.id) {
+      const { error } = await supabase
+        .from("accord_company_members")
+        .update({
+          email: normalizedEmail,
+          role,
+          status: "active",
+          updated_at: now
+        })
+        .eq("id", existingMember.id);
+
+      if (error) return { ok: false, message: "Could not update that member." };
+      return { ok: true, message: "Member updated." };
+    }
+
+    const { error } = await supabase.from("accord_company_members").insert({
+      company_slug: organization.companySlug,
+      user_id: existingAuthUser.id,
+      email: normalizedEmail,
+      role,
+      status: "active",
+      updated_at: now
+    });
+
+    if (error) return { ok: false, message: "Could not add that member." };
+    return { ok: true, message: "Member added." };
+  }
+
+  const { data: existingInvitation } = await supabase
+    .from("accord_company_members")
+    .select("id")
+    .eq("company_slug", organization.companySlug)
+    .eq("email", normalizedEmail)
+    .is("user_id", null)
+    .maybeSingle();
+
+  if (existingInvitation?.id) {
+    const { error } = await supabase
+      .from("accord_company_members")
+      .update({
+        role,
+        status: "invited",
+        updated_at: now
+      })
+      .eq("id", existingInvitation.id);
+
+    if (error) return { ok: false, message: "Could not update that invitation." };
+    return { ok: true, message: "Invitation updated." };
+  }
+
+  const { error } = await supabase.from("accord_company_members").insert({
+    company_slug: organization.companySlug,
+    user_id: null,
+    email: normalizedEmail,
+    role,
+    status: "invited",
+    updated_at: now
+  });
+
+  if (error) return { ok: false, message: "Could not create that invitation." };
+  return { ok: true, message: "Invitation created. They will join this organization when they sign in with that email." };
+}
+
+export function canManageOrganization(role: AccordOrganizationContext["role"]) {
+  return role === "owner" || role === "admin";
+}
+
 async function getFirstMembership(user: User): Promise<AccordOrganizationContext | null> {
   const supabase = getSupabaseServerClient();
   if (!supabase) return null;
@@ -83,7 +257,8 @@ async function getFirstMembership(user: User): Promise<AccordOrganizationContext
     .select("company_slug,role")
     .eq("user_id", user.id)
     .eq("status", "active")
-    .order("created_at", { ascending: true })
+    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -110,8 +285,6 @@ async function getFirstMembership(user: User): Promise<AccordOrganizationContext
 async function ensureDefaultOrganization(user: User): Promise<AccordOrganizationContext> {
   const supabase = getSupabaseServerClient();
   const email = user.email || "";
-  const companyName = organizationNameFromUser(user);
-  const companySlug = slugify(`${companyName}-${user.id.slice(0, 8)}`) || "test-company";
 
   if (!supabase) {
     return {
@@ -124,6 +297,11 @@ async function ensureDefaultOrganization(user: User): Promise<AccordOrganization
     };
   }
 
+  const claimedInvitation = await claimPendingMembership(user);
+  if (claimedInvitation) return claimedInvitation;
+
+  const companyName = organizationNameFromUser(user);
+  const companySlug = slugify(`${companyName}-${user.id.slice(0, 8)}`) || "test-company";
   const now = new Date().toISOString();
   const companyResult = await supabase.from("accord_companies").upsert(
     {
@@ -181,6 +359,63 @@ async function ensureDefaultOrganization(user: User): Promise<AccordOrganization
   };
 }
 
+async function claimPendingMembership(user: User): Promise<AccordOrganizationContext | null> {
+  const supabase = getSupabaseServerClient();
+  const email = normalizeEmail(user.email);
+  if (!supabase || !email) return null;
+
+  const { data: invitation, error } = await supabase
+    .from("accord_company_members")
+    .select("id,company_slug,role")
+    .eq("email", email)
+    .eq("status", "invited")
+    .is("user_id", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !invitation?.id || typeof invitation.company_slug !== "string") return null;
+
+  const { error: updateError } = await supabase
+    .from("accord_company_members")
+    .update({
+      user_id: user.id,
+      status: "active",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", invitation.id);
+
+  if (updateError) return null;
+
+  const { data: company } = await supabase
+    .from("accord_companies")
+    .select("name")
+    .eq("slug", invitation.company_slug)
+    .maybeSingle();
+
+  return {
+    authenticated: true,
+    authConfigured: true,
+    userId: user.id,
+    userEmail: user.email || undefined,
+    companySlug: invitation.company_slug,
+    companyName: typeof company?.name === "string" ? company.name : titleFromSlug(invitation.company_slug),
+    role: normalizeMemberRole(invitation.role),
+    onboardingRequired: false
+  };
+}
+
+async function findAuthUserByEmail(supabase: SupabaseClient, email: string): Promise<User | null> {
+  const { data, error } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000
+  });
+
+  if (error || !Array.isArray(data?.users)) return null;
+
+  return data.users.find((candidate) => normalizeEmail(candidate.email) === email) || null;
+}
+
 function organizationNameFromUser(user: User) {
   const metadata = user.user_metadata || {};
   const fullName = typeof metadata.full_name === "string" ? metadata.full_name : "";
@@ -198,8 +433,20 @@ function organizationNameFromUser(user: User) {
   return "Accord Workspace";
 }
 
-function normalizeRole(value: unknown): AccordOrganizationContext["role"] {
+function normalizeRole(value: unknown): OrganizationRole {
+  return normalizeMemberRole(value);
+}
+
+function normalizeMemberRole(value: unknown): OrganizationRole {
   return value === "owner" || value === "admin" || value === "member" || value === "viewer" ? value : "member";
+}
+
+function normalizeMemberStatus(value: unknown): OrganizationMemberStatus {
+  return value === "active" || value === "invited" || value === "suspended" ? value : "invited";
+}
+
+function normalizeEmail(value: FormDataEntryValue | string | null | undefined) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 function slugify(value: string) {

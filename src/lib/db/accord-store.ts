@@ -270,7 +270,7 @@ export async function getAccordDatabaseSnapshot(companySlug = "test-company"): P
     const extensionMetrics = await getExtensionTelemetryMetrics(supabase, companySlug);
     const recentEvents = await getRecentEvents(supabase, 8, companySlug);
     const charts = await getDashboardChartData(supabase, companySlug);
-    const stats = await buildDatabaseStats(supabase, extensionMetrics);
+    const stats = buildDatabaseStats(extensionMetrics);
 
     return {
       memory,
@@ -1138,12 +1138,9 @@ async function getWorkspaceMemoryRows(supabase: SupabaseClient): Promise<Workspa
 }
 
 async function getRecentEvents(supabase: SupabaseClient, limit: number, companySlug: string): Promise<GovernanceEvent[]> {
-  const [chatEvents, extensionEvents] = await Promise.all([
-    getRecentGovernanceEventRows(supabase, limit),
-    getRecentExtensionEventRows(supabase, limit, companySlug)
-  ]);
+  const extensionEvents = await getRecentExtensionEventRows(supabase, limit, companySlug);
 
-  return [...extensionEvents, ...chatEvents]
+  return extensionEvents
     .sort((a, b) => eventSortTime(b.occurredAt) - eventSortTime(a.occurredAt))
     .slice(0, limit);
 }
@@ -1218,38 +1215,21 @@ async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: numb
 async function getDashboardChartData(supabase: SupabaseClient, companySlug: string): Promise<DashboardChartData> {
   try {
     const start = startOfLocalDay(daysAgo(6));
-    const [extensionResult, governanceResult, chatMessagesResult] = await Promise.all([
-      supabase
-        .from("accord_extension_events")
-        .select("created_at,event_type,action,risk_score,risk_level,flags")
-        .eq("company_slug", companySlug)
-        .gte("created_at", start.toISOString())
-        .order("created_at", { ascending: true })
-        .limit(1000),
-      supabase
-        .from("accord_governance_events")
-        .select("created_at,category,severity,provider,risk_score,flags")
-        .gte("created_at", start.toISOString())
-        .order("created_at", { ascending: true })
-        .limit(1000),
-      supabase
-        .from("accord_chat_messages")
-        .select("created_at,provider_label,risk_score,role")
-        .gte("created_at", start.toISOString())
-        .eq("role", "user")
-        .order("created_at", { ascending: true })
-        .limit(1000)
-    ]);
+    const extensionResult = await supabase
+      .from("accord_extension_events")
+      .select("created_at,event_type,action,risk_score,risk_level,flags")
+      .eq("company_slug", companySlug)
+      .gte("created_at", start.toISOString())
+      .order("created_at", { ascending: true })
+      .limit(1000);
 
     const extensionRows = extensionResult.error ? [] : extensionResult.data || [];
-    const governanceRows = governanceResult.error ? [] : governanceResult.data || [];
-    const chatMessageRows = chatMessagesResult.error ? [] : chatMessagesResult.data || [];
 
     return {
-      usageOverTime: buildUsageOverTime(extensionRows, governanceRows, start),
-      riskDistribution: buildRiskDistribution(extensionRows, governanceRows),
-      providerUsage: buildProviderUsage(extensionRows, chatMessageRows),
-      riskCategories: buildRiskCategories(extensionRows, governanceRows)
+      usageOverTime: buildUsageOverTime(extensionRows, [], start),
+      riskDistribution: buildRiskDistribution(extensionRows, []),
+      providerUsage: buildProviderUsage(extensionRows, []),
+      riskCategories: buildRiskCategories(extensionRows, [])
     };
   } catch {
     return emptyDashboardChartData();
@@ -1381,32 +1361,22 @@ function buildRiskCategories(extensionRows: Array<Record<string, unknown>>, gove
     .slice(0, 6);
 }
 
-async function buildDatabaseStats(supabase: SupabaseClient, extensionMetrics: { metrics: ExtensionTelemetryMetrics }): Promise<Stat[]> {
-  const [totalResult, highRiskResult, blockedResult] = await Promise.all([
-    supabase.from("accord_chat_messages").select("id", { count: "exact", head: true }).eq("role", "user"),
-    supabase.from("accord_governance_events").select("id", { count: "exact", head: true }).gte("risk_score", 60),
-    supabase.from("accord_governance_events").select("id", { count: "exact", head: true }).eq("action_taken", "Blocked")
-  ]);
-  if (totalResult.error) throw totalResult.error;
-  if (highRiskResult.error) throw highRiskResult.error;
-  if (blockedResult.error) throw blockedResult.error;
-
-  const total = totalResult.count || 0;
-  const highRisk = highRiskResult.count || 0;
-  const blocked = blockedResult.count || 0;
-
+function buildDatabaseStats(extensionMetrics: { metrics: ExtensionTelemetryMetrics }): Stat[] {
   return dashboardStats.map((stat) => {
     if (stat.label === "Total AI requests") {
-      return { ...stat, value: formatNumber(total + extensionMetrics.metrics.messagesSent), detail: "Dashboard and extension sends" };
+      return { ...stat, value: formatNumber(extensionMetrics.metrics.messagesSent), detail: "Messages submitted after Guard checks" };
     }
     if (stat.label === "High-risk events") {
-      return { ...stat, value: formatNumber(highRisk + extensionMetrics.metrics.policyViolations), detail: "Policy violations logged" };
+      return { ...stat, value: formatNumber(extensionMetrics.metrics.policyViolations), detail: "Warn, redact, or block decisions" };
     }
     if (stat.label === "Blocked requests") {
-      return { ...stat, value: formatNumber(blocked + extensionMetrics.metrics.messagesBlocked), detail: "Messages blocked before AI" };
+      return { ...stat, value: formatNumber(extensionMetrics.metrics.messagesBlocked), detail: "Messages blocked before external AI" };
     }
     if (stat.label === "Active users") {
-      return { ...stat, value: formatNumber(extensionMetrics.metrics.activeUsers), detail: "Extension test users" };
+      return { ...stat, value: formatNumber(extensionMetrics.metrics.activeUsers), detail: "Extension users reporting telemetry" };
+    }
+    if (stat.label === "Estimated spend") {
+      return { ...stat, value: "$0", detail: "Spend tracking not connected" };
     }
     return stat;
   });
@@ -1709,7 +1679,7 @@ function fallbackSnapshot(): AccordDatabaseSnapshot {
   return {
     memory: [],
     recentEvents: [],
-    stats: dashboardStats,
+    stats: buildDatabaseStats({ metrics: emptyExtensionMetrics() }),
     charts: emptyDashboardChartData(),
     databaseEnabled: false,
     extensionTelemetryEnabled: false,
