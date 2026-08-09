@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, FileText, Loader2, UploadCloud } from "lucide-react";
+import { BadgeCheck, Loader2, UploadCloud } from "lucide-react";
 import type { ImportedPolicyRule, PolicyImportResult } from "@/lib/policy-import/types";
 import { cn } from "@/lib/utils";
 
@@ -104,28 +104,24 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-accord-border bg-accord-mist p-5">
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
-        <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-white p-2 text-accord-primary shadow-sm ring-1 ring-accord-border">
-            <FileText className="h-4 w-4" aria-hidden="true" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold tracking-[-0.02em] text-accord-text">Import existing AI policy</h3>
-            <p className="mt-1 max-w-4xl text-sm leading-6 text-accord-muted">
-              Upload a policy PDF, DOCX, DOC, TXT, or Markdown file. Accord extracts policy obligations and formats them as editable draft rules. Raw document text is not saved.
-            </p>
-          </div>
+    <section className="rounded-lg border border-dashed border-accord-primary/40 bg-accord-tint/40 p-6">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <UploadCloud className="h-5 w-5 text-accord-primary" aria-hidden="true" />
+        <div>
+          <h3 className="text-sm font-semibold text-accord-text">Import an AI policy document</h3>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-accord-muted">
+            PDF, DOCX, DOC, TXT, or Markdown. Accord extracts obligations as editable draft rules — raw text is never saved.
+          </p>
         </div>
 
         <label
           className={cn(
-            "inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-accord-text shadow-sm ring-1 ring-accord-border transition hover:-translate-y-0.5 hover:text-accord-primary",
+            "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accord-primary px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-accord-blue",
             state === "parsing" && "pointer-events-none opacity-70"
           )}
         >
-          {state === "parsing" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <UploadCloud className="h-4 w-4" aria-hidden="true" />}
-          {state === "parsing" ? "Parsing document" : "Upload policy doc"}
+          {state === "parsing" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
+          {state === "parsing" ? "Parsing document" : "Choose file"}
           <input
             className="sr-only"
             type="file"
@@ -136,29 +132,26 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-700">
+        <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] leading-5 text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       ) : null}
 
       {state === "saved" ? (
-        <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+        <div className="mt-3 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] font-medium text-emerald-800 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-300">
           <BadgeCheck className="h-4 w-4" aria-hidden="true" />
           Imported draft rules saved. Review them below, then approve and publish when ready.
         </div>
       ) : null}
 
       {result ? (
-        <div className="mt-5 space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-accord-border">{result.fileName}</span>
-            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-accord-border">{result.fileType.toUpperCase()}</span>
-            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-accord-border">{result.extractedCharacters.toLocaleString()} chars extracted</span>
-            <span className="rounded-full bg-white px-3 py-1 ring-1 ring-accord-border">{rules.length} generated rules</span>
-          </div>
+        <div className="mt-5 space-y-4 rounded-md border border-accord-border bg-accord-panel p-4 text-left">
+          <p className="font-mono text-[11px] text-accord-muted">
+            {result.fileName} · {result.fileType.toUpperCase()} · {result.extractedCharacters.toLocaleString()} chars · {rules.length} generated rules
+          </p>
 
           {result.warnings.length ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] leading-5 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-300">
               {result.warnings.join(" ")}
             </div>
           ) : null}
@@ -175,15 +168,15 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
             ))}
           </div>
 
-          <div className="flex flex-col gap-3 rounded-2xl border border-accord-border bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm leading-6 text-accord-muted">
+          <div className="flex flex-col gap-3 rounded-md border border-accord-border bg-accord-panel px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs leading-5 text-accord-muted">
               {selectedRules.length} of {rules.length} generated rules selected. Saving creates drafts only; nothing is published until you approve and publish the bundle.
             </p>
             <button
               type="button"
               onClick={saveDrafts}
               disabled={state === "saving" || !selectedRules.length}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accord-night px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-accord-night px-3 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy dark:bg-accord-primary dark:hover:bg-accord-blue disabled:cursor-not-allowed disabled:opacity-60"
             >
               {state === "saving" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <BadgeCheck className="h-4 w-4" aria-hidden="true" />}
               Save selected drafts
@@ -207,9 +200,9 @@ function ImportedRuleEditor({
   onChange: (patch: Partial<ImportedPolicyRule>) => void;
 }) {
   return (
-    <article className={cn("rounded-2xl border bg-white p-4 shadow-sm", selected ? "border-accord-primary/30" : "border-accord-border")}>
+    <article className={cn("rounded-md border bg-accord-panel p-3", selected ? "border-accord-primary/40" : "border-accord-border")}>
       <div className="grid gap-4 xl:grid-cols-[auto_minmax(220px,0.75fr)_minmax(0,1.25fr)] xl:items-start">
-        <label className="flex items-center gap-2 text-sm font-semibold text-accord-text xl:pt-8">
+        <label className="flex items-center gap-2 text-[13px] font-medium text-accord-text xl:pt-7">
           <input className="h-4 w-4 accent-accord-primary" type="checkbox" checked={selected} onChange={onToggle} />
           Use
         </label>
@@ -242,11 +235,9 @@ function ImportedRuleEditor({
               })
             }
           />
-          <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-            <span className="rounded-full bg-slate-100 px-2.5 py-1">{rule.sourcePolicyName}</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1">{rule.sourceSection}</span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1">{rule.confidence}% confidence</span>
-          </div>
+          <p className="font-mono text-[11px] text-accord-muted">
+            {rule.sourcePolicyName} · {rule.sourceSection} · {rule.confidence}% confidence
+          </p>
         </div>
       </div>
     </article>
@@ -255,10 +246,10 @@ function ImportedRuleEditor({
 
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
-    <label className="grid gap-2 text-[13px] font-semibold text-accord-text">
+    <label className="grid gap-1.5 text-xs font-medium text-accord-text">
       {label}
       <input
-        className="rounded-xl border border-accord-border bg-white px-3.5 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-accord-primary"
+        className="h-8 rounded-md border border-accord-border bg-accord-panel px-2.5 text-[13px] text-accord-text outline-none transition-colors focus:border-accord-primary"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -278,10 +269,10 @@ function Select({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-[13px] font-semibold text-accord-text">
+    <label className="grid gap-1.5 text-xs font-medium text-accord-text">
       {label}
       <select
-        className="rounded-xl border border-accord-border bg-white px-3.5 py-3 text-sm font-medium text-slate-700 outline-none transition focus:border-accord-primary"
+        className="h-8 rounded-md border border-accord-border bg-accord-panel px-2.5 text-[13px] text-accord-text outline-none transition-colors focus:border-accord-primary"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       >
@@ -307,10 +298,10 @@ function TextArea({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="grid gap-2 text-[13px] font-semibold text-accord-text">
+    <label className="grid gap-1.5 text-xs font-medium text-accord-text">
       {label}
       <textarea
-        className="resize-y rounded-xl border border-accord-border bg-white px-3.5 py-3 text-sm font-medium leading-6 text-slate-700 outline-none transition focus:border-accord-primary"
+        className="resize-y rounded-md border border-accord-border bg-accord-panel px-2.5 py-2 text-[13px] leading-5 text-accord-text outline-none transition-colors focus:border-accord-primary"
         rows={rows}
         value={value}
         onChange={(event) => onChange(event.target.value)}

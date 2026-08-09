@@ -15,6 +15,10 @@
   --accord-border: #e3e8f2;
   --accord-text: #071225;
   --accord-muted: #64748b;
+  --accord-panel: #ffffff;
+  --accord-surface: #f7f8fa;
+  --accord-faint: #94a3b8;
+  --accord-tint: #f6f5ff;
   background: var(--accord-bg);
 }
 
@@ -606,5 +610,31 @@ textarea {
     position: static;
     transform: none;
     white-space: normal;
+  }
+}
+
+
+/* App theme scope: dark tokens apply inside the .dark app wrapper only */
+.dark {
+  color-scheme: dark;
+  --accord-panel: #0b1220;
+  --accord-surface: #101a2d;
+  --accord-border: #1e2a3d;
+  --accord-text: #e7ebf3;
+  --accord-muted: #8b96a8;
+  --accord-faint: #64748b;
+  --accord-tint: rgba(98, 91, 255, 0.14);
+}
+
+/* Top nav content follows the sidebar rail as it expands */
+@media (min-width: 1024px) {
+  .app-rail-shell .rail-follow {
+    margin-left: 0;
+    transition: margin-left 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .app-rail-shell:has(aside:hover) .rail-follow,
+  .app-rail-shell:has(aside:focus-within) .rail-follow {
+    margin-left: 152px;
   }
 }

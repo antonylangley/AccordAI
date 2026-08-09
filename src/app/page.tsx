@@ -6,9 +6,11 @@ import {
   FileText,
   LockKeyhole,
   MessageSquareText,
-  ShieldCheck,
-  UploadCloud
+  ShieldCheck
 } from "lucide-react";
+import { DashboardPreview } from "@/components/landing/dashboard-preview";
+import { PoliciesPreview } from "@/components/landing/policies-preview";
+import { PolicyFlowGraphic } from "@/components/landing/policy-flow-graphic";
 import { LandingScrollReveal } from "@/components/landing/scroll-reveal";
 import { AccordLogo } from "@/components/ui/accord-logo";
 
@@ -41,12 +43,6 @@ const platformStats = [
   ["Local redaction", "Sensitive values stay protected in the session"]
 ];
 
-const flowSteps = [
-  ["Upload", "Bring an AI policy, employee handbook, or security procedure."],
-  ["Review", "Accord extracts draft rules with citations and admin-facing explanations."],
-  ["Publish", "Approved rules become the active bundle for Accord Guard."]
-];
-
 const faqs = [
   {
     question: "Does Accord replace the AI tools employees use?",
@@ -73,6 +69,7 @@ export default function LandingPage() {
       <Hero />
       <AudienceStrip />
       <ProductSection />
+      <DashboardSection />
       <PolicySection />
       <PrivacySection />
       <FAQSection />
@@ -241,6 +238,29 @@ function ProductSection() {
   );
 }
 
+function DashboardSection() {
+  return (
+    <section id="dashboard" className="bg-[#f3f2ee] px-6 py-20 md:py-28">
+      <div className="mx-auto max-w-[1500px]">
+        <div className="max-w-4xl" data-reveal>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accord-primary">Dashboard</p>
+          <h2 className="mt-5 text-[clamp(2.6rem,4.7vw,5rem)] font-medium leading-[1.02] tracking-[-0.055em] text-black">
+            The signal, without the transcripts.
+          </h2>
+          <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-700">
+            Usage, policy decisions, and risk levels in one place — built on metadata and redacted evidence, never raw
+            conversations.
+          </p>
+        </div>
+
+        <div className="mt-12 rounded-[2rem] border border-black/10 bg-white p-4 shadow-[0_22px_70px_rgba(7,18,37,0.08)]" data-reveal>
+          <DashboardPreview />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PolicySection() {
   return (
     <section id="policy" className="bg-[#f3f2ee] px-6 py-20 md:py-28">
@@ -257,34 +277,13 @@ function PolicySection() {
         </div>
 
         <div className="rounded-[2rem] border border-black/10 bg-white p-4 shadow-[0_22px_70px_rgba(7,18,37,0.08)]" data-reveal>
-          <div className="rounded-[1.45rem] bg-[#f8f8f5] p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-accord-primary shadow-sm">
-                  <UploadCloud className="h-5 w-5" aria-hidden="true" />
-                </span>
-                <div>
-                  <p className="font-semibold text-black">External AI Usage Policy.pdf</p>
-                  <p className="text-sm text-slate-500">Parsed into draft rules</p>
-                </div>
-              </div>
-              <span className="rounded-full bg-black px-3 py-1 text-xs font-semibold text-white">Ready</span>
-            </div>
+          <PoliciesPreview />
+        </div>
+      </div>
 
-            <div className="mt-8 grid gap-4">
-              {flowSteps.map(([title, body], index) => (
-                <div key={title} className="grid grid-cols-[3rem_1fr] gap-4 rounded-2xl bg-white p-5 ring-1 ring-black/5">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f0edff] text-sm font-semibold text-accord-primary">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-lg font-semibold text-black">{title}</p>
-                    <p className="mt-1 text-base leading-7 text-slate-600">{body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="mx-auto mt-14 max-w-[1500px]" data-reveal>
+        <div className="rounded-[2rem] border border-black/10 bg-white p-6 shadow-[0_22px_70px_rgba(7,18,37,0.08)] md:p-8">
+          <PolicyFlowGraphic />
         </div>
       </div>
     </section>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { FilePenLine, ShieldCheck } from "lucide-react";
 import { EventTable } from "@/components/ui/event-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { RiskBadge } from "@/components/ui/risk-badge";
@@ -11,75 +10,69 @@ export function RiskEventsExplorer() {
   const [selected, setSelected] = useState<GovernanceEvent>(governanceEvents[0]);
 
   return (
-    <div className="space-y-8">
+    <div className="app-geist space-y-6">
       <PageHeader
         title="Risk Events"
-        description="Review flagged events with redacted prompt previews, policy outcomes, and reviewer notes. Raw prompts are intentionally not displayed."
+        description="Flagged events with redacted previews and policy outcomes — raw prompts are never displayed"
       />
-      <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
+      <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
         <EventTable events={governanceEvents} selectedId={selected.id} onSelect={setSelected} />
 
-        <aside className="rounded-2xl border border-accord-border bg-white/94 p-5 shadow-accord-panel">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-accord-primary">Incident review</p>
-              <h2 className="mt-1 text-xl font-semibold text-accord-text">{selected.category}</h2>
-            </div>
+        <aside className="rounded-lg border border-accord-border bg-accord-panel">
+          <div className="flex items-center justify-between gap-4 border-b border-accord-border px-4 py-3">
+            <h2 className="text-sm font-semibold text-accord-text">{selected.category}</h2>
             <RiskBadge level={selected.severity} />
           </div>
 
-          <div className="mt-5 rounded-2xl border border-accord-border bg-accord-mist p-4">
-            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-accord-muted">Risk score</p>
-            <div className="mt-2 flex items-end gap-2">
-              <p className="text-4xl font-semibold text-accord-text">{selected.riskScore}</p>
-              <p className="pb-1 text-sm text-slate-500">/ 100</p>
+          <div className="space-y-4 px-4 py-4">
+            <div className="flex items-baseline justify-between gap-4">
+              <p className="text-[13px] text-accord-muted">Risk score</p>
+              <p className="text-xl font-semibold text-accord-text [font-variant-numeric:tabular-nums]">
+                {selected.riskScore}
+                <span className="ml-1 text-xs font-normal text-accord-muted">/ 100</span>
+              </p>
             </div>
-          </div>
 
-          <div className="mt-5">
-            <p className="text-sm font-semibold text-accord-text">Redacted prompt preview</p>
-            <p className="mt-1 text-xs text-accord-muted">Secure evidence card. Raw prompt content is not displayed.</p>
-            <p className="mt-2 rounded-2xl border border-accord-border bg-accord-night p-4 font-mono text-xs leading-6 text-slate-300">
-              {selected.redactedPromptPreview}
-            </p>
-          </div>
-
-          <div className="mt-5">
-            <p className="text-sm font-semibold text-accord-text">Flags</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {selected.flags.map((flag) => (
-                <span key={flag} className="rounded-full bg-[#f1f2ff] px-3 py-1 text-xs font-semibold text-accord-primary">
-                  {flag}
-                </span>
-              ))}
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Redacted prompt preview</p>
+              <p className="mt-1.5 rounded-md bg-accord-night p-3 font-mono text-xs leading-5 text-slate-300">
+                {selected.redactedPromptPreview}
+              </p>
             </div>
-          </div>
 
-          <div className="mt-5 space-y-4">
-            <div className="flex gap-3 rounded-2xl border border-accord-border bg-white p-4">
-              <ShieldCheck className="mt-0.5 h-5 w-5 text-accord-primary" aria-hidden="true" />
-              <div>
-                <p className="text-sm font-semibold text-accord-text">Policy triggered</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{selected.policyTriggered}</p>
+            <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Flags</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {selected.flags.map((flag) => (
+                  <span key={flag} className="rounded border border-accord-border bg-accord-surface px-1.5 py-0.5 text-[11px] font-medium text-accord-muted">
+                    {flag}
+                  </span>
+                ))}
               </div>
             </div>
-            <div className="flex gap-3 rounded-2xl border border-accord-border bg-white p-4">
-              <FilePenLine className="mt-0.5 h-5 w-5 text-accord-primary" aria-hidden="true" />
-              <div>
-                <p className="text-sm font-semibold text-accord-text">Recommended action</p>
-                <p className="mt-1 text-sm leading-6 text-slate-600">{selected.recommendedAction}</p>
+
+            <div className="divide-y divide-accord-border/60 border-t border-accord-border/60">
+              <div className="py-2.5">
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Policy triggered</p>
+                <p className="mt-1 text-[13px] leading-5 text-accord-text">{selected.policyTriggered}</p>
+              </div>
+              <div className="py-2.5">
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Recommended action</p>
+                <p className="mt-1 text-[13px] leading-5 text-accord-text">{selected.recommendedAction}</p>
               </div>
             </div>
-          </div>
 
-          <label className="mt-5 block text-sm font-semibold text-accord-text" htmlFor="reviewer-notes">
-            Reviewer notes
-          </label>
-          <textarea
-            id="reviewer-notes"
-            className="mt-2 min-h-28 w-full resize-none rounded-2xl border border-accord-border bg-accord-mist p-3 text-sm outline-none focus:border-accord-primary"
-            placeholder="Add review notes or exception rationale..."
-          />
+            <div>
+              <label className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint" htmlFor="reviewer-notes">
+                Reviewer notes
+              </label>
+              <textarea
+                id="reviewer-notes"
+                className="mt-1.5 min-h-24 w-full resize-y rounded-md border border-accord-border bg-accord-panel p-2.5 text-[13px] leading-5 text-accord-text outline-none transition-colors placeholder:text-accord-faint focus:border-accord-primary"
+                placeholder="Add review notes or exception rationale…"
+              />
+            </div>
+          </div>
         </aside>
       </section>
     </div>

@@ -1,4 +1,3 @@
-import { CheckCircle2, CircleDashed } from "lucide-react";
 import type { ProviderConnection } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -7,40 +6,30 @@ export function ProviderCard({ provider }: { provider: ProviderConnection }) {
   const pending = provider.status === "pending authorization";
 
   return (
-    <article className="rounded-2xl border border-accord-border bg-white/92 p-5 shadow-sm">
+    <article className="rounded-lg border border-accord-border bg-accord-panel p-4">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="font-semibold text-accord-text">{provider.name}</h3>
-          <p className="mt-2 text-sm leading-6 text-accord-muted">{provider.detail}</p>
-        </div>
-        <div
-          className={cn(
-            "rounded-full border p-2",
-            connected && "border-emerald-200 bg-emerald-50 text-emerald-600",
-            pending && "border-amber-200 bg-amber-50 text-amber-600",
-            !connected && !pending && "border-slate-200 bg-slate-50 text-slate-400"
-          )}
-        >
-          {connected ? (
-            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-          ) : (
-            <CircleDashed className="h-4 w-4" aria-hidden="true" />
-          )}
-        </div>
-      </div>
-      <div className="mt-5 flex items-center justify-between border-t border-accord-border/70 pt-4 text-sm">
+        <h3 className="text-[13px] font-semibold text-accord-text">{provider.name}</h3>
         <span
           className={cn(
-            "font-semibold capitalize",
-            connected && "text-emerald-700",
-            pending && "text-amber-700",
-            !connected && !pending && "text-slate-500"
+            "inline-flex items-center gap-1.5 text-xs font-medium capitalize",
+            connected && "text-emerald-600 dark:text-emerald-400",
+            pending && "text-amber-600 dark:text-amber-400",
+            !connected && !pending && "text-accord-muted"
           )}
         >
+          <span
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              connected && "bg-emerald-500",
+              pending && "bg-amber-500",
+              !connected && !pending && "bg-slate-400"
+            )}
+          />
           {provider.status}
         </span>
-        <span className="font-mono text-xs text-accord-muted">{provider.requests}</span>
       </div>
+      <p className="mt-1.5 text-xs leading-5 text-accord-muted">{provider.detail}</p>
+      <p className="mt-3 border-t border-accord-border/60 pt-2.5 font-mono text-[11px] text-accord-muted">{provider.requests}</p>
     </article>
   );
 }

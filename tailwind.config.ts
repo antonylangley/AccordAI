@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -26,10 +27,14 @@ const config: Config = {
           blue: "#4F6BFF",
           violet: "#8B7CFF",
           mist: "#F6F8FC",
-          border: "#E3E8F2",
+          panel: "var(--accord-panel)",
+          surface: "var(--accord-surface)",
+          faint: "var(--accord-faint)",
+          tint: "var(--accord-tint)",
+          border: "var(--accord-border)",
           darkBorder: "#1E2A3D",
-          text: "#071225",
-          muted: "#64748B"
+          text: "var(--accord-text)",
+          muted: "var(--accord-muted)"
         }
       },
       boxShadow: {

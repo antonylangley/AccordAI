@@ -23,42 +23,52 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
   };
 
   return (
-    <div className="grid gap-5 md:grid-cols-[1fr_0.9fr]">
-      <div className="relative h-72">
+    <div className="grid gap-4 md:grid-cols-[1fr_0.9fr]">
+      <div className="relative h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               dataKey="count"
               nameKey="name"
-              innerRadius={72}
-              outerRadius={104}
-              paddingAngle={3}
-              stroke="#FFFFFF"
-              strokeWidth={4}
+              innerRadius={68}
+              outerRadius={96}
+              paddingAngle={2.5}
+              stroke="none"
             >
               {data.map((item) => (
                 <Cell key={item.name} fill={palette[item.name] || item.color} />
               ))}
             </Pie>
-            <Tooltip contentStyle={{ borderRadius: 16, border: "1px solid #E3E8F2", boxShadow: "0 18px 42px rgba(7,18,37,0.12)" }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "var(--accord-panel)",
+                borderRadius: 8,
+                border: "1px solid var(--accord-border)",
+                boxShadow: "0 4px 12px rgba(7,18,37,0.16)",
+                color: "var(--accord-text)",
+                fontSize: 12
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-3xl font-semibold tracking-[-0.04em] text-[#271A6F]">{total}</p>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-accord-muted">events</p>
+            <p className="text-2xl font-semibold tracking-[-0.02em] text-accord-text [font-variant-numeric:tabular-nums]">{total}</p>
+            <p className="mt-0.5 text-[11px] uppercase tracking-[0.06em] text-accord-muted">events</p>
           </div>
         </div>
       </div>
-      <div className="flex flex-col justify-center space-y-2.5">
+      <div className="flex flex-col justify-center divide-y divide-accord-border/60">
         {data.map((item) => (
-          <div key={item.name} className="flex items-center justify-between gap-3 rounded-2xl border border-accord-border bg-gradient-to-r from-white to-[#f4f2ff] px-3.5 py-3 text-sm">
+          <div key={item.name} className="flex items-center justify-between gap-3 py-2 text-[13px]">
             <span className="flex items-center gap-2 text-accord-muted">
-              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: palette[item.name] || item.color }} />
+              <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: palette[item.name] || item.color }} />
               {item.name}
             </span>
-            <span className="font-semibold text-accord-text">{item.count.toLocaleString("en-US")} / {item.value}%</span>
+            <span className="font-medium text-accord-text [font-variant-numeric:tabular-nums]">
+              {item.count.toLocaleString("en-US")} · {item.value}%
+            </span>
           </div>
         ))}
       </div>
@@ -67,9 +77,5 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
 }
 
 function EmptyChartState({ label }: { label: string }) {
-  return (
-    <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-accord-border bg-accord-soft/60 text-sm text-accord-muted">
-      {label}
-    </div>
-  );
+  return <div className="flex h-64 items-center justify-center text-[13px] text-accord-muted">{label}</div>;
 }

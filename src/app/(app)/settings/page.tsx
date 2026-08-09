@@ -1,103 +1,105 @@
 import Link from "next/link";
-import { KeyRound, LockKeyhole, UsersRound } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProviderCard } from "@/components/ui/provider-card";
-import { privacyControls, providers, settingsSections } from "@/lib/mock-data";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { privacyControls, providers } from "@/lib/mock-data";
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Settings"
-        description="Manage tenant configuration, provider connections, retention rules, review access, and integrations."
-      />
+    <div className="app-geist space-y-6">
+      <PageHeader title="Settings" description="Tenant configuration, provider connections, retention, and access" />
 
-      <section className="grid gap-6 xl:grid-cols-[280px_1fr]">
-        <nav aria-label="Settings sections" className="rounded-2xl border border-accord-border bg-white/94 p-3 shadow-sm">
-          {settingsSections.map((section, index) => (
-            <a
-              href={`#${section.toLowerCase().replaceAll(" ", "-")}`}
-              key={section}
-              className={`block rounded-xl px-3 py-2.5 text-sm font-medium ${
-                index === 0 ? "bg-[#f1f2ff] text-accord-primary" : "text-slate-600 hover:bg-accord-mist"
-              }`}
-            >
-              {section}
-            </a>
-          ))}
-        </nav>
+      <SettingsPanel title="Appearance">
+        <SettingsRow label="Interface theme" hint="Applies to the Accord dashboard on this device">
+          <ThemeToggle />
+        </SettingsRow>
+      </SettingsPanel>
 
-        <div className="space-y-6">
-          <section id="organization" className="rounded-2xl border border-accord-border bg-white/94 p-5 shadow-accord-panel">
-            <div className="flex gap-3">
-              <UsersRound className="mt-1 h-5 w-5 text-accord-primary" aria-hidden="true" />
-              <div>
-                <h2 className="text-lg font-semibold text-accord-text">Organization</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Northstar Financial uses Accord across support, legal, HR, engineering, and research teams.
-                </p>
-              </div>
-            </div>
-          </section>
+      <SettingsPanel title="Organization">
+        <p className="px-4 py-3.5 text-[13px] leading-5 text-accord-muted">
+          Northstar Financial uses Accord across support, legal, HR, engineering, and research teams.
+        </p>
+      </SettingsPanel>
 
-          <section id="providers">
-            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold text-accord-text">Providers</h2>
-              <Link
-                href="/api-tokens"
-                className="inline-flex items-center gap-2 rounded-xl border border-accord-border bg-white px-3 py-2 text-sm font-semibold text-accord-text shadow-sm"
-              >
-                <KeyRound className="h-4 w-4 text-accord-primary" aria-hidden="true" />
-                Manage API tokens
-              </Link>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {providers.map((provider) => (
-                <ProviderCard key={provider.name} provider={provider} />
-              ))}
-            </div>
-          </section>
-
-          <section
-            id="privacy-and-retention"
-            className="rounded-2xl border border-accord-border bg-accord-night p-5 text-white shadow-accord-panel"
+      <SettingsPanel
+        title="Providers"
+        action={
+          <Link
+            href="/api-tokens"
+            className="inline-flex h-8 items-center rounded-md border border-accord-border bg-accord-panel px-3 text-[13px] font-medium text-accord-text transition-colors hover:border-accord-faint"
           >
-            <div className="flex gap-3">
-              <LockKeyhole className="mt-1 h-5 w-5 text-accord-violet" aria-hidden="true" />
-              <div>
-                <h2 className="text-lg font-semibold text-white">Privacy and retention</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Governance without broad employee content retention. Accord is configured to govern usage while
-                  keeping raw content protected by default.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {privacyControls.map((control) => (
-                <div key={control} className="rounded-xl border border-white/10 bg-white/[0.055] px-4 py-3 text-sm font-medium text-slate-200">
-                  {control}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section id="review-access" className="rounded-2xl border border-accord-border bg-white/94 p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-accord-text">Review access</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Reviewers see redacted previews by default. Raw-content access is disabled unless an approved exception
-              workflow is configured.
-            </p>
-          </section>
-
-          <section id="integrations" className="rounded-2xl border border-accord-border bg-white/94 p-5 shadow-sm">
-            <h2 className="text-lg font-semibold text-accord-text">Integrations</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Connect identity, SIEM, ticketing, and data-loss prevention systems when the backend integration layer is
-              ready.
-            </p>
-          </section>
+            Manage API tokens
+          </Link>
+        }
+      >
+        <div className="grid gap-3 p-4 md:grid-cols-2">
+          {providers.map((provider) => (
+            <ProviderCard key={provider.name} provider={provider} />
+          ))}
         </div>
-      </section>
+      </SettingsPanel>
+
+      <SettingsPanel title="Privacy and retention" description="Governance without broad employee content retention — raw content stays protected by default">
+        <div className="divide-y divide-accord-border/60 px-4">
+          {privacyControls.map((control) => (
+            <div key={control} className="flex items-center gap-2 py-2.5 text-[13px] text-accord-text">
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+              {control}
+            </div>
+          ))}
+        </div>
+      </SettingsPanel>
+
+      <SettingsPanel title="Review access">
+        <p className="px-4 py-3.5 text-[13px] leading-5 text-accord-muted">
+          Reviewers see redacted previews by default. Raw-content access is disabled unless an approved exception
+          workflow is configured.
+        </p>
+      </SettingsPanel>
+
+      <SettingsPanel title="Integrations">
+        <p className="px-4 py-3.5 text-[13px] leading-5 text-accord-muted">
+          Connect identity, SIEM, ticketing, and data-loss prevention systems when the backend integration layer is
+          ready.
+        </p>
+      </SettingsPanel>
+    </div>
+  );
+}
+
+function SettingsPanel({
+  title,
+  description,
+  action,
+  children
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border border-accord-border bg-accord-panel">
+      <div className="flex items-center justify-between gap-4 border-b border-accord-border px-4 py-3">
+        <div>
+          <h2 className="text-sm font-semibold text-accord-text">{title}</h2>
+          {description ? <p className="mt-0.5 text-xs text-accord-muted">{description}</p> : null}
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SettingsRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+      <div>
+        <p className="text-[13px] font-medium text-accord-text">{label}</p>
+        {hint ? <p className="mt-0.5 text-xs text-accord-muted">{hint}</p> : null}
+      </div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }
