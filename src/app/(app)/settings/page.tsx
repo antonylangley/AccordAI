@@ -9,6 +9,7 @@ import {
   canManageOrganization,
   getAccordOrganizationContext,
   getOrganizationMembers,
+  updateOrganizationNameFromForm,
   type AccordOrganizationMember
 } from "@/lib/auth/organization";
 import { privacyControls, providers } from "@/lib/mock-data";
@@ -16,6 +17,7 @@ import { privacyControls, providers } from "@/lib/mock-data";
 type SettingsPageProps = {
   searchParams?: {
     member?: string | string[];
+    workspace?: string | string[];
   };
 };
 
@@ -24,6 +26,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   const members = await getOrganizationMembers(organization.companySlug, organization.userId);
   const canManageMembers = canManageOrganization(organization.role);
   const memberStatus = Array.isArray(searchParams?.member) ? searchParams?.member[0] : searchParams?.member;
+  const workspaceStatus = Array.isArray(searchParams?.workspace)
+    ? searchParams?.workspace[0]
+    : searchParams?.workspace;
 
   return (
     <div className="app-geist space-y-6">
@@ -43,10 +48,31 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         <div className="grid gap-4 p-4 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="rounded-lg border border-accord-border bg-white p-4">
             <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-muted">Workspace</p>
-            <h3 className="mt-1 text-lg font-semibold tracking-[-0.02em] text-accord-text">
-              {organization.companyName}
-            </h3>
-            <dl className="mt-4 space-y-3 text-[13px]">
+            <form action={updateWorkspaceAction} className="mt-3 space-y-3">
+              <label className="grid gap-1.5 text-xs font-semibold text-accord-text">
+                Company name
+                <input
+                  name="companyName"
+                  defaultValue={organization.companyName}
+                  required
+                  minLength={2}
+                  maxLength={80}
+                  disabled={!canManageMembers}
+                  className="h-10 rounded-md border border-accord-border bg-accord-panel px-3 text-sm font-normal text-accord-text outline-none transition-colors placeholder:text-accord-muted/70 focus:border-accord-faint disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={!canManageMembers}
+                className="rounded-md bg-accord-navy px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-accord-text disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                Save workspace
+              </button>
+            </form>
+
+            {workspaceStatus ? <WorkspaceNotice status={workspaceStatus} /> : null}
+
+            <dl className="mt-5 space-y-3 text-[13px]">
               <div className="flex items-center justify-between gap-4">
                 <dt className="text-accord-muted">Company slug</dt>
                 <dd className="font-mono text-xs uppercase tracking-[0.04em] text-accord-text">
@@ -73,7 +99,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
               <div>
                 <h3 className="text-sm font-semibold text-accord-text">Members</h3>
                 <p className="mt-0.5 text-xs text-accord-muted">
-                  Add teammates by email. Pending members join this company when they sign in with that email.
+                  Invite teammates by email. They join this workspace after accepting the Supabase Auth invite.
                 </p>
               </div>
               <span className="rounded-full bg-accord-mist px-2.5 py-1 text-xs font-semibold text-accord-faint">
@@ -113,7 +139,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 disabled={!canManageMembers}
                 className="self-end rounded-md bg-accord-navy px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-accord-text disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Add member
+                Send invite
               </button>
             </form>
 
@@ -188,7 +214,17 @@ async function addMemberAction(formData: FormData) {
 
   const result = await addOrganizationMemberFromForm(formData);
   revalidatePath("/settings");
-  redirect(`/settings?member=${result.ok ? "added" : "error"}`);
+  redirect(`/settings?member=${result.ok ? (result.emailSent ? "invited" : "added") : "error"}`);
+}
+
+async function updateWorkspaceAction(formData: FormData) {
+  "use server";
+
+  const result = await updateOrganizationNameFromForm(formData);
+  revalidatePath("/settings");
+  revalidatePath("/dashboard");
+  revalidatePath("/policies");
+  redirect(`/settings?workspace=${result.ok ? "saved" : "error"}`);
 }
 
 function MemberRow({ member }: { member: AccordOrganizationMember }) {
@@ -201,7 +237,7 @@ function MemberRow({ member }: { member: AccordOrganizationMember }) {
         </div>
         <p className="mt-0.5 text-xs text-accord-muted">
           {member.status === "invited"
-            ? "Pending sign-in with this email"
+            ? "Invite sent; waiting for sign-in"
             : member.status === "suspended"
               ? "Suspended"
               : "Active workspace member"}
@@ -214,18 +250,41 @@ function MemberRow({ member }: { member: AccordOrganizationMember }) {
 }
 
 function MemberNotice({ status }: { status: string }) {
-  const isAdded = status === "added";
+  const isGood = status === "added" || status === "invited";
+  const message =
+    status === "invited"
+      ? "Invite email sent. The teammate joins this workspace when they accept it."
+      : status === "added"
+        ? "Organization member saved."
+        : "Could not save that member or send the invite email. Check the email and your Supabase Auth settings.";
 
   return (
     <div
       className={[
         "mx-4 mt-4 rounded-lg border px-3 py-2 text-sm",
-        isAdded
+        isGood
           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
           : "border-amber-200 bg-amber-50 text-amber-800"
       ].join(" ")}
     >
-      {isAdded ? "Organization member saved." : "Could not save that member. Check the email and your role."}
+      {message}
+    </div>
+  );
+}
+
+function WorkspaceNotice({ status }: { status: string }) {
+  const isSaved = status === "saved";
+
+  return (
+    <div
+      className={[
+        "mt-3 rounded-lg border px-3 py-2 text-sm",
+        isSaved
+          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+          : "border-amber-200 bg-amber-50 text-amber-800"
+      ].join(" ")}
+    >
+      {isSaved ? "Workspace name saved." : "Could not save the workspace name. Check your access and try again."}
     </div>
   );
 }

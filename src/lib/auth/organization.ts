@@ -32,6 +32,12 @@ export type AccordOrganizationMember = {
 export type OrganizationMemberResult = {
   ok: boolean;
   message: string;
+  emailSent?: boolean;
+};
+
+export type OrganizationUpdateResult = {
+  ok: boolean;
+  message: string;
 };
 
 const demoOrganization: AccordOrganizationContext = {
@@ -140,6 +146,42 @@ export async function addOrganizationMemberFromForm(formData: FormData): Promise
   return addOrganizationMember({ email, role });
 }
 
+export async function updateOrganizationNameFromForm(formData: FormData): Promise<OrganizationUpdateResult> {
+  return updateOrganizationName(normalizeCompanyName(formData.get("companyName")));
+}
+
+export async function updateOrganizationName(companyName: string): Promise<OrganizationUpdateResult> {
+  const organization = await getAccordOrganizationContext({ autoCreate: true });
+  if (!organization.authenticated) {
+    return { ok: false, message: "Sign in before updating the workspace." };
+  }
+
+  if (!canManageOrganization(organization.role)) {
+    return { ok: false, message: "Only owners and admins can update workspace settings." };
+  }
+
+  const normalizedName = normalizeCompanyName(companyName);
+  if (normalizedName.length < 2) {
+    return { ok: false, message: "Enter a workspace name." };
+  }
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, message: "Supabase is not configured for organization management." };
+  }
+
+  const { error } = await supabase
+    .from("accord_companies")
+    .update({
+      name: normalizedName,
+      updated_at: new Date().toISOString()
+    })
+    .eq("slug", organization.companySlug);
+
+  if (error) return { ok: false, message: "Could not update the workspace name." };
+  return { ok: true, message: "Workspace name saved." };
+}
+
 export async function addOrganizationMember({
   email,
   role
@@ -170,8 +212,40 @@ export async function addOrganizationMember({
     return { ok: false, message: "Supabase is not configured for organization management." };
   }
 
-  const existingAuthUser = await findAuthUserByEmail(supabase, normalizedEmail);
   const now = new Date().toISOString();
+  const { data: existingInvitation } = await supabase
+    .from("accord_company_members")
+    .select("id")
+    .eq("company_slug", organization.companySlug)
+    .eq("email", normalizedEmail)
+    .is("user_id", null)
+    .maybeSingle();
+
+  if (existingInvitation?.id) {
+    const { error } = await supabase
+      .from("accord_company_members")
+      .update({
+        role,
+        status: "invited",
+        updated_at: now
+      })
+      .eq("id", existingInvitation.id);
+
+    if (error) return { ok: false, message: "Could not update that invitation." };
+
+    const emailResult = await sendOrganizationInviteEmail({ supabase, organization, email: normalizedEmail, role });
+    if (!emailResult.ok) {
+      return {
+        ok: false,
+        emailSent: false,
+        message: "Invitation was saved, but Supabase could not send the email."
+      };
+    }
+
+    return { ok: true, emailSent: true, message: "Invite email resent." };
+  }
+
+  const existingAuthUser = await findAuthUserByEmail(supabase, normalizedEmail);
 
   if (existingAuthUser?.id) {
     const { data: existingMember } = await supabase
@@ -193,7 +267,7 @@ export async function addOrganizationMember({
         .eq("id", existingMember.id);
 
       if (error) return { ok: false, message: "Could not update that member." };
-      return { ok: true, message: "Member updated." };
+      return { ok: true, emailSent: false, message: "Member updated." };
     }
 
     const { error } = await supabase.from("accord_company_members").insert({
@@ -206,29 +280,7 @@ export async function addOrganizationMember({
     });
 
     if (error) return { ok: false, message: "Could not add that member." };
-    return { ok: true, message: "Member added." };
-  }
-
-  const { data: existingInvitation } = await supabase
-    .from("accord_company_members")
-    .select("id")
-    .eq("company_slug", organization.companySlug)
-    .eq("email", normalizedEmail)
-    .is("user_id", null)
-    .maybeSingle();
-
-  if (existingInvitation?.id) {
-    const { error } = await supabase
-      .from("accord_company_members")
-      .update({
-        role,
-        status: "invited",
-        updated_at: now
-      })
-      .eq("id", existingInvitation.id);
-
-    if (error) return { ok: false, message: "Could not update that invitation." };
-    return { ok: true, message: "Invitation updated." };
+    return { ok: true, emailSent: false, message: "Member added." };
   }
 
   const { error } = await supabase.from("accord_company_members").insert({
@@ -241,7 +293,21 @@ export async function addOrganizationMember({
   });
 
   if (error) return { ok: false, message: "Could not create that invitation." };
-  return { ok: true, message: "Invitation created. They will join this organization when they sign in with that email." };
+
+  const emailResult = await sendOrganizationInviteEmail({ supabase, organization, email: normalizedEmail, role });
+  if (!emailResult.ok) {
+    return {
+      ok: false,
+      emailSent: false,
+      message: "Invitation was saved, but Supabase could not send the email."
+    };
+  }
+
+  return {
+    ok: true,
+    emailSent: true,
+    message: "Invite email sent. They will join this organization after accepting it."
+  };
 }
 
 export function canManageOrganization(role: AccordOrganizationContext["role"]) {
@@ -416,6 +482,50 @@ async function findAuthUserByEmail(supabase: SupabaseClient, email: string): Pro
   return data.users.find((candidate) => normalizeEmail(candidate.email) === email) || null;
 }
 
+async function sendOrganizationInviteEmail({
+  supabase,
+  organization,
+  email,
+  role
+}: {
+  supabase: SupabaseClient;
+  organization: AccordOrganizationContext;
+  email: string;
+  role: OrganizationRole;
+}) {
+  const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
+    redirectTo: buildAuthCallbackUrl("/settings"),
+    data: {
+      accord_invite: true,
+      company_name: organization.companyName,
+      company_slug: organization.companySlug,
+      invited_role: role
+    }
+  });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return { ok: true, message: "Invite email sent." };
+}
+
+function buildAuthCallbackUrl(returnTo: string) {
+  const callbackUrl = new URL("/auth/callback", appBaseUrl());
+  callbackUrl.searchParams.set("returnTo", returnTo);
+  return callbackUrl.toString();
+}
+
+function appBaseUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || process.env.SITE_URL || "";
+  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || "";
+  if (vercelUrl) return `https://${vercelUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}`;
+
+  return "http://localhost:3000";
+}
+
 function organizationNameFromUser(user: User) {
   const metadata = user.user_metadata || {};
   const fullName = typeof metadata.full_name === "string" ? metadata.full_name : "";
@@ -447,6 +557,10 @@ function normalizeMemberStatus(value: unknown): OrganizationMemberStatus {
 
 function normalizeEmail(value: FormDataEntryValue | string | null | undefined) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function normalizeCompanyName(value: FormDataEntryValue | string | null | undefined) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, 80) : "";
 }
 
 function slugify(value: string) {
