@@ -1,0 +1,14 @@
+diff --git a/src/components/landing/policy-flow-graphic.tsx b/src/components/landing/policy-flow-graphic.tsx
+index 87de5a1..1a4947c 100644
+--- a/src/components/landing/policy-flow-graphic.tsx
++++ b/src/components/landing/policy-flow-graphic.tsx
+@@ -22,7 +22,8 @@ export function PolicyFlowGraphic() {
+             <DocLine w="78%" />
+             <div className="rounded-sm bg-accord-tint px-2 py-1.5">
+               <p className="text-[10px] leading-4 text-accord-text/80">
+-                "Employees must not submit client names, account numbers, or medical records to personal AI services…"
++                &ldquo;Employees must not submit client names, account numbers, or medical records to personal AI
++                services…&rdquo;
+               </p>
+               <p className="mt-1 font-mono text-[8px] uppercase tracking-[0.06em] text-accord-primary">§ 4.2 · Client information</p>
+             </div>
