@@ -113,6 +113,8 @@ export async function getOrganizationMembers(
   const supabase = getSupabaseServerClient();
   if (!supabase) return [];
 
+  await reconcileAcceptedInvitations(supabase, companySlug);
+
   const { data, error } = await supabase
     .from("accord_company_members")
     .select("id,user_id,email,role,status,created_at,updated_at")
@@ -144,6 +146,12 @@ export async function addOrganizationMemberFromForm(formData: FormData): Promise
   const role = normalizeMemberRole(formData.get("role"));
 
   return addOrganizationMember({ email, role });
+}
+
+export async function resendOrganizationInviteFromForm(formData: FormData): Promise<OrganizationMemberResult> {
+  const memberId = typeof formData.get("memberId") === "string" ? String(formData.get("memberId")) : "";
+
+  return resendOrganizationInvite({ memberId });
 }
 
 export async function updateOrganizationNameFromForm(formData: FormData): Promise<OrganizationUpdateResult> {
@@ -213,6 +221,7 @@ export async function addOrganizationMember({
   }
 
   const now = new Date().toISOString();
+  const existingAuthUser = await findAuthUserByEmail(supabase, normalizedEmail);
   const { data: existingInvitation } = await supabase
     .from("accord_company_members")
     .select("id")
@@ -221,7 +230,7 @@ export async function addOrganizationMember({
     .is("user_id", null)
     .maybeSingle();
 
-  if (existingInvitation?.id) {
+  if (existingInvitation?.id && (!existingAuthUser?.id || !hasAcceptedAuthInvite(existingAuthUser))) {
     const { error } = await supabase
       .from("accord_company_members")
       .update({
@@ -234,20 +243,12 @@ export async function addOrganizationMember({
     if (error) return { ok: false, message: "Could not update that invitation." };
 
     const emailResult = await sendOrganizationInviteEmail({ supabase, organization, email: normalizedEmail, role });
-    if (!emailResult.ok) {
-      return {
-        ok: false,
-        emailSent: false,
-        message: "Invitation was saved, but Supabase could not send the email."
-      };
-    }
+    if (!emailResult.ok) return inviteEmailFailedResult(emailResult.message);
 
     return { ok: true, emailSent: true, message: "Invite email resent." };
   }
 
-  const existingAuthUser = await findAuthUserByEmail(supabase, normalizedEmail);
-
-  if (existingAuthUser?.id) {
+  if (existingAuthUser?.id && hasAcceptedAuthInvite(existingAuthUser)) {
     const { data: existingMember } = await supabase
       .from("accord_company_members")
       .select("id")
@@ -267,7 +268,41 @@ export async function addOrganizationMember({
         .eq("id", existingMember.id);
 
       if (error) return { ok: false, message: "Could not update that member." };
-      return { ok: true, emailSent: false, message: "Member updated." };
+
+      if (existingInvitation?.id) {
+        await supabase
+          .from("accord_company_members")
+          .delete()
+          .eq("company_slug", organization.companySlug)
+          .eq("email", normalizedEmail)
+          .is("user_id", null);
+      }
+
+      return {
+        ok: true,
+        emailSent: false,
+        message: "Existing account updated. No invite email was needed."
+      };
+    }
+
+    if (existingInvitation?.id) {
+      const { error } = await supabase
+        .from("accord_company_members")
+        .update({
+          user_id: existingAuthUser.id,
+          email: normalizedEmail,
+          role,
+          status: "active",
+          updated_at: now
+        })
+        .eq("id", existingInvitation.id);
+
+      if (error) return { ok: false, message: "Could not activate that invitation." };
+      return {
+        ok: true,
+        emailSent: false,
+        message: "Existing account added. No invite email was needed."
+      };
     }
 
     const { error } = await supabase.from("accord_company_members").insert({
@@ -280,7 +315,11 @@ export async function addOrganizationMember({
     });
 
     if (error) return { ok: false, message: "Could not add that member." };
-    return { ok: true, emailSent: false, message: "Member added." };
+    return {
+      ok: true,
+      emailSent: false,
+      message: "Existing account added. No invite email was needed."
+    };
   }
 
   const { error } = await supabase.from("accord_company_members").insert({
@@ -295,19 +334,77 @@ export async function addOrganizationMember({
   if (error) return { ok: false, message: "Could not create that invitation." };
 
   const emailResult = await sendOrganizationInviteEmail({ supabase, organization, email: normalizedEmail, role });
-  if (!emailResult.ok) {
-    return {
-      ok: false,
-      emailSent: false,
-      message: "Invitation was saved, but Supabase could not send the email."
-    };
-  }
+  if (!emailResult.ok) return inviteEmailFailedResult(emailResult.message);
 
   return {
     ok: true,
     emailSent: true,
     message: "Invite email sent. They will join this organization after accepting it."
   };
+}
+
+export async function resendOrganizationInvite({ memberId }: { memberId: string }): Promise<OrganizationMemberResult> {
+  const organization = await getAccordOrganizationContext({ autoCreate: true });
+  if (!organization.authenticated) {
+    return { ok: false, message: "Sign in before resending invitations." };
+  }
+
+  if (!canManageOrganization(organization.role)) {
+    return { ok: false, message: "Only owners and admins can resend invitations." };
+  }
+
+  if (!memberId) return { ok: false, message: "Choose an invitation to resend." };
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, message: "Supabase is not configured for organization management." };
+  }
+
+  const { data: invitation, error } = await supabase
+    .from("accord_company_members")
+    .select("id,email,role,status,user_id")
+    .eq("id", memberId)
+    .eq("company_slug", organization.companySlug)
+    .maybeSingle();
+
+  if (error || !invitation) return { ok: false, message: "Could not find that invitation." };
+
+  const email = normalizeEmail(invitation.email);
+  if (!email) return { ok: false, message: "That invitation does not have an email address." };
+
+  if (invitation.status !== "invited" || invitation.user_id) {
+    return { ok: false, message: "That member is already active. They can sign in instead." };
+  }
+
+  const role = normalizeMemberRole(invitation.role);
+  const existingAuthUser = await findAuthUserByEmail(supabase, email);
+  if (existingAuthUser?.id && hasAcceptedAuthInvite(existingAuthUser)) {
+    const { error: activateError } = await supabase
+      .from("accord_company_members")
+      .update({
+        user_id: existingAuthUser.id,
+        status: "active",
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", invitation.id)
+      .is("user_id", null);
+
+    if (activateError) return { ok: false, message: "Could not activate that accepted invitation." };
+    return { ok: true, emailSent: false, message: "Invite was already accepted. The member is active now." };
+  }
+
+  const emailResult = await sendOrganizationInviteEmail({ supabase, organization, email, role });
+  if (!emailResult.ok) return inviteEmailFailedResult(emailResult.message);
+
+  await supabase
+    .from("accord_company_members")
+    .update({
+      status: "invited",
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", invitation.id);
+
+  return { ok: true, emailSent: true, message: "Invite email resent." };
 }
 
 export function canManageOrganization(role: AccordOrganizationContext["role"]) {
@@ -482,6 +579,62 @@ async function findAuthUserByEmail(supabase: SupabaseClient, email: string): Pro
   return data.users.find((candidate) => normalizeEmail(candidate.email) === email) || null;
 }
 
+async function reconcileAcceptedInvitations(supabase: SupabaseClient, companySlug: string) {
+  const { data: invitations, error } = await supabase
+    .from("accord_company_members")
+    .select("id,email")
+    .eq("company_slug", companySlug)
+    .eq("status", "invited")
+    .is("user_id", null);
+
+  if (error || !Array.isArray(invitations) || invitations.length === 0) return;
+
+  const pendingByEmail = new Map<string, string>();
+  for (const invitation of invitations) {
+    const id = typeof invitation.id === "string" ? invitation.id : "";
+    const email = normalizeEmail(invitation.email);
+    if (id && email) pendingByEmail.set(email, id);
+  }
+
+  if (pendingByEmail.size === 0) return;
+
+  const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000
+  });
+
+  if (authError || !Array.isArray(authUsers?.users)) return;
+
+  const now = new Date().toISOString();
+  await Promise.all(
+    authUsers.users.map(async (user) => {
+      const email = normalizeEmail(user.email);
+      const invitationId = pendingByEmail.get(email);
+      if (!invitationId || !hasAcceptedAuthInvite(user)) return;
+
+      await supabase
+        .from("accord_company_members")
+        .update({
+          user_id: user.id,
+          status: "active",
+          updated_at: now
+        })
+        .eq("id", invitationId)
+        .is("user_id", null);
+    })
+  );
+}
+
+function hasAcceptedAuthInvite(user: User) {
+  const authUser = user as User & {
+    confirmed_at?: string | null;
+    email_confirmed_at?: string | null;
+    last_sign_in_at?: string | null;
+  };
+
+  return Boolean(authUser.confirmed_at || authUser.email_confirmed_at || authUser.last_sign_in_at);
+}
+
 async function sendOrganizationInviteEmail({
   supabase,
   organization,
@@ -493,21 +646,47 @@ async function sendOrganizationInviteEmail({
   email: string;
   role: OrganizationRole;
 }) {
+  const baseUrl = appBaseUrl();
   const { error } = await supabase.auth.admin.inviteUserByEmail(email, {
     redirectTo: buildAuthCallbackUrl("/settings"),
     data: {
       accord_invite: true,
       company_name: organization.companyName,
+      organization_name: organization.companyName,
       company_slug: organization.companySlug,
-      invited_role: role
+      invited_role: role,
+      invited_as: role,
+      accord_logo_url: `${baseUrl}/email/accord-logo.png`,
+      accord_wordmark_url: `${baseUrl}/email/accord-logo-wordmark.png`
     }
   });
 
   if (error) {
+    const inviteError = error as typeof error & { code?: string; status?: number };
+    console.error("Accord invite email failed", {
+      code: inviteError.code,
+      status: inviteError.status,
+      name: error.name,
+      message: error.message
+    });
+
     return { ok: false, message: error.message };
   }
 
   return { ok: true, message: "Invite email sent." };
+}
+
+function inviteEmailFailedResult(message?: string): OrganizationMemberResult {
+  const normalizedMessage = message || "Unknown Supabase invite email error.";
+  const alreadyRegistered = /already.*registered|already.*exists|user.*exists/i.test(normalizedMessage);
+
+  return {
+    ok: false,
+    emailSent: false,
+    message: alreadyRegistered
+      ? "That email already has a confirmed Supabase Auth user. Ask them to sign in with that email, then Accord will attach them to the workspace."
+      : "Invitation was saved, but Supabase could not hand the email to SMTP. Check Supabase Auth logs and Resend logs for the delivery error."
+  };
 }
 
 function buildAuthCallbackUrl(returnTo: string) {

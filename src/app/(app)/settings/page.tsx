@@ -9,6 +9,7 @@ import {
   canManageOrganization,
   getAccordOrganizationContext,
   getOrganizationMembers,
+  resendOrganizationInviteFromForm,
   updateOrganizationNameFromForm,
   type AccordOrganizationMember
 } from "@/lib/auth/organization";
@@ -151,7 +152,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
             <div className="divide-y divide-accord-border">
               {members.length ? (
-                members.map((member) => <MemberRow key={member.id} member={member} />)
+                members.map((member) => (
+                  <MemberRow key={member.id} member={member} canManageMembers={canManageMembers} />
+                ))
               ) : (
                 <p className="px-4 py-5 text-sm text-accord-muted">No organization members have been created yet.</p>
               )}
@@ -217,6 +220,14 @@ async function addMemberAction(formData: FormData) {
   redirect(`/settings?member=${result.ok ? (result.emailSent ? "invited" : "added") : "error"}`);
 }
 
+async function resendMemberInviteAction(formData: FormData) {
+  "use server";
+
+  const result = await resendOrganizationInviteFromForm(formData);
+  revalidatePath("/settings");
+  redirect(`/settings?member=${result.ok ? (result.emailSent ? "resent" : "added") : "error"}`);
+}
+
 async function updateWorkspaceAction(formData: FormData) {
   "use server";
 
@@ -227,9 +238,15 @@ async function updateWorkspaceAction(formData: FormData) {
   redirect(`/settings?workspace=${result.ok ? "saved" : "error"}`);
 }
 
-function MemberRow({ member }: { member: AccordOrganizationMember }) {
+function MemberRow({
+  member,
+  canManageMembers
+}: {
+  member: AccordOrganizationMember;
+  canManageMembers: boolean;
+}) {
   return (
-    <div className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-center">
+    <div className="grid gap-3 px-4 py-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-center">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
           <p className="truncate text-sm font-semibold text-accord-text">{member.email}</p>
@@ -240,9 +257,20 @@ function MemberRow({ member }: { member: AccordOrganizationMember }) {
             ? "Invite sent; waiting for sign-in"
             : member.status === "suspended"
               ? "Suspended"
-              : "Active workspace member"}
+          : "Active workspace member"}
         </p>
       </div>
+      {member.status === "invited" && canManageMembers ? (
+        <form action={resendMemberInviteAction}>
+          <input type="hidden" name="memberId" value={member.id} />
+          <button
+            type="submit"
+            className="rounded-full border border-accord-border bg-accord-panel px-3 py-1 text-xs font-semibold text-accord-text transition-colors hover:border-accord-faint hover:text-accord-faint"
+          >
+            Resend
+          </button>
+        </form>
+      ) : null}
       <StatusPill value={member.role} />
       <StatusPill value={member.status} tone={member.status === "active" ? "green" : "purple"} />
     </div>
@@ -250,12 +278,14 @@ function MemberRow({ member }: { member: AccordOrganizationMember }) {
 }
 
 function MemberNotice({ status }: { status: string }) {
-  const isGood = status === "added" || status === "invited";
+  const isGood = status === "added" || status === "invited" || status === "resent";
   const message =
     status === "invited"
       ? "Invite email sent. The teammate joins this workspace when they accept it."
+      : status === "resent"
+        ? "Invite email resent. If it still does not arrive, check Supabase Auth logs and Resend delivery logs."
       : status === "added"
-        ? "Organization member saved."
+        ? "Organization member saved. Existing accounts are added directly, so no new invite email is sent."
         : "Could not save that member or send the invite email. Check the email and your Supabase Auth settings.";
 
   return (

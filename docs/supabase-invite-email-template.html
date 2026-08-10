@@ -1,0 +1,115 @@
+<!--
+Supabase Auth > Emails > Templates > Invite user
+Suggested subject: You're invited to Accord
+
+This template expects the invite flow to pass:
+- organization_name
+- invited_as
+- accord_logo_url
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>You're invited to Accord</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f7f8fa;">
+    <!-- Preheader (hidden preview text in inbox list) -->
+    <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
+      You've been invited to an Accord governance workspace. Accept to get started.
+    </div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f8fa;">
+      <tr>
+        <td align="center" style="padding:48px 16px;">
+
+          <table role="presentation" width="420" cellpadding="0" cellspacing="0" style="width:420px; max-width:100%;">
+            <!-- Logo row -->
+            <tr>
+              <td align="center" style="padding-bottom:20px;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="background-color:#ffffff; border:1px solid #e6eaf2; border-radius:8px; width:32px; height:32px; text-align:center; vertical-align:middle; box-shadow:0 4px 16px rgba(95,86,255,0.08); overflow:hidden;">
+                      <img
+                        src='{{ index .Data "accord_logo_url" }}'
+                        width="22"
+                        height="22"
+                        alt="Accord"
+                        style="display:block; border:0; outline:none; text-decoration:none; margin:5px auto 0 auto;"
+                      />
+                    </td>
+                    <td style="padding-left:10px; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:17px; font-weight:600; color:#071225; letter-spacing:-0.02em;">
+                      Accord
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Card -->
+            <tr>
+              <td style="background-color:#ffffff; border:1px solid #e3e8f2; border-radius:8px;">
+                <!-- Card header -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:20px 24px 16px 24px; border-bottom:1px solid #e3e8f2;">
+                      <p style="margin:0; font-family:'IBM Plex Mono', Consolas, 'Courier New', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8;">
+                        Accord workspace
+                      </p>
+                      <h1 style="margin:6px 0 0 0; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:20px; font-weight:600; letter-spacing:-0.02em; color:#071225;">
+                        You've been invited
+                      </h1>
+                    </td>
+                  </tr>
+
+                  <!-- Card body -->
+                  <tr>
+                    <td style="padding:20px 24px 24px 24px;">
+                      <p style="margin:0 0 20px 0; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:14px; line-height:22px; color:#64748b;">
+                        You've been invited to join {{ index .Data "organization_name" }} as {{ index .Data "invited_as" }}. Accord gives your team usage, policy decisions, and audit evidence for AI work in one place.
+                      </p>
+
+                      <!-- Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" style="border-radius:6px; background-color:#111d2e;">
+                            <a href="{{ .ConfirmationURL }}"
+                               style="display:block; padding:12px 20px; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:14px; font-weight:500; color:#ffffff; text-decoration:none; border-radius:6px;">
+                              Accept invitation
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <p style="margin:20px 0 0 0; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:12px; line-height:18px; color:#94a3b8;">
+                        If the button doesn't work, paste this link into your browser:
+                      </p>
+                      <p style="margin:6px 0 0 0; font-family:'IBM Plex Mono', Consolas, 'Courier New', monospace; font-size:11px; line-height:17px; word-break:break-all;">
+                        <a href="{{ .ConfirmationURL }}" style="color:#595ffd; text-decoration:none;">{{ .ConfirmationURL }}</a>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+              <td align="center" style="padding-top:20px;">
+                <p style="margin:0; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:12px; line-height:18px; color:#94a3b8;">
+                  Accord logs metadata and redacted evidence; raw prompts stay out of dashboard storage.
+                </p>
+                <p style="margin:8px 0 0 0; font-family:'Work Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:12px; line-height:18px; color:#94a3b8;">
+                  Didn't expect this invitation? You can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
