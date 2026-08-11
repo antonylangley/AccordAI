@@ -51,12 +51,18 @@ export function createSupabaseServerAuthClient() {
 }
 
 export function appOriginFromRequest(request: Request) {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (configuredUrl) return configuredUrl.replace(/\/$/, "");
+  const requestUrl = new URL(request.url);
+  const forwardedHost = firstForwardedValue(request.headers.get("x-forwarded-host"));
+  const forwardedProto = firstForwardedValue(request.headers.get("x-forwarded-proto"));
 
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-  if (forwardedHost) return `${forwardedProto}://${forwardedHost}`;
+  if (forwardedHost) {
+    const protocol = forwardedProto || requestUrl.protocol.replace(":", "");
+    return `${protocol}://${forwardedHost}`;
+  }
 
-  return new URL(request.url).origin;
+  return requestUrl.origin;
+}
+
+function firstForwardedValue(value: string | null) {
+  return value?.split(",")[0]?.trim() || "";
 }
