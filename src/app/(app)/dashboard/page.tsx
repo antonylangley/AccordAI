@@ -64,18 +64,20 @@ export default async function DashboardPage({
         ))}
       </section>
 
-      <div className="flex">
-        <TimeRangeFilter selectedRange={timeRange} />
-      </div>
+      <div className="space-y-2">
+        <div className="flex">
+          <TimeRangeFilter selectedRange={timeRange} />
+        </div>
 
-      <section className="grid gap-4 pb-32 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)] xl:pb-40">
-        <ChartCard title="Guarded traffic" description={timeRangeLabel}>
-          <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
-        </ChartCard>
-        <ChartCard title="Risk breakdown" description={timeRangeLabel}>
-          <RiskDistributionChart data={databaseSnapshot.charts.riskDistribution} />
-        </ChartCard>
-      </section>
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)]">
+          <ChartCard title="Guarded traffic" description={timeRangeLabel}>
+            <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
+          </ChartCard>
+          <ChartCard title="Risk breakdown" description={timeRangeLabel}>
+            <RiskDistributionChart data={databaseSnapshot.charts.riskDistribution} />
+          </ChartCard>
+        </section>
+      </div>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <ChartCard title="Top categories" description={timeRangeLabel}>
