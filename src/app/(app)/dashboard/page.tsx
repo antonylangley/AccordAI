@@ -55,18 +55,20 @@ export default async function DashboardPage({
   ] as const;
 
   return (
-    <div className="app-geist space-y-4">
-      <section className="grid items-stretch gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <OverviewHeader companyName={organization.companyName} selectedRange={timeRange} />
+    <div className="app-geist space-y-6">
+      <OverviewHeader companyName={organization.companyName} />
 
-        <div className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
-          {kpis.map((kpi) => (
-            <OverviewMetricCell key={kpi.label} {...kpi} />
-          ))}
-        </div>
+      <section className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel md:grid-cols-2 md:divide-y-0 xl:grid-cols-4 xl:divide-x">
+        {kpis.map((kpi) => (
+          <OverviewMetricCell key={kpi.label} {...kpi} />
+        ))}
       </section>
 
-      <section className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)]">
+      <div className="flex">
+        <TimeRangeFilter selectedRange={timeRange} />
+      </div>
+
+      <section className="grid gap-4 pb-40 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)] xl:pb-80">
         <ChartCard title="Guarded traffic" description={timeRangeLabel}>
           <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
         </ChartCard>
@@ -75,7 +77,7 @@ export default async function DashboardPage({
         </ChartCard>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <ChartCard title="Top categories" description={timeRangeLabel}>
           <RiskCategoryBars data={databaseSnapshot.charts.riskCategories} />
         </ChartCard>
@@ -119,15 +121,9 @@ export default async function DashboardPage({
   );
 }
 
-function OverviewHeader({
-  companyName,
-  selectedRange
-}: {
-  companyName: string;
-  selectedRange: DashboardTimeRange;
-}) {
+function OverviewHeader({ companyName }: { companyName: string }) {
   return (
-    <header className="flex min-h-[92px] flex-col justify-center gap-3">
+    <header>
       <div>
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-faint">
           {companyName} / Overview
@@ -135,7 +131,6 @@ function OverviewHeader({
         <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.025em] text-accord-text">Governance activity</h1>
       </div>
 
-      <TimeRangeFilter selectedRange={selectedRange} />
     </header>
   );
 }
@@ -166,9 +161,9 @@ function TimeRangeFilter({ selectedRange }: { selectedRange: DashboardTimeRange 
 
 function OverviewMetricCell({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <article className="flex min-h-[92px] flex-col justify-center px-4 py-3">
+    <article className="px-4 py-4">
       <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-accord-muted">{label}</p>
-      <p className="mt-2 text-2xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums] xl:text-3xl">
+      <p className="mt-2 text-3xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums]">
         {value}
         {detail ? (
           <>

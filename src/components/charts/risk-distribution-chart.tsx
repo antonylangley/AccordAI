@@ -23,16 +23,16 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-[1fr_0.9fr]">
-      <div className="relative h-64">
+    <div className="grid items-center gap-3 sm:grid-cols-[minmax(170px,0.85fr)_minmax(150px,1fr)]">
+      <div className="relative h-56 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               dataKey="count"
               nameKey="name"
-              innerRadius={68}
-              outerRadius={96}
+              innerRadius={56}
+              outerRadius={82}
               paddingAngle={2.5}
               stroke="none"
             >
