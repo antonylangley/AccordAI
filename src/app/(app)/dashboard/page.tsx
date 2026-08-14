@@ -39,12 +39,6 @@ export default async function DashboardPage({
   const blockedRequests = getStat("Blocked requests")?.value || metrics.messagesBlocked.toLocaleString("en-US");
   const submittedOrBlocked = metrics.messagesSent + metrics.messagesBlocked;
   const blockRate = submittedOrBlocked ? `${Math.round((metrics.messagesBlocked / submittedOrBlocked) * 100)}%` : "0%";
-  const riskTotal = databaseSnapshot.charts.riskDistribution.reduce((sum, item) => sum + item.count, 0);
-  const highCriticalCount = databaseSnapshot.charts.riskDistribution
-    .filter((item) => item.name === "High" || item.name === "Critical")
-    .reduce((sum, item) => sum + item.count, 0);
-  const highCriticalRate = riskTotal ? `${Math.round((highCriticalCount / riskTotal) * 100)}%` : "0%";
-
   const kpis = [
     { label: "AI requests", value: totalRequests },
     { label: "Active users", value: activeUsers },
@@ -61,54 +55,32 @@ export default async function DashboardPage({
   ] as const;
 
   return (
-    <div className="app-geist space-y-6">
-      <OverviewHeader
-        companyName={organization.companyName}
-        authenticated={organization.authenticated}
-        databaseEnabled={databaseSnapshot.databaseEnabled}
-        extensionTelemetryEnabled={databaseSnapshot.extensionTelemetryEnabled}
-        selectedRange={timeRange}
-      />
+    <div className="app-geist space-y-4">
+      <section className="grid items-stretch gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <OverviewHeader companyName={organization.companyName} selectedRange={timeRange} />
 
-      <section className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel md:grid-cols-2 md:divide-y-0 xl:grid-cols-4 xl:divide-x">
-        {kpis.map((kpi) => (
-          <OverviewMetricCell key={kpi.label} {...kpi} />
-        ))}
+        <div className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x">
+          {kpis.map((kpi) => (
+            <OverviewMetricCell key={kpi.label} {...kpi} />
+          ))}
+        </div>
       </section>
 
-      <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,0.6fr)]">
+      <section className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)]">
         <ChartCard title="Guarded traffic" description={timeRangeLabel}>
           <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
         </ChartCard>
-
-        <section className="rounded-lg border border-accord-border bg-accord-panel">
-          <div className="border-b border-accord-border px-4 py-3">
-            <h2 className="text-sm font-semibold text-accord-text">System status</h2>
-          </div>
-
-          <div className="divide-y divide-accord-border/60 px-4">
-            <StatusRow label="Supabase" value={databaseSnapshot.databaseEnabled ? "Connected" : "Setup pending"} active={databaseSnapshot.databaseEnabled} />
-            <StatusRow
-              label="Extension telemetry"
-              value={databaseSnapshot.extensionTelemetryEnabled ? "Receiving events" : "Migration pending"}
-              active={databaseSnapshot.extensionTelemetryEnabled}
-            />
-            <StatusRow label="Raw content storage" value="Disabled" active />
-          </div>
-
-          <div className="grid grid-cols-2 divide-x divide-accord-border border-t border-accord-border">
-            <MiniStat label="High or critical" value={highCriticalRate} />
-            <MiniStat label="Policy decisions" value={metrics.policyViolations.toLocaleString("en-US")} />
-          </div>
-        </section>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <ChartCard title="Risk breakdown" description={timeRangeLabel}>
           <RiskDistributionChart data={databaseSnapshot.charts.riskDistribution} />
         </ChartCard>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
         <ChartCard title="Top categories" description={timeRangeLabel}>
           <RiskCategoryBars data={databaseSnapshot.charts.riskCategories} />
+        </ChartCard>
+        <ChartCard title="AI provider usage" description={timeRangeLabel}>
+          <ProviderUsageChart data={databaseSnapshot.charts.providerUsage} />
         </ChartCard>
       </section>
 
@@ -134,19 +106,6 @@ export default async function DashboardPage({
           </div>
         </DashboardDetails>
 
-        <DashboardDetails title="Provider breakdown">
-          <ProviderUsageChart data={databaseSnapshot.charts.providerUsage} compact />
-        </DashboardDetails>
-
-        <DashboardDetails title="Data source status">
-          <div className="divide-y divide-accord-border/60">
-            <StatusRow label="Database" value={databaseSnapshot.databaseEnabled ? "Supabase live" : "Setup pending"} active={databaseSnapshot.databaseEnabled} />
-            <StatusRow label="Telemetry" value={databaseSnapshot.extensionTelemetryEnabled ? "Extension live" : "Migration pending"} active={databaseSnapshot.extensionTelemetryEnabled} />
-            <StatusRow label="Account" value={organization.authenticated ? "Signed in" : "Demo mode"} active={organization.authenticated} />
-            <StatusRow label="Workspace records" value={databaseSnapshot.memory.length.toLocaleString("en-US")} active={databaseSnapshot.memory.length > 0} />
-          </div>
-        </DashboardDetails>
-
         <DashboardDetails title="Governance defaults">
           <div className="divide-y divide-accord-border/60">
             <PrivacyRow title="Raw prompts" value="Not stored by default" />
@@ -162,19 +121,13 @@ export default async function DashboardPage({
 
 function OverviewHeader({
   companyName,
-  authenticated,
-  databaseEnabled,
-  extensionTelemetryEnabled,
   selectedRange
 }: {
   companyName: string;
-  authenticated: boolean;
-  databaseEnabled: boolean;
-  extensionTelemetryEnabled: boolean;
   selectedRange: DashboardTimeRange;
 }) {
   return (
-    <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <header className="flex min-h-[92px] flex-col justify-center gap-3">
       <div>
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-faint">
           {companyName} / Overview
@@ -182,14 +135,7 @@ function OverviewHeader({
         <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.025em] text-accord-text">Governance activity</h1>
       </div>
 
-      <div className="flex flex-col items-start gap-2 md:items-end">
-        <TimeRangeFilter selectedRange={selectedRange} />
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-          <HeaderStatus label={databaseEnabled ? "Supabase live" : "Supabase setup"} active={databaseEnabled} />
-          <HeaderStatus label={extensionTelemetryEnabled ? "Extension live" : "Telemetry pending"} active={extensionTelemetryEnabled} />
-          <HeaderStatus label={authenticated ? "Signed in" : "Demo mode"} active={authenticated} />
-        </div>
-      </div>
+      <TimeRangeFilter selectedRange={selectedRange} />
     </header>
   );
 }
@@ -218,20 +164,11 @@ function TimeRangeFilter({ selectedRange }: { selectedRange: DashboardTimeRange 
   );
 }
 
-function HeaderStatus({ label, active }: { label: string; active: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-accord-muted">
-      <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`} />
-      {label}
-    </span>
-  );
-}
-
 function OverviewMetricCell({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <article className="px-4 py-4">
+    <article className="flex min-h-[92px] flex-col justify-center px-4 py-3">
       <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-accord-muted">{label}</p>
-      <p className="mt-2 text-3xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums]">
+      <p className="mt-2 text-2xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums] xl:text-3xl">
         {value}
         {detail ? (
           <>
@@ -241,27 +178,6 @@ function OverviewMetricCell({ label, value, detail }: { label: string; value: st
         ) : null}
       </p>
     </article>
-  );
-}
-
-function StatusRow({ label, value, active }: { label: string; value: string; active: boolean }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2.5">
-      <p className="text-[13px] text-accord-muted">{label}</p>
-      <p className="flex items-center gap-1.5 text-[13px] font-medium text-accord-text">
-        <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-emerald-500" : "bg-amber-500"}`} />
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="p-4">
-      <p className="text-xl font-semibold text-accord-text [font-variant-numeric:tabular-nums]">{value}</p>
-      <p className="mt-1 text-[11px] uppercase tracking-[0.06em] text-accord-muted">{label}</p>
-    </div>
   );
 }
 

@@ -45,7 +45,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
           <TopNav />
           <main className="app-content-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-none">
-            <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">{children}</div>
+            <div
+              className={cn(
+                "mx-auto w-full max-w-7xl px-4 md:px-6 lg:px-8",
+                pathname === "/dashboard" ? "py-4" : "py-6"
+              )}
+            >
+              {children}
+            </div>
           </main>
         </div>
       </div>

@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Legend,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -34,12 +35,32 @@ export function UsageLineChart({ data }: { data: UsageLineChartPoint[] }) {
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data} margin={{ left: -22, right: 8, top: 12, bottom: 0 }}>
+        <AreaChart data={data} margin={{ left: -12, right: 12, top: 8, bottom: 0 }}>
+          <defs>
+            <linearGradient id="guardedTrafficFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#625BFF" stopOpacity={0.2} />
+              <stop offset="100%" stopColor="#625BFF" stopOpacity={0.015} />
+            </linearGradient>
+          </defs>
           <CartesianGrid stroke="rgba(148, 163, 184, 0.22)" vertical={false} />
           <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} dy={8} />
           <YAxis tickLine={false} axisLine={false} tick={{ fill: "#94A3B8", fontSize: 11 }} allowDecimals={false} />
           <Tooltip cursor={{ stroke: "#CBD5E1", strokeWidth: 1 }} contentStyle={tooltipStyle} />
-          <Area type="monotone" dataKey="requests" fill="#625BFF" fillOpacity={0.06} stroke="none" />
+          <Legend
+            align="right"
+            verticalAlign="top"
+            iconType="circle"
+            iconSize={7}
+            wrapperStyle={{ color: "#64748B", fontSize: 11, paddingBottom: 8 }}
+          />
+          <Area
+            type="monotone"
+            dataKey="requests"
+            name="Requests"
+            fill="url(#guardedTrafficFill)"
+            stroke="none"
+            legendType="none"
+          />
           <Line
             type="monotone"
             dataKey="requests"
