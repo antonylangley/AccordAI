@@ -32,7 +32,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="group/sidebar sticky top-0 z-40 hidden h-screen w-14 shrink-0 lg:block">
+    <aside className="group/sidebar relative z-40 hidden h-full w-14 shrink-0 overflow-visible lg:block">
       <Link
         href="/"
         className="relative z-10 flex h-[52px] w-14 items-center justify-center bg-white text-accord-text transition-colors duration-200 hover:bg-accord-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accord-primary/35"
@@ -40,7 +40,7 @@ export function Sidebar() {
         aria-label="Accord home"
       >
         <Image
-          src="/brand/accord-emblem-new.png"
+          src="/brand/accord-emblem-wide-gap.png"
           width={576}
           height={410}
           alt=""

@@ -14,32 +14,38 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<AccordTheme>("light");
 
   useEffect(() => {
+    document.documentElement.classList.add("accord-app-viewport");
+    document.body.classList.add("accord-app-viewport");
     setTheme(readStoredTheme());
     const onThemeChange = (event: Event) => {
       const detail = (event as CustomEvent<AccordTheme>).detail;
       setTheme(detail === "dark" ? "dark" : "light");
     };
     window.addEventListener(ACCORD_THEME_EVENT, onThemeChange);
-    return () => window.removeEventListener(ACCORD_THEME_EVENT, onThemeChange);
+    return () => {
+      window.removeEventListener(ACCORD_THEME_EVENT, onThemeChange);
+      document.documentElement.classList.remove("accord-app-viewport");
+      document.body.classList.remove("accord-app-viewport");
+    };
   }, []);
 
   if (chatMode) {
     return (
-      <div className="min-h-screen bg-accord-mist">
+      <div className="h-dvh overflow-hidden bg-accord-mist overscroll-none">
         <ChatHoverNav />
-        <main className="min-h-screen">{children}</main>
+        <main className="h-full min-h-0 overflow-hidden">{children}</main>
       </div>
     );
   }
 
   return (
-    <div className={cn("app-rail-shell min-h-screen bg-accord-panel text-accord-text", theme === "dark" && "dark")}>
-      <div className="flex">
+    <div className={cn("app-rail-shell h-dvh overflow-hidden bg-accord-panel text-accord-text overscroll-none", theme === "dark" && "dark")}>
+      <div className="flex h-full min-h-0">
         <Sidebar />
-        <div className="min-w-0 flex-1">
+        <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
           <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">
-            {children}
+          <main className="app-content-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-none">
+            <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">{children}</div>
           </main>
         </div>
       </div>

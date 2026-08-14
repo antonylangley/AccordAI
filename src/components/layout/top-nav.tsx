@@ -3,7 +3,7 @@ import { Bell, ChevronDown, Command, Search } from "lucide-react";
 
 export function TopNav() {
   return (
-    <header className="sticky top-0 z-30 flex h-[52px] items-center border-b border-accord-border bg-accord-panel px-4 md:px-6">
+    <header className="relative z-30 flex h-[52px] shrink-0 items-center border-b border-accord-border bg-accord-panel px-4 md:px-6">
       <div className="flex w-full items-center justify-between gap-3">
         <div className="rail-follow flex min-w-0 flex-1 items-center">
           <label className="sr-only" htmlFor="command-search">

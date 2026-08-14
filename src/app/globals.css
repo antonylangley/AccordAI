@@ -23,6 +23,7 @@
 }
 
 html {
+  overscroll-behavior: none;
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
 }
@@ -39,12 +40,27 @@ html.landing-scrollbar-hidden body::-webkit-scrollbar {
   width: 0;
 }
 
+html.accord-app-viewport,
+html.accord-app-viewport body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.accord-app-viewport {
+  inset: 0;
+  position: fixed;
+  width: 100%;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-height: 100%;
+  overscroll-behavior: none;
   background:
     radial-gradient(circle at 16% -10%, rgba(98, 91, 255, 0.11), transparent 32rem),
     radial-gradient(circle at 84% 0%, rgba(79, 107, 255, 0.09), transparent 28rem),
@@ -52,6 +68,20 @@ body {
   color: var(--accord-text);
   font-feature-settings: "ss01" 1, "cv05" 1;
   text-rendering: geometricPrecision;
+}
+
+.app-content-scroll {
+  -ms-overflow-style: none;
+  overscroll-behavior: none;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-content-scroll::-webkit-scrollbar {
+  display: none;
+  height: 0;
+  width: 0;
 }
 
 button,
