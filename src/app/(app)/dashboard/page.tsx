@@ -35,15 +35,17 @@ export default async function DashboardPage({
   const getStat = (label: string) => stats.find((stat) => stat.label === label);
   const totalRequests = getStat("Total AI requests")?.value || metrics.messagesSent.toLocaleString("en-US");
   const activeUsers = getStat("Active users")?.value || metrics.activeUsers.toLocaleString("en-US");
-  const governanceEvents = metrics.governedEvents.toLocaleString("en-US");
+  const redactedRequests = metrics.messagesRedacted.toLocaleString("en-US");
   const blockedRequests = getStat("Blocked requests")?.value || metrics.messagesBlocked.toLocaleString("en-US");
   const submittedOrBlocked = metrics.messagesSent + metrics.messagesBlocked;
   const blockRate = submittedOrBlocked ? `${Math.round((metrics.messagesBlocked / submittedOrBlocked) * 100)}%` : "0%";
+  const redactionRate = metrics.messagesSent ? `${Math.round((metrics.messagesRedacted / metrics.messagesSent) * 100)}%` : "0%";
   const kpis = [
     { label: "AI requests", value: totalRequests },
-    { label: "Active users", value: activeUsers },
-    { label: "Governance events", value: governanceEvents },
-    { label: "Blocked", value: blockedRequests, detail: `(${blockRate} of submitted)` }
+    { label: "Redacted requests", value: redactedRequests, detail: `(${redactionRate} of sent)` },
+    { label: "Blocked attempts", value: blockedRequests, detail: `(${blockRate} of attempts)` },
+    { label: "Identifiers protected", value: metrics.protectedIdentifiers.toLocaleString("en-US") },
+    { label: "Active users", value: activeUsers }
   ] as const;
 
   const extensionMetricCards = [
@@ -58,7 +60,7 @@ export default async function DashboardPage({
     <div className="app-geist space-y-6">
       <OverviewHeader companyName={organization.companyName} />
 
-      <section className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel md:grid-cols-2 md:divide-y-0 xl:grid-cols-4 xl:divide-x">
+      <section className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel md:grid-cols-2 md:divide-y-0 xl:grid-cols-5 xl:divide-x">
         {kpis.map((kpi) => (
           <OverviewMetricCell key={kpi.label} {...kpi} />
         ))}

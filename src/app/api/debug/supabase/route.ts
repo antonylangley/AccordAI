@@ -46,6 +46,7 @@ export async function GET() {
         recentEvents: snapshot.recentEvents.length,
         memoryItems: snapshot.memory.length,
         totalRequests: snapshot.extensionMetrics.messagesSent,
+        redactedRequests: snapshot.extensionMetrics.messagesRedacted,
         blockedMessages: snapshot.extensionMetrics.messagesBlocked,
         policyViolations: snapshot.extensionMetrics.policyViolations,
         activeUsers: snapshot.extensionMetrics.activeUsers

@@ -225,6 +225,7 @@ export type ExtensionTelemetryPayload = {
 export type ExtensionTelemetryMetrics = {
   governedEvents: number;
   messagesSent: number;
+  messagesRedacted: number;
   messagesBlocked: number;
   policyViolations: number;
   governedUploads: number;
@@ -1439,9 +1440,10 @@ async function getExtensionTelemetryMetrics(
   };
 
   try {
-    const [governedEvents, sent, blocked, violations, uploads, users, redactions] = await Promise.all([
+    const [governedEvents, sent, redacted, blocked, violations, uploads, users, redactions] = await Promise.all([
       countGovernedExtensionEvents(supabase, companySlug, timeWindow),
       countExtensionEvents(supabase, companySlug, "message_sent_to_ai", timeWindow),
+      countRedactedMessages(supabase, companySlug, timeWindow),
       countExtensionEvents(supabase, companySlug, "message_blocked", timeWindow),
       countExtensionViolations(supabase, companySlug, timeWindow),
       countExtensionUploads(supabase, companySlug, timeWindow),
@@ -1454,6 +1456,7 @@ async function getExtensionTelemetryMetrics(
       metrics: {
         governedEvents,
         messagesSent: sent,
+        messagesRedacted: redacted,
         messagesBlocked: blocked,
         policyViolations: violations,
         governedUploads: uploads,
@@ -1493,6 +1496,23 @@ async function countExtensionEvents(
     .select("id", { count: "exact", head: true })
     .eq("company_slug", companySlug)
     .eq("event_type", eventType);
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
+  if (error) throw error;
+  return count || 0;
+}
+
+async function countRedactedMessages(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
+    .from("accord_extension_events")
+    .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug)
+    .eq("event_type", "message_sent_to_ai")
+    .in("action", ["redact", "redacted"]);
 
   if (timeWindow.start) {
     query = query.gte("created_at", timeWindow.start.toISOString());
@@ -1554,7 +1574,8 @@ async function sumExtensionRedactions(supabase: SupabaseClient, companySlug: str
   let query = supabase
     .from("accord_extension_events")
     .select("redaction_count")
-    .eq("company_slug", companySlug);
+    .eq("company_slug", companySlug)
+    .neq("event_type", "assistant_response_rehydrated");
 
   if (timeWindow.start) {
     query = query.gte("created_at", timeWindow.start.toISOString());
@@ -1793,6 +1814,7 @@ function emptyExtensionMetrics(): ExtensionTelemetryMetrics {
   return {
     governedEvents: 0,
     messagesSent: 0,
+    messagesRedacted: 0,
     messagesBlocked: 0,
     policyViolations: 0,
     governedUploads: 0,
