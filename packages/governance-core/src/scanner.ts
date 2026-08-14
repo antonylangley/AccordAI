@@ -614,22 +614,22 @@ export function decidePolicy(preflight: ChatScanResult): ChatPolicyDecision {
     "regulated_hr"
   ]);
 
-  if (hasSecret || hasPromptInjection) {
+  if (hasPromptInjection) {
     return {
       action: "block",
-      reason: hasSecret
-        ? "Credential-like content is not sent to providers."
-        : "Instruction-bypass language requires review before any provider call.",
+      reason: "Instruction-bypass language requires review before any provider call.",
       requiresReview: true,
       providerCalled: false,
       redacted: preflight.redactions.length > 0
     };
   }
 
-  if (hasPii) {
+  if (hasSecret || hasPii) {
     return {
       action: "redact",
-      reason: "Personal data was detected and replaced with stable placeholders before provider routing.",
+      reason: hasSecret
+        ? "Credential-like content was detected and removed locally before provider routing."
+        : "Personal data was detected and replaced with stable placeholders before provider routing.",
       requiresReview: hasRegulatedContext,
       providerCalled: false,
       redacted: true
@@ -665,13 +665,7 @@ function detectEntityCandidates(text: string): EntityCandidate[] {
       0.9,
       "phone_regex"
     ),
-    ...detectPatternEntities(
-      text,
-      "SECRET",
-      /\b(?:sk-[A-Za-z0-9_-]{6,}|(?:api[_\s-]?key|secret|token|password)\s*[:=]\s*[A-Za-z0-9_.-]*[A-Za-z0-9_-]|[A-Za-z0-9_-]{32,})\b/gi,
-      0.98,
-      "secret_regex"
-    ),
+    ...detectSecretCandidates(text),
     ...detectPatternEntities(
       text,
       "ADDRESS",
@@ -690,6 +684,31 @@ function detectEntityCandidates(text: string): EntityCandidate[] {
     ...detectHumanListPersonCandidates(text),
     ...detectLowercaseContextPersonCandidates(text)
   ];
+}
+
+function detectSecretCandidates(text: string): EntityCandidate[] {
+  const patterns: Array<{ pattern: RegExp; detector: string }> = [
+    { pattern: /\bsk-[A-Za-z0-9_-]{6,}\b/g, detector: "openai_key_regex" },
+    { pattern: /\bAKIA[0-9A-Z]{16}\b/g, detector: "aws_access_key_regex" },
+    { pattern: /\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, detector: "github_token_regex" },
+    { pattern: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g, detector: "slack_token_regex" },
+    { pattern: /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, detector: "jwt_regex" },
+    { pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b/gi, detector: "bearer_token_regex" },
+    {
+      pattern: /\b(?:api[_\s-]?key|client[_\s-]?secret|access[_\s-]?token|auth[_\s-]?token|password|passwd)\s*[:=]\s*["']?[A-Za-z0-9_./+=-]{8,}["']?/gi,
+      detector: "credential_assignment_regex"
+    },
+    {
+      pattern: /\b(?:postgres(?:ql)?|mysql|mongodb(?:\+srv)?):\/\/[^\s:@/]+:[^\s@/]+@[^\s]+/gi,
+      detector: "credential_uri_regex"
+    },
+    {
+      pattern: /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/g,
+      detector: "private_key_regex"
+    }
+  ];
+
+  return patterns.flatMap(({ pattern, detector }) => detectPatternEntities(text, "SECRET", pattern, 0.98, detector));
 }
 
 function detectPatternEntities(

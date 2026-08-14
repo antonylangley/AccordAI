@@ -278,7 +278,9 @@ export default defineContentScript({
               metadata: {
                 outcome,
                 scanId: scan?.scanId || null,
-                redacted: scan?.action === "redact"
+                redacted: scan?.action === "redact",
+                enforcementSource: scan?.enforcementSource || "accord_core",
+                findingSources: scan?.flags.length ? "accord_core" : "none"
               }
             });
 
@@ -590,7 +592,11 @@ function attachmentTelemetryPayload(
       batchAction: result.batchAction,
       actionList: actions.join(","),
       blockedReasonCategories: blockedReasons.join(",") || null,
-      summary: result.summary
+      summary: result.summary,
+      enforcementSource: result.results.some((fileResult) => fileResult.policy?.triggered && fileResult.policy.executionAction === "block")
+        ? "organization_policy"
+        : "accord_core",
+      findingSources: redactionCount > 0 || blockedReasons.length ? "accord_core" : "none"
     }
   };
 }

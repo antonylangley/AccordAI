@@ -63,6 +63,7 @@ function scanResult(overrides: Partial<SafeScanResult>): SafeScanResult {
     decorations: [],
     flags: [],
     explanation: "No elevated issue.",
+    enforcementSource: "accord_core",
     personDetection: {
       mode: "hybrid-local-rules",
       nerStatus: "ready",

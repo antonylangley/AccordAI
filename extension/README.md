@@ -1,6 +1,6 @@
 # Accord Guard
 
-Accord Guard is the employee-facing browser-mode surface for Accord. It adds a compact governance layer inside ChatGPT so employees can keep using `https://chatgpt.com` while Accord scans typed prompts, redacts detected identifiers before governed submission, blocks credentials or prompt-injection attempts, and automatically shows Accord-owned resolved assistant responses when trusted placeholders are returned.
+Accord Guard is the employee-facing browser-mode surface for Accord. It adds a compact governance layer inside ChatGPT so employees can keep using `https://chatgpt.com` while Accord scans typed prompts, redacts detected identifiers and credentials before governed submission, enforces published organization policies, blocks unsafe instruction-bypass attempts, and automatically shows Accord-owned resolved assistant responses when trusted placeholders are returned.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ Assistant responses are resolved in Accord-owned UI. The original ChatGPT assist
 ## Known Limitations
 
 - ChatGPT only. Claude support is intentionally not part of this milestone.
-- Supported text/source-code uploads are governed in browser mode. PDF and DOCX uploads are converted into governed text-copy replacements when readable text can be extracted locally. Images, archives, binary files, and unreadable/scanned documents fail closed with an explanation.
+- Supported text/source-code uploads are governed in browser mode: `.bash`, `.c`, `.cc`, `.cpp`, `.csv`, `.h`, `.hpp`, `.ini`, `.java`, `.js`, `.json`, `.jsx`, `.md`, `.py`, `.sh`, `.sql`, `.toml`, `.ts`, `.tsx`, `.txt`, `.xml`, `.yaml`, and `.yml` up to 256 KiB. PDF and DOCX uploads up to 5 MiB are converted into governed text-copy replacements when readable text can be extracted locally. Images, spreadsheets, presentations, archives, executables, other binary files, oversized files, and unreadable/scanned documents fail closed with an explanation.
 - PERSON enhancement currently uses a bundled deterministic local candidate detector in the service worker. No transformer/ONNX model is packaged in this pass, so `personDetection.nerStatus` reports `unavailable`, model asset size impact is 0 bytes, and there is no offscreen inference document yet. `src/person-detection/ner-normalizer.ts` is the safe bridge for future local token-classification output: it merges `B-PER` / `I-PER` / `PER` / `PERSON` tokens into exact-offset PERSON candidates before `@accord/governance-core` validates and assigns placeholders.
 - Session-scoped placeholder vaults are lost after browser restart, extension reload, or service-worker/session reset.
 - ChatGPT DOM selectors may need updates if ChatGPT changes its composer or response markup.
@@ -82,16 +82,16 @@ pnpm build
 
 ## Built Directory
 
-WXT writes the Chrome MV3 build here:
+WXT writes the Chrome MV3 build here, relative to this repository:
 
 ```text
-C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\extension\.output\chrome-mv3
+extension/.output/chrome-mv3
 ```
 
 This is the exact directory to select in Chrome:
 
 ```text
-chrome://extensions -> Developer mode -> Load unpacked -> C:\Users\anton\Documents\Codex\2026-07-01\files-mentioned-by-the-user-you\outputs\accord\extension\.output\chrome-mv3
+chrome://extensions -> Developer mode -> Load unpacked -> extension/.output/chrome-mv3
 ```
 
 ## Reload After Code Changes
@@ -194,13 +194,13 @@ Ask Mary Jones to review the new draft.
 
 Expected: Mary Jones becomes `[PERSON_2]`.
 
-5. Block:
+5. Credential redaction:
 
 ```text
 Use api_key=sk-1234567890abcdef to debug this.
 ```
 
-Expected: the exact credential span receives stronger blocked highlighting, the compact emblem shows `Sending blocked`, and no submission occurs.
+Expected: the credential is replaced locally with `[SECRET_1]`, the sanitized prompt is submitted, and the original credential is not retained in the session placeholder vault or telemetry.
 
 7. Supported text/code attachment:
 

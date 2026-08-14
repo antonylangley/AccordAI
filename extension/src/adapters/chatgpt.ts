@@ -640,7 +640,7 @@ function intersectRects(first: DOMRect, second: DOMRect) {
 }
 
 function isBlockedDecoration(decoration: ComposerEntityDecoration, state: ComposerDecorationState) {
-  return state === "blocked" || decoration.type === "SECRET";
+  return state === "blocked";
 }
 
 function findComposerShell(composer: HTMLElement) {

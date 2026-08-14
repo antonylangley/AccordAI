@@ -57,13 +57,11 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
                 <p className="accord-guard-entity-label">{entityLabel(decoration.type)}</p>
                 <p className="accord-guard-entity-action">{entityAction(decoration, blocked)}</p>
               </div>
-              {decoration.type === "SECRET" ? (
-                <span className="accord-guard-placeholder">Blocked</span>
-              ) : (
-                <span className="accord-guard-placeholder">
-                  {state.draftText.slice(decoration.start, decoration.end)} -&gt; {decoration.placeholder}
-                </span>
-              )}
+              <span className="accord-guard-placeholder">
+                {decoration.type === "SECRET"
+                  ? decoration.placeholder
+                  : `${state.draftText.slice(decoration.start, decoration.end)} -> ${decoration.placeholder}`}
+              </span>
             </div>
           ))}
         </div>
@@ -137,9 +135,8 @@ function shortEntityLabel(type: EntityDecoration["type"]) {
 }
 
 function entityAction(decoration: EntityDecoration, blocked: boolean) {
-  if (blocked || decoration.type === "SECRET") {
-    return decoration.type === "SECRET" ? "Sending blocked" : "Sending blocked by policy";
-  }
+  if (blocked) return "Sending blocked by policy";
+  if (decoration.type === "SECRET") return "Will be removed before submission";
 
   return "Will be hidden before submission";
 }

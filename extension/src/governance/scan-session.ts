@@ -620,13 +620,20 @@ function toSafeScanResult(
       label: flag.label,
       severity: flag.severity,
       stage: flag.stage,
-      evidence: flag.evidence
+      evidence: flag.evidence,
+      source: "accord_core" as const
     })),
     explanation: buildExplanation(decision, detectedEntityCount, policy),
+    enforcementSource: enforcementSource(decision, policy),
     personDetection,
     policy: policy?.triggered ? policy : undefined,
     sanitizedText: includeSanitizedText ? scan.redactedText : undefined
   };
+}
+
+function enforcementSource(decision: ChatPolicyDecision, policy?: AppliedPolicyDecision): SafeScanResult["enforcementSource"] {
+  if (policy?.triggered && decision.reason === policy.explanation) return "organization_policy";
+  return "accord_core";
 }
 
 function riskLevel(score: number): SafeScanResult["riskLevel"] {

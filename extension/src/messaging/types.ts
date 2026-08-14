@@ -17,6 +17,7 @@ export type SafeRiskFlag = {
   severity: ChatFlagSeverity;
   stage: ChatScanStage;
   evidence: string;
+  source?: "accord_core";
 };
 
 export type EntityDecoration = {
@@ -36,6 +37,7 @@ export type SafeScanResult = {
   decorations: EntityDecoration[];
   flags: SafeRiskFlag[];
   explanation: string;
+  enforcementSource: "accord_core" | "organization_policy";
   personDetection: PersonDetectionCoverage;
   policy?: AppliedPolicyDecision;
   sanitizedText?: string;

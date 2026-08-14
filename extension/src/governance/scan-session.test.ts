@@ -64,15 +64,60 @@ describe("Accord Guard scan session", () => {
     expect(second.sanitizedText).toContain("[PERSON_2]");
   });
 
-  test("blocks fake credentials", async () => {
+  test("redacts credentials locally and continues", async () => {
     const result = await scan("Use api_key=sk-1234567890abcdef to debug this.", "conversation:secret");
 
-    expect(result.action).toBe("block");
+    expect(result.action).toBe("redact");
     expect(result.decorations[0]).toMatchObject({
       type: "SECRET",
       placeholder: "[SECRET_1]"
     });
     expect(result.flags.some((flag) => flag.type === "secret")).toBe(true);
+    expect(result.flags[0]?.source).toBe("accord_core");
+    expect(result.enforcementSource).toBe("accord_core");
+    expect(result.sanitizedText).not.toContain("sk-1234567890abcdef");
+  });
+
+  test.each([
+    "Write an email to John about tomorrow's meeting.",
+    "Explain how API keys work.",
+    "Create an example environment variable called OPENAI_API_KEY.",
+    "What is a Social Security number used for?",
+    "Refactor this function to use async and await.",
+    "Summarize this architecture and suggest clearer module names.",
+    "The deployment identifier is abcdefghijklmnopqrstuvwxyz123456.",
+    "Use this request correlation id: 0123456789abcdef0123456789abcdef.",
+    "Explain how an API key should be stored without showing a real credential."
+  ])("does not block or redact ordinary text: %s", async (text) => {
+    const result = await scan(text, `conversation:safe-secret-regression:${text}`);
+
+    expect(result.action).toBe("allow");
+    expect(result.entityCounts.SECRET || 0).toBe(0);
+  });
+
+  test.each([
+    ["Bearer abcdefghijklmnopqrstuvwxyz123456", "bearer token"],
+    ['password="correct-horse-battery-staple"', "password assignment"],
+    ["-----BEGIN PRIVATE KEY-----\nabc123def456ghi789\n-----END PRIVATE KEY-----", "private key"]
+  ])("redacts an actual %s", async (text) => {
+    const result = await scan(text, `conversation:positive-secret:${text}`);
+
+    expect(result.action).toBe("redact");
+    expect(result.entityCounts.SECRET).toBe(1);
+    expect(result.sanitizedText).toContain("[SECRET_1]");
+    expect(result.sanitizedText).not.toContain(text);
+  });
+
+  test("redacts multiple secrets in one prompt", async () => {
+    const result = await scan(
+      "Use sk-1234567890abcdef and Bearer abcdefghijklmnopqrstuvwxyz123456 for this migration.",
+      "conversation:multiple-secrets"
+    );
+
+    expect(result.action).toBe("redact");
+    expect(result.entityCounts.SECRET).toBe(2);
+    expect(result.sanitizedText).toContain("[SECRET_1]");
+    expect(result.sanitizedText).toContain("[SECRET_2]");
   });
 
   test("does not rehydrate unknown placeholders", async () => {

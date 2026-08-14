@@ -75,16 +75,15 @@ describe("Accord Guard attachment governance", () => {
     expect(result.results[0].sanitizedText).not.toContain("brian.mcginty@example.com");
   });
 
-  test("C: blocks source code containing a possible credential", async () => {
+  test("C: redacts a credential in source code and returns a governed copy", async () => {
     const result = await govern([file("config.ts", 'const api_key = "sk-test-1234567890abcdef";')], "attachments:secret");
 
-    expect(result.batchAction).toBe("block");
+    expect(result.batchAction).toBe("allow");
     expect(result.results[0]).toMatchObject({
-      action: "blocked",
-      sanitizedText: undefined
+      action: "redacted"
     });
-    expect(result.summary).toContain("Possible credential detected");
-    expect(result.summary).toContain("config.ts was not uploaded");
+    expect(result.results[0].sanitizedText).toContain("[SECRET_1]");
+    expect(result.results[0].sanitizedText).not.toContain("sk-test-1234567890abcdef");
   });
 
   test("D: governs names in filenames before host handoff", async () => {
@@ -276,7 +275,7 @@ describe("Accord Guard attachment governance", () => {
     expect(result.summary).toContain("fake.ts");
   });
 
-  test("blocks the whole batch and names the attachment that caused the failure", async () => {
+  test("redacts credentials without blocking the rest of a supported batch", async () => {
     const result = await govern(
       [
         file("customer.ts", 'export const customer = {\n  status: "active",\n};'),
@@ -285,10 +284,10 @@ describe("Accord Guard attachment governance", () => {
       "attachments:mixed-batch"
     );
 
-    expect(result.batchAction).toBe("block");
-    expect(result.summary).toBe("2-file upload blocked. config.ts contains a possible credential. Neither file was uploaded.");
-    expect(result.results[0].sanitizedText).toBeUndefined();
-    expect(result.results[1].sanitizedText).toBeUndefined();
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0].action).toBe("clean");
+    expect(result.results[1].action).toBe("redacted");
+    expect(result.results[1].sanitizedText).toContain("[SECRET_1]");
   });
 });
 
