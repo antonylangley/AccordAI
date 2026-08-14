@@ -33,7 +33,7 @@ export function UsageLineChart({ data }: { data: UsageLineChartPoint[] }) {
   }
 
   return (
-    <div className="h-64">
+    <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ left: -12, right: 12, top: 8, bottom: 0 }}>
           <defs>
@@ -86,5 +86,5 @@ export function UsageLineChart({ data }: { data: UsageLineChartPoint[] }) {
 }
 
 function EmptyChartState({ label }: { label: string }) {
-  return <div className="flex h-64 items-center justify-center text-[13px] text-accord-muted">{label}</div>;
+  return <div className="flex h-72 items-center justify-center text-[13px] text-accord-muted">{label}</div>;
 }

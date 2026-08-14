@@ -68,7 +68,7 @@ export default async function DashboardPage({
         <TimeRangeFilter selectedRange={timeRange} />
       </div>
 
-      <section className="grid gap-4 pb-40 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)] xl:pb-80">
+      <section className="grid gap-4 pb-32 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)] xl:pb-40">
         <ChartCard title="Guarded traffic" description={timeRangeLabel}>
           <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
         </ChartCard>
@@ -125,10 +125,10 @@ function OverviewHeader({ companyName }: { companyName: string }) {
   return (
     <header>
       <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-faint">
+        <p className="font-mono text-xs uppercase tracking-[0.09em] text-accord-faint">
           {companyName} / Overview
         </p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.025em] text-accord-text">Governance activity</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-accord-text md:text-[32px]">Governance activity</h1>
       </div>
 
     </header>

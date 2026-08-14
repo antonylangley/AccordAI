@@ -24,7 +24,7 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
 
   return (
     <div className="grid items-center gap-3 sm:grid-cols-[minmax(170px,0.85fr)_minmax(150px,1fr)]">
-      <div className="relative h-56 min-w-0">
+      <div className="relative h-72 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -77,5 +77,5 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
 }
 
 function EmptyChartState({ label }: { label: string }) {
-  return <div className="flex h-64 items-center justify-center text-[13px] text-accord-muted">{label}</div>;
+  return <div className="flex h-72 items-center justify-center text-[13px] text-accord-muted">{label}</div>;
 }
