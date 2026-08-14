@@ -23,7 +23,7 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
   };
 
   return (
-    <div className="grid items-center gap-3 sm:grid-cols-[minmax(170px,0.85fr)_minmax(150px,1fr)]">
+    <div className="grid items-center gap-2 sm:grid-cols-[minmax(190px,1fr)_150px]">
       <div className="relative h-72 min-w-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -31,8 +31,8 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
               data={data}
               dataKey="count"
               nameKey="name"
-              innerRadius={56}
-              outerRadius={82}
+              innerRadius={64}
+              outerRadius={94}
               paddingAngle={2.5}
               stroke="none"
             >
@@ -61,7 +61,7 @@ export function RiskDistributionChart({ data }: { data: RiskDistributionChartPoi
       </div>
       <div className="flex flex-col justify-center divide-y divide-accord-border/60">
         {data.map((item) => (
-          <div key={item.name} className="flex items-center justify-between gap-3 py-2 text-[13px]">
+          <div key={item.name} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2 text-[13px]">
             <span className="flex items-center gap-2 text-accord-muted">
               <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: palette[item.name] || item.color }} />
               {item.name}
