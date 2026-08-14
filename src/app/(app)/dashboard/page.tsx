@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Info } from "lucide-react";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EventTable } from "@/components/ui/event-table";
 import { ProviderUsageChart } from "@/components/charts/provider-usage-chart";
@@ -42,9 +42,17 @@ export default async function DashboardPage({
   const redactionRate = metrics.messagesSent ? `${Math.round((metrics.messagesRedacted / metrics.messagesSent) * 100)}%` : "0%";
   const kpis = [
     { label: "AI requests", value: totalRequests },
-    { label: "Redacted requests", value: redactedRequests, detail: `(${redactionRate} of sent)` },
-    { label: "Blocked attempts", value: blockedRequests, detail: `(${blockRate} of attempts)` },
-    { label: "Identifiers protected", value: metrics.protectedIdentifiers.toLocaleString("en-US") },
+    { label: "Policy events", value: metrics.policyViolations.toLocaleString("en-US") },
+    {
+      label: "Redacted requests",
+      value: redactedRequests,
+      detail: metrics.messagesRedacted > 0 ? `(${redactionRate} of sent)` : undefined
+    },
+    {
+      label: "Blocked attempts",
+      value: blockedRequests,
+      detail: metrics.messagesBlocked > 0 ? `(${blockRate} of attempts)` : undefined
+    },
     { label: "Active users", value: activeUsers }
   ] as const;
 
@@ -166,7 +174,28 @@ function TimeRangeFilter({ selectedRange }: { selectedRange: DashboardTimeRange 
 function OverviewMetricCell({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <article className="px-4 py-4">
-      <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-accord-muted">{label}</p>
+      <div className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-[0.06em] text-accord-muted">
+        <span>{label}</span>
+        {label === "Policy events" ? (
+          <span className="group relative inline-flex">
+            <button
+              type="button"
+              aria-label="About policy events"
+              aria-describedby="policy-events-tooltip"
+              className="rounded-sm text-accord-faint outline-none transition-colors hover:text-accord-muted focus-visible:ring-2 focus-visible:ring-accord-primary/40"
+            >
+              <Info className="h-3 w-3" aria-hidden="true" />
+            </button>
+            <span
+              id="policy-events-tooltip"
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-md bg-accord-night px-3 py-2 font-sans text-xs normal-case leading-relaxed tracking-normal text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+            >
+              Policy rule triggers, including blocked attempts. One request may trigger multiple policies.
+            </span>
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-3xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums]">
         {value}
         {detail ? (
