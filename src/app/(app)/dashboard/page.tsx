@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { ChartCard } from "@/components/ui/chart-card";
 import { EventTable } from "@/components/ui/event-table";
@@ -7,13 +8,26 @@ import { RiskCategoryBars } from "@/components/charts/risk-category-bars";
 import { RiskDistributionChart } from "@/components/charts/risk-distribution-chart";
 import { UsageLineChart } from "@/components/charts/usage-line-chart";
 import { getAccordOrganizationContext } from "@/lib/auth/organization";
-import { getAccordDatabaseSnapshot } from "@/lib/db/accord-store";
+import { getAccordDatabaseSnapshot, normalizeDashboardTimeRange, type DashboardTimeRange } from "@/lib/db/accord-store";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+const timeRangeOptions: Array<{ value: DashboardTimeRange; label: string; description: string }> = [
+  { value: "7d", label: "Last 7 days", description: "Since the start of the seventh day back" },
+  { value: "30d", label: "Last month", description: "Last 30 calendar days" },
+  { value: "all", label: "All time", description: "Every event in this workspace" }
+];
+
+export default async function DashboardPage({
+  searchParams
+}: {
+  searchParams?: { range?: string | string[] };
+}) {
+  const timeRange = normalizeDashboardTimeRange(searchParams?.range);
+  const timeRangeLabel = timeRangeOptions.find((option) => option.value === timeRange)?.label || "Last 7 days";
   const organization = await getAccordOrganizationContext({ autoCreate: true });
-  const databaseSnapshot = await getAccordDatabaseSnapshot(organization.companySlug);
+  const databaseSnapshot = await getAccordDatabaseSnapshot(organization.companySlug, timeRange);
   const stats = databaseSnapshot.stats;
   const metrics = databaseSnapshot.extensionMetrics;
   const recentEvents = databaseSnapshot.recentEvents.slice(0, 6);
@@ -21,7 +35,7 @@ export default async function DashboardPage() {
   const getStat = (label: string) => stats.find((stat) => stat.label === label);
   const totalRequests = getStat("Total AI requests")?.value || metrics.messagesSent.toLocaleString("en-US");
   const activeUsers = getStat("Active users")?.value || metrics.activeUsers.toLocaleString("en-US");
-  const highRiskEvents = getStat("High-risk events")?.value || metrics.policyViolations.toLocaleString("en-US");
+  const governanceEvents = metrics.governedEvents.toLocaleString("en-US");
   const blockedRequests = getStat("Blocked requests")?.value || metrics.messagesBlocked.toLocaleString("en-US");
   const submittedOrBlocked = metrics.messagesSent + metrics.messagesBlocked;
   const blockRate = submittedOrBlocked ? `${Math.round((metrics.messagesBlocked / submittedOrBlocked) * 100)}%` : "0%";
@@ -34,11 +48,12 @@ export default async function DashboardPage() {
   const kpis = [
     { label: "AI requests", value: totalRequests },
     { label: "Active users", value: activeUsers },
-    { label: "Policy events", value: highRiskEvents },
-    { label: "Blocked", value: blockedRequests, detail: `${blockRate} of submitted` }
+    { label: "Governance events", value: governanceEvents },
+    { label: "Blocked", value: blockedRequests, detail: `(${blockRate} of submitted)` }
   ] as const;
 
   const extensionMetricCards = [
+    ["Policy decisions", metrics.policyViolations, "Warn, redact, or block outcomes"],
     ["Messages sent", metrics.messagesSent, "Submitted after Accord checks"],
     ["Messages blocked", metrics.messagesBlocked, "Stopped before external AI"],
     ["Governed uploads", metrics.governedUploads, "Files replaced or blocked"],
@@ -52,6 +67,7 @@ export default async function DashboardPage() {
         authenticated={organization.authenticated}
         databaseEnabled={databaseSnapshot.databaseEnabled}
         extensionTelemetryEnabled={databaseSnapshot.extensionTelemetryEnabled}
+        selectedRange={timeRange}
       />
 
       <section className="grid divide-y divide-accord-border rounded-lg border border-accord-border bg-accord-panel md:grid-cols-2 md:divide-y-0 xl:grid-cols-4 xl:divide-x">
@@ -61,7 +77,7 @@ export default async function DashboardPage() {
       </section>
 
       <section className="grid gap-4 2xl:grid-cols-[minmax(0,1.4fr)_minmax(340px,0.6fr)]">
-        <ChartCard title="Guarded traffic">
+        <ChartCard title="Guarded traffic" description={timeRangeLabel}>
           <UsageLineChart data={databaseSnapshot.charts.usageOverTime} />
         </ChartCard>
 
@@ -82,16 +98,16 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-2 divide-x divide-accord-border border-t border-accord-border">
             <MiniStat label="High or critical" value={highCriticalRate} />
-            <MiniStat label="Recent events" value={recentEvents.length.toLocaleString("en-US")} />
+            <MiniStat label="Policy decisions" value={metrics.policyViolations.toLocaleString("en-US")} />
           </div>
         </section>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <ChartCard title="Risk breakdown">
+        <ChartCard title="Risk breakdown" description={timeRangeLabel}>
           <RiskDistributionChart data={databaseSnapshot.charts.riskDistribution} />
         </ChartCard>
-        <ChartCard title="Top categories">
+        <ChartCard title="Top categories" description={timeRangeLabel}>
           <RiskCategoryBars data={databaseSnapshot.charts.riskCategories} />
         </ChartCard>
       </section>
@@ -148,12 +164,14 @@ function OverviewHeader({
   companyName,
   authenticated,
   databaseEnabled,
-  extensionTelemetryEnabled
+  extensionTelemetryEnabled,
+  selectedRange
 }: {
   companyName: string;
   authenticated: boolean;
   databaseEnabled: boolean;
   extensionTelemetryEnabled: boolean;
+  selectedRange: DashboardTimeRange;
 }) {
   return (
     <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -164,12 +182,39 @@ function OverviewHeader({
         <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.025em] text-accord-text">Governance activity</h1>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-        <HeaderStatus label={databaseEnabled ? "Supabase live" : "Supabase setup"} active={databaseEnabled} />
-        <HeaderStatus label={extensionTelemetryEnabled ? "Extension live" : "Telemetry pending"} active={extensionTelemetryEnabled} />
-        <HeaderStatus label={authenticated ? "Signed in" : "Demo mode"} active={authenticated} />
+      <div className="flex flex-col items-start gap-2 md:items-end">
+        <TimeRangeFilter selectedRange={selectedRange} />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <HeaderStatus label={databaseEnabled ? "Supabase live" : "Supabase setup"} active={databaseEnabled} />
+          <HeaderStatus label={extensionTelemetryEnabled ? "Extension live" : "Telemetry pending"} active={extensionTelemetryEnabled} />
+          <HeaderStatus label={authenticated ? "Signed in" : "Demo mode"} active={authenticated} />
+        </div>
       </div>
     </header>
+  );
+}
+
+function TimeRangeFilter({ selectedRange }: { selectedRange: DashboardTimeRange }) {
+  return (
+    <div className="inline-flex rounded-lg border border-accord-border bg-accord-panel p-0.5">
+      {timeRangeOptions.map((option) => {
+        const active = option.value === selectedRange;
+        return (
+          <Link
+            key={option.value}
+            href={option.value === "7d" ? "/dashboard" : `/dashboard?range=${option.value}`}
+            aria-current={active ? "true" : undefined}
+            title={option.description}
+            className={cn(
+              "rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors",
+              active ? "bg-accord-night text-white" : "text-accord-muted hover:bg-accord-surface hover:text-accord-text"
+            )}
+          >
+            {option.label}
+          </Link>
+        );
+      })}
+    </div>
   );
 }
 
@@ -188,7 +233,12 @@ function OverviewMetricCell({ label, value, detail }: { label: string; value: st
       <p className="font-mono text-[11px] uppercase tracking-[0.06em] text-accord-muted">{label}</p>
       <p className="mt-2 text-3xl font-semibold leading-none tracking-[-0.025em] text-accord-text [font-variant-numeric:tabular-nums]">
         {value}
-        {detail ? <span className="ml-2 align-middle text-xs font-normal tracking-normal text-accord-muted">{detail}</span> : null}
+        {detail ? (
+          <>
+            {" "}
+            <span className="ml-2 align-middle text-xs font-normal tracking-normal text-accord-muted">{detail}</span>
+          </>
+        ) : null}
       </p>
     </article>
   );

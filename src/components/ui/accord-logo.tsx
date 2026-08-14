@@ -1,6 +1,18 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
+const ACCORD_LOCKUP = {
+  src: "/brand/accord-logo-new.png",
+  width: 1935,
+  height: 455
+};
+
+const ACCORD_EMBLEM = {
+  src: "/brand/accord-emblem-new.png",
+  width: 576,
+  height: 410
+};
+
 type AccordLogoProps = {
   className?: string;
   markOnly?: boolean;
@@ -33,12 +45,12 @@ export function AccordLogo({
         aria-label="Accord"
       >
         <Image
-          src="/accord-logo.png"
-          width={371}
-          height={94}
+          src={ACCORD_LOCKUP.src}
+          width={ACCORD_LOCKUP.width}
+          height={ACCORD_LOCKUP.height}
           alt="Accord"
           priority
-          className={cn("w-auto", compact ? "h-6" : "h-8")}
+          className={cn("w-auto object-contain", compact ? "h-6" : "h-8")}
         />
       </div>
     );
@@ -48,19 +60,19 @@ export function AccordLogo({
     <div className={cn("flex items-center gap-3", className)} aria-label="Accord">
       <div
         className={cn(
-          "flex h-10 w-10 items-center justify-center rounded-xl",
+          "flex h-10 w-10 items-center justify-center rounded-xl bg-white",
           tone === "dark"
-            ? "bg-white/[0.08] shadow-accord-glow ring-1 ring-white/[0.12]"
-            : "bg-white shadow-accord-panel ring-1 ring-accord-border"
+            ? "shadow-accord-glow ring-1 ring-white/[0.18]"
+            : "shadow-accord-panel ring-1 ring-accord-border"
         )}
       >
         <Image
-          src="/accord-mark.png"
-          width={118}
-          height={90}
+          src={ACCORD_EMBLEM.src}
+          width={ACCORD_EMBLEM.width}
+          height={ACCORD_EMBLEM.height}
           alt=""
           priority
-          className="h-7 w-auto"
+          className="h-7 w-auto object-contain"
         />
       </div>
       {!markOnly ? (

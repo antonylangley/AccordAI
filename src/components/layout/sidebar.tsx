@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,7 +12,6 @@ import {
   ShieldAlert,
   SlidersHorizontal
 } from "lucide-react";
-import { AccordLogo } from "@/components/ui/accord-logo";
 import { cn } from "@/lib/utils";
 
 const navGroups = [
@@ -33,19 +33,24 @@ export function Sidebar() {
 
   return (
     <aside className="group/sidebar sticky top-0 z-40 hidden h-screen w-14 shrink-0 lg:block">
-      <div className="absolute inset-y-0 left-0 w-14 overflow-hidden border-r border-accord-border bg-[#081526] transition-[width,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/sidebar:w-52 group-hover/sidebar:shadow-[8px_0_28px_rgba(3,9,19,0.35)] group-focus-within/sidebar:w-52 group-focus-within/sidebar:shadow-[8px_0_28px_rgba(3,9,19,0.35)]">
-        <div className="w-52">
-          <Link
-            href="/"
-            className="grid h-[52px] w-full grid-cols-[3.5rem_1fr] items-center border-b border-white/10 text-white transition-colors duration-200 hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accord-primary/40"
-            title="Accord home"
-          >
-            <AccordLogo markOnly tone="dark" className="justify-self-center" />
-            <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.02em] opacity-0 transition-opacity delay-100 duration-150 ease-out group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
-              Accord
-            </span>
-          </Link>
+      <Link
+        href="/"
+        className="relative z-10 flex h-[52px] w-14 items-center justify-center bg-white text-accord-text transition-colors duration-200 hover:bg-accord-mist focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accord-primary/35"
+        title="Accord home"
+        aria-label="Accord home"
+      >
+        <Image
+          src="/brand/accord-emblem-new.png"
+          width={576}
+          height={410}
+          alt=""
+          priority
+          className="h-7 w-auto object-contain"
+        />
+      </Link>
 
+      <div className="absolute bottom-0 left-0 top-[52px] w-14 overflow-hidden border-r border-accord-border bg-[#081526] transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/sidebar:w-52 group-focus-within/sidebar:w-52">
+        <div className="w-52">
           <nav aria-label="Primary navigation" className="flex w-full flex-col px-1.5 py-3">
             {navGroups.map((group, groupIndex) => (
               <div key={groupIndex} className="flex flex-col gap-0.5">

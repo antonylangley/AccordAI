@@ -112,6 +112,10 @@ textarea {
   font-family: var(--font-geist-mono), var(--font-mono), ui-monospace, monospace;
 }
 
+.geist-mono {
+  font-family: var(--font-geist-mono), var(--font-mono), ui-monospace, monospace;
+}
+
 .app-geist h1,
 .dashboard-geist h1 {
   font-weight: 680;
@@ -624,17 +628,4 @@ textarea {
   --accord-muted: #8b96a8;
   --accord-faint: #64748b;
   --accord-tint: rgba(98, 91, 255, 0.14);
-}
-
-/* Top nav content follows the sidebar rail as it expands */
-@media (min-width: 1024px) {
-  .app-rail-shell .rail-follow {
-    margin-left: 0;
-    transition: margin-left 500ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .app-rail-shell:has(aside:hover) .rail-follow,
-  .app-rail-shell:has(aside:focus-within) .rail-follow {
-    margin-left: 152px;
-  }
 }

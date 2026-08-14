@@ -143,6 +143,7 @@ export type AccordDatabaseSnapshot = {
   databaseEnabled: boolean;
   extensionTelemetryEnabled: boolean;
   extensionMetrics: ExtensionTelemetryMetrics;
+  timeRange: DashboardTimeRange;
   provider: "supabase";
 };
 
@@ -222,12 +223,20 @@ export type ExtensionTelemetryPayload = {
 };
 
 export type ExtensionTelemetryMetrics = {
+  governedEvents: number;
   messagesSent: number;
   messagesBlocked: number;
   policyViolations: number;
   governedUploads: number;
   protectedIdentifiers: number;
   activeUsers: number;
+};
+
+export type DashboardTimeRange = "7d" | "30d" | "all";
+
+type DashboardTimeWindow = {
+  range: DashboardTimeRange;
+  start?: Date;
 };
 
 let supabaseClient: SupabaseClient | null = null;
@@ -259,17 +268,21 @@ const seedMemoryItems = [
   }
 ];
 
-export async function getAccordDatabaseSnapshot(companySlug = "test-company"): Promise<AccordDatabaseSnapshot> {
+export async function getAccordDatabaseSnapshot(
+  companySlug = "test-company",
+  timeRange: DashboardTimeRange = "7d"
+): Promise<AccordDatabaseSnapshot> {
   try {
     const supabase = getSupabaseServerClient();
     if (!supabase) return fallbackSnapshot();
 
+    const timeWindow = dashboardTimeWindow(timeRange);
     await seedWorkspaceMemory(supabase);
     await seedTestCompany(supabase, companySlug, companySlug === "test-company" ? "Test Company" : titleFromSlug(companySlug)).catch(() => false);
     const memory = await getWorkspaceMemoryRows(supabase);
-    const extensionMetrics = await getExtensionTelemetryMetrics(supabase, companySlug);
-    const recentEvents = await getRecentEvents(supabase, 8, companySlug);
-    const charts = await getDashboardChartData(supabase, companySlug);
+    const extensionMetrics = await getExtensionTelemetryMetrics(supabase, companySlug, timeWindow);
+    const recentEvents = await getRecentEvents(supabase, 8, companySlug, timeWindow);
+    const charts = await getDashboardChartData(supabase, companySlug, timeWindow);
     const stats = buildDatabaseStats(extensionMetrics);
 
     return {
@@ -280,11 +293,17 @@ export async function getAccordDatabaseSnapshot(companySlug = "test-company"): P
       databaseEnabled: true,
       extensionTelemetryEnabled: extensionMetrics.enabled,
       extensionMetrics: extensionMetrics.metrics,
+      timeRange,
       provider: "supabase"
     };
   } catch {
     return fallbackSnapshot();
   }
+}
+
+export function normalizeDashboardTimeRange(value: unknown): DashboardTimeRange {
+  const input = Array.isArray(value) ? value[0] : value;
+  return input === "30d" || input === "all" ? input : "7d";
 }
 
 export async function persistChatGatewayRun(input: unknown, response: ChatGatewayResponse) {
@@ -1137,8 +1156,13 @@ async function getWorkspaceMemoryRows(supabase: SupabaseClient): Promise<Workspa
   }));
 }
 
-async function getRecentEvents(supabase: SupabaseClient, limit: number, companySlug: string): Promise<GovernanceEvent[]> {
-  const extensionEvents = await getRecentExtensionEventRows(supabase, limit, companySlug);
+async function getRecentEvents(
+  supabase: SupabaseClient,
+  limit: number,
+  companySlug: string,
+  timeWindow: DashboardTimeWindow
+): Promise<GovernanceEvent[]> {
+  const extensionEvents = await getRecentExtensionEventRows(supabase, limit, companySlug, timeWindow);
 
   return extensionEvents
     .sort((a, b) => eventSortTime(b.occurredAt) - eventSortTime(a.occurredAt))
@@ -1174,14 +1198,23 @@ async function getRecentGovernanceEventRows(supabase: SupabaseClient, limit: num
   }));
 }
 
-async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: number, companySlug: string): Promise<GovernanceEvent[]> {
-  const { data, error } = await supabase
+async function getRecentExtensionEventRows(
+  supabase: SupabaseClient,
+  limit: number,
+  companySlug: string,
+  timeWindow: DashboardTimeWindow
+): Promise<GovernanceEvent[]> {
+  let query = supabase
     .from("accord_extension_events")
     .select("id,created_at,event_type,action,risk_score,risk_level,flags,redaction_count,attachment_count,message_length_bucket,metadata")
     .eq("company_slug", companySlug)
-    .or("event_type.eq.message_blocked,event_type.eq.attachment_blocked,action.eq.redact,action.eq.warn,action.eq.block,action.eq.redacted,action.eq.blocked")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .or("event_type.eq.message_blocked,event_type.eq.attachment_blocked,action.eq.redact,action.eq.warn,action.eq.block,action.eq.redacted,action.eq.blocked");
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
 
   if (error) return [];
 
@@ -1212,42 +1245,52 @@ async function getRecentExtensionEventRows(supabase: SupabaseClient, limit: numb
   });
 }
 
-async function getDashboardChartData(supabase: SupabaseClient, companySlug: string): Promise<DashboardChartData> {
+async function getDashboardChartData(
+  supabase: SupabaseClient,
+  companySlug: string,
+  timeWindow: DashboardTimeWindow
+): Promise<DashboardChartData> {
   try {
-    const start = startOfLocalDay(daysAgo(6));
-    const extensionResult = await supabase
+    let extensionQuery = supabase
       .from("accord_extension_events")
       .select("created_at,event_type,action,risk_score,risk_level,flags")
       .eq("company_slug", companySlug)
-      .gte("created_at", start.toISOString())
-      .order("created_at", { ascending: true })
-      .limit(1000);
+      .order("created_at", { ascending: true });
+
+    if (timeWindow.start) {
+      extensionQuery = extensionQuery.gte("created_at", timeWindow.start.toISOString());
+    }
+
+    const extensionResult = await extensionQuery.limit(5000);
 
     const extensionRows = extensionResult.error ? [] : extensionResult.data || [];
 
     return {
-      usageOverTime: buildUsageOverTime(extensionRows, [], start),
+      usageOverTime: buildUsageOverTime(extensionRows, [], timeWindow),
       riskDistribution: buildRiskDistribution(extensionRows, []),
       providerUsage: buildProviderUsage(extensionRows, []),
       riskCategories: buildRiskCategories(extensionRows, [])
     };
   } catch {
-    return emptyDashboardChartData();
+    return emptyDashboardChartData(timeWindow);
   }
 }
 
 function buildUsageOverTime(
   extensionRows: Array<Record<string, unknown>>,
   governanceRows: Array<Record<string, unknown>>,
-  start: Date
+  timeWindow: DashboardTimeWindow
 ) {
-  const buckets = Array.from({ length: 7 }, (_, index) => {
+  const start = timeWindow.start || firstEventDay(extensionRows, governanceRows) || startOfLocalDay(daysAgo(6));
+  const end = startOfLocalDay(new Date());
+  const bucketCount = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000) + 1);
+  const buckets = Array.from({ length: bucketCount }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
 
     return {
       key: dateKey(date),
-      day: dayLabel(date),
+      day: dayLabel(date, bucketCount),
       requests: 0,
       flagged: 0
     };
@@ -1382,7 +1425,11 @@ function buildDatabaseStats(extensionMetrics: { metrics: ExtensionTelemetryMetri
   });
 }
 
-async function getExtensionTelemetryMetrics(supabase: SupabaseClient, companySlug: string): Promise<{
+async function getExtensionTelemetryMetrics(
+  supabase: SupabaseClient,
+  companySlug: string,
+  timeWindow: DashboardTimeWindow
+): Promise<{
   enabled: boolean;
   metrics: ExtensionTelemetryMetrics;
 }> {
@@ -1392,18 +1439,20 @@ async function getExtensionTelemetryMetrics(supabase: SupabaseClient, companySlu
   };
 
   try {
-    const [sent, blocked, violations, uploads, users, redactions] = await Promise.all([
-      countExtensionEvents(supabase, companySlug, "message_sent_to_ai"),
-      countExtensionEvents(supabase, companySlug, "message_blocked"),
-      countExtensionViolations(supabase, companySlug),
-      countExtensionUploads(supabase, companySlug),
-      countExtensionUsers(supabase, companySlug),
-      sumExtensionRedactions(supabase, companySlug)
+    const [governedEvents, sent, blocked, violations, uploads, users, redactions] = await Promise.all([
+      countGovernedExtensionEvents(supabase, companySlug, timeWindow),
+      countExtensionEvents(supabase, companySlug, "message_sent_to_ai", timeWindow),
+      countExtensionEvents(supabase, companySlug, "message_blocked", timeWindow),
+      countExtensionViolations(supabase, companySlug, timeWindow),
+      countExtensionUploads(supabase, companySlug, timeWindow),
+      countExtensionUsers(supabase, companySlug, timeWindow),
+      sumExtensionRedactions(supabase, companySlug, timeWindow)
     ]);
 
     return {
       enabled: true,
       metrics: {
+        governedEvents,
         messagesSent: sent,
         messagesBlocked: blocked,
         policyViolations: violations,
@@ -1417,50 +1466,101 @@ async function getExtensionTelemetryMetrics(supabase: SupabaseClient, companySlu
   }
 }
 
-async function countExtensionEvents(supabase: SupabaseClient, companySlug: string, eventType: ExtensionTelemetryEventType) {
-  const { count, error } = await supabase
+async function countGovernedExtensionEvents(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
+    .from("accord_extension_events")
+    .select("id", { count: "exact", head: true })
+    .eq("company_slug", companySlug)
+    .neq("event_type", "assistant_response_rehydrated");
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
+  if (error) throw error;
+  return count || 0;
+}
+
+async function countExtensionEvents(
+  supabase: SupabaseClient,
+  companySlug: string,
+  eventType: ExtensionTelemetryEventType,
+  timeWindow: DashboardTimeWindow
+) {
+  let query = supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
     .eq("company_slug", companySlug)
     .eq("event_type", eventType);
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionViolations(supabase: SupabaseClient, companySlug: string) {
-  const { count, error } = await supabase
+async function countExtensionViolations(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
     .eq("company_slug", companySlug)
     .in("action", ["warn", "redact", "block", "redacted", "blocked"]);
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionUploads(supabase: SupabaseClient, companySlug: string) {
-  const { count, error } = await supabase
+async function countExtensionUploads(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
     .from("accord_extension_events")
     .select("id", { count: "exact", head: true })
     .eq("company_slug", companySlug)
     .in("event_type", ["attachment_governed", "attachment_blocked"]);
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
 
-async function countExtensionUsers(supabase: SupabaseClient, companySlug: string) {
-  const { count, error } = await supabase
+async function countExtensionUsers(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
     .from("accord_extension_users")
     .select("id", { count: "exact", head: true })
     .eq("company_slug", companySlug);
+
+  if (timeWindow.start) {
+    query = query.gte("last_seen_at", timeWindow.start.toISOString());
+  }
+
+  const { count, error } = await query;
   if (error) throw error;
   return count || 0;
 }
 
-async function sumExtensionRedactions(supabase: SupabaseClient, companySlug: string) {
-  const { data, error } = await supabase
+async function sumExtensionRedactions(supabase: SupabaseClient, companySlug: string, timeWindow: DashboardTimeWindow) {
+  let query = supabase
     .from("accord_extension_events")
     .select("redaction_count")
     .eq("company_slug", companySlug);
+
+  if (timeWindow.start) {
+    query = query.gte("created_at", timeWindow.start.toISOString());
+  }
+
+  const { data, error } = await query;
   if (error) throw error;
 
   return (data || []).reduce((sum, row) => {
@@ -1684,12 +1784,14 @@ function fallbackSnapshot(): AccordDatabaseSnapshot {
     databaseEnabled: false,
     extensionTelemetryEnabled: false,
     extensionMetrics: emptyExtensionMetrics(),
+    timeRange: "7d",
     provider: "supabase"
   };
 }
 
 function emptyExtensionMetrics(): ExtensionTelemetryMetrics {
   return {
+    governedEvents: 0,
     messagesSent: 0,
     messagesBlocked: 0,
     policyViolations: 0,
@@ -1699,15 +1801,18 @@ function emptyExtensionMetrics(): ExtensionTelemetryMetrics {
   };
 }
 
-function emptyDashboardChartData(): DashboardChartData {
-  const start = startOfLocalDay(daysAgo(6));
+function emptyDashboardChartData(timeWindow: DashboardTimeWindow = dashboardTimeWindow("7d")): DashboardChartData {
+  const start = timeWindow.start || startOfLocalDay(daysAgo(6));
+  const end = startOfLocalDay(new Date());
+  const bucketCount = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 86400000) + 1);
+
   return {
-    usageOverTime: Array.from({ length: 7 }, (_, index) => {
+    usageOverTime: Array.from({ length: bucketCount }, (_, index) => {
       const date = new Date(start);
       date.setDate(start.getDate() + index);
 
       return {
-        day: dayLabel(date),
+        day: dayLabel(date, bucketCount),
         requests: 0,
         flagged: 0
       };
@@ -1759,6 +1864,14 @@ function daysAgo(days: number) {
   return date;
 }
 
+function dashboardTimeWindow(range: DashboardTimeRange): DashboardTimeWindow {
+  if (range === "all") return { range };
+  return {
+    range,
+    start: startOfLocalDay(daysAgo(range === "30d" ? 29 : 6))
+  };
+}
+
 function startOfLocalDay(date: Date) {
   const next = new Date(date);
   next.setHours(0, 0, 0, 0);
@@ -1776,8 +1889,17 @@ function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function dayLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
+function dayLabel(date: Date, bucketCount = 7) {
+  return new Intl.DateTimeFormat("en-US", bucketCount <= 7 ? { weekday: "short" } : { month: "short", day: "numeric" }).format(date);
+}
+
+function firstEventDay(extensionRows: Array<Record<string, unknown>>, governanceRows: Array<Record<string, unknown>>) {
+  const dates = [...extensionRows, ...governanceRows]
+    .map((row) => (typeof row.created_at === "string" ? new Date(row.created_at) : null))
+    .filter((date): date is Date => Boolean(date && !Number.isNaN(date.getTime())));
+
+  if (!dates.length) return null;
+  return startOfLocalDay(new Date(Math.min(...dates.map((date) => date.getTime()))));
 }
 
 function isPolicyViolationAction(action: string) {

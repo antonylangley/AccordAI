@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const chatMode = pathname === "/chat";
-  const wideMode = pathname === "/policies" || pathname === "/dashboard";
   const [theme, setTheme] = useState<AccordTheme>("light");
 
   useEffect(() => {
@@ -39,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Sidebar />
         <div className="min-w-0 flex-1">
           <TopNav />
-          <main className={cn("mx-auto w-full px-4 py-6 md:px-6 lg:px-8", wideMode ? "max-w-[96rem]" : "max-w-7xl")}>
+          <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">
             {children}
           </main>
         </div>

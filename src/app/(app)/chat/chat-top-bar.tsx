@@ -72,7 +72,13 @@ export function ChatTopBar({
             <MessageSquareText className="h-4 w-4" aria-hidden="true" />
             Chats
           </button>
-          <Image src="/accord-mark.png" alt="" width={24} height={24} className="shrink-0 rounded-md object-contain" />
+          <Image
+            src="/brand/accord-emblem-new.png"
+            alt=""
+            width={576}
+            height={410}
+            className="h-6 w-auto shrink-0 object-contain"
+          />
           <div className="min-w-0">
             <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accord-primary">Accord Chat</div>
             <h1 className="truncate text-sm font-semibold tracking-[-0.015em] text-accord-text">{title}</h1>

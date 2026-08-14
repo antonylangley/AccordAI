@@ -48,7 +48,13 @@ export function ChatThread({ messages, onStarterSelect }: ChatThreadProps) {
     >
       {empty ? (
         <div className="mx-auto flex h-full max-w-3xl flex-col items-center justify-center text-center">
-          <Image src="/accord-mark.png" alt="" width={48} height={48} className="object-contain" />
+          <Image
+            src="/brand/accord-emblem-new.png"
+            alt=""
+            width={576}
+            height={410}
+            className="h-12 w-auto object-contain"
+          />
           <div className="mt-4 max-w-xl">
             <h2 className="text-2xl font-semibold tracking-[-0.035em] text-accord-text">What do you want to work on?</h2>
             <p className="mt-2 text-sm leading-6 text-accord-muted">
