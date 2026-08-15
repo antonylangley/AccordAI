@@ -148,7 +148,9 @@ function buildResolvedOverlay({
   mark.src = markUrl;
   mark.alt = "";
   mark.className = "accord-guard-response-mark";
-  markButton.append(mark, buildResponsePopover(root, view, originalText, fullResolvedText, resolvedCount, unresolvedCount, copyText));
+  const popover = buildResponsePopover(root, view, originalText, fullResolvedText, resolvedCount, unresolvedCount, copyText);
+  markButton.append(mark, popover);
+  wireResponsePopoverHover(markButton, popover);
 
   const content = document.createElement("div");
   content.className = "accord-guard-response-content";
@@ -343,14 +345,85 @@ function syncResponsePopoverPlacement(view: HTMLElement) {
   if (!button || !popover) return;
 
   const buttonRect = button.getBoundingClientRect();
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
   const estimatedWidth = popover.offsetWidth || 288;
   const estimatedHeight = popover.offsetHeight || 220;
   const margin = 12;
+
+  // Space on the left excludes any fixed left sidebar, so "room" never counts the
+  // area hidden behind ChatGPT's nav.
+  const roomLeft = buttonRect.left - leftContentEdge();
+  const roomRight = viewportWidth - buttonRect.right;
+
+  // Prefer opening over the message column (right) — that area is always on-screen.
+  // Only fall back to the left gutter when the right genuinely can't fit the popover.
+  let placeX: "left" | "right";
+  if (roomRight >= estimatedWidth + margin) {
+    placeX = "right";
+  } else if (roomLeft >= estimatedWidth + margin) {
+    placeX = "left";
+  } else {
+    placeX = roomRight >= roomLeft ? "right" : "left";
+  }
+
   const hasRoomAbove = buttonRect.top >= estimatedHeight + margin;
-  const hasRoomLeft = buttonRect.left >= estimatedWidth + margin;
 
   button.dataset.popoverY = hasRoomAbove ? "above" : "below";
-  button.dataset.popoverX = hasRoomLeft ? "left" : "right";
+  button.dataset.popoverX = placeX;
+}
+
+// Right edge of a fixed/sticky left-docked sidebar (ChatGPT's nav), or 0 if none is present.
+function leftContentEdge(): number {
+  let edge = 0;
+  const candidates = document.querySelectorAll<HTMLElement>("nav, aside");
+  for (const element of Array.from(candidates)) {
+    const style = window.getComputedStyle(element);
+    if (style.position !== "fixed" && style.position !== "sticky") continue;
+    const rect = element.getBoundingClientRect();
+    const docksLeft = rect.left <= 1 && rect.width > 40 && rect.width < window.innerWidth * 0.5;
+    const isTall = rect.height > window.innerHeight * 0.4;
+    if (docksLeft && isTall) edge = Math.max(edge, rect.right);
+  }
+  return edge;
+}
+
+// Hover-intent so the popover stays open long enough to move the cursor across the
+// gap and into it. A short close delay covers the gap; click and focus also open it.
+function wireResponsePopoverHover(button: HTMLElement, popover: HTMLElement) {
+  const CLOSE_DELAY_MS = 160;
+  let closeTimer: number | undefined;
+
+  const open = () => {
+    if (closeTimer !== undefined) {
+      window.clearTimeout(closeTimer);
+      closeTimer = undefined;
+    }
+    button.classList.add("accord-guard-response-open");
+  };
+  const scheduleClose = () => {
+    if (closeTimer !== undefined) window.clearTimeout(closeTimer);
+    closeTimer = window.setTimeout(() => {
+      button.classList.remove("accord-guard-response-open");
+      closeTimer = undefined;
+    }, CLOSE_DELAY_MS);
+  };
+
+  button.addEventListener("mouseenter", open);
+  button.addEventListener("mouseleave", scheduleClose);
+  popover.addEventListener("mouseenter", open);
+  popover.addEventListener("mouseleave", scheduleClose);
+  button.addEventListener("focusin", open);
+  button.addEventListener("focusout", scheduleClose);
+  button.addEventListener("click", (event) => {
+    // Clicks on the inner controls stopPropagation; a click on the mark just opens.
+    if (event.target === button || event.target instanceof HTMLImageElement) {
+      event.preventDefault();
+    }
+    open();
+  });
+  button.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") button.classList.remove("accord-guard-response-open");
+  });
 }
 
 async function copyTextValue(text: string, copyText?: (text: string) => Promise<void> | void) {
