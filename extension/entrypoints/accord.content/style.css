@@ -561,8 +561,7 @@
 }
 
 .accord-guard-response-mark-button:hover .accord-guard-response-popover,
-.accord-guard-response-mark-button:focus-visible .accord-guard-response-popover,
-.accord-guard-response-mark-button.accord-guard-response-open .accord-guard-response-popover {
+.accord-guard-response-mark-button:focus-visible .accord-guard-response-popover {
   pointer-events: auto;
   opacity: 1;
   transform: translateY(0);
