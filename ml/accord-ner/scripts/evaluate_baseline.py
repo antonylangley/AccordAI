@@ -34,37 +34,73 @@ def merge_person_predictions(
     becomes:
         Mary-Kate Olsen
 
+    The merged confidence is a character-length-weighted average of the
+    component predictions. This avoids letting a tiny uncertain fragment
+    dominate the confidence of an otherwise strongly predicted full name.
+
     This is post-processing only. It does not change the model itself.
     """
     if not predictions:
         return []
 
-    predictions = sorted(predictions, key=lambda p: p["start"])
-    merged: list[dict] = [predictions[0].copy()]
+    predictions = sorted(
+        predictions,
+        key=lambda p: (p["start"], p["end"]),
+    )
+
+    groups: list[list[dict]] = []
+    current_group: list[dict] = [predictions[0]]
 
     for current in predictions[1:]:
-        previous = merged[-1]
+        previous = current_group[-1]
 
         gap = text[previous["end"] : current["start"]]
 
-        # Merge:
-        #   Mary + - + Kate Olsen
-        #   Jean + - + Pierre Dupont
-        #
-        # Also merge directly adjacent fragments produced by tokenization.
+        # Merge directly adjacent PERSON fragments, or fragments separated
+        # only by punctuation commonly used inside names.
         should_merge = gap == "" or gap in {"-", "'", "’"}
 
         if should_merge:
-            previous["end"] = current["end"]
-            previous["text"] = text[previous["start"] : previous["end"]]
-
-            # Keep the most conservative confidence across the merged span.
-            previous["score"] = min(
-                float(previous["score"]),
-                float(current["score"]),
-            )
+            current_group.append(current)
         else:
-            merged.append(current.copy())
+            groups.append(current_group)
+            current_group = [current]
+
+    groups.append(current_group)
+
+    merged: list[dict] = []
+
+    for group in groups:
+        start = group[0]["start"]
+        end = group[-1]["end"]
+
+        weighted_score_sum = 0.0
+        total_weight = 0
+
+        for component in group:
+            # Weight confidence by how much actual text this prediction covers.
+            weight = max(
+                1,
+                int(component["end"]) - int(component["start"]),
+            )
+
+            weighted_score_sum += float(component["score"]) * weight
+            total_weight += weight
+
+        merged_score = (
+            weighted_score_sum / total_weight
+            if total_weight
+            else 0.0
+        )
+
+        merged.append(
+            {
+                "text": text[start:end],
+                "start": start,
+                "end": end,
+                "score": merged_score,
+            }
+        )
 
     return merged
 
