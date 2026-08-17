@@ -1,0 +1,50 @@
+{"text": "Send the report to John Smith tomorrow.", "entities": [{"text": "John Smith", "label": "PERSON"}]}
+{"text": "Ask Sarah Chen to approve the document.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "Michael Rodriguez said the deployment can proceed.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Please copy Antony Langley on the email.", "entities": [{"text": "Antony Langley", "label": "PERSON"}]}
+{"text": "José de la Cruz reviewed the contract.", "entities": [{"text": "José de la Cruz", "label": "PERSON"}]}
+{"text": "Jean-Pierre Dupont joined the meeting.", "entities": [{"text": "Jean-Pierre Dupont", "label": "PERSON"}]}
+{"text": "Dr. Sarah Chen reviewed the patient record.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "CEO Michael Rodriguez approved the purchase.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Sarah Chen and Michael Rodriguez reviewed the report.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}, {"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Ask Jordan to approve the report.", "entities": [{"text": "Jordan", "label": "PERSON"}]}
+{"text": "Rose reviewed the document yesterday.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "May approved the proposal.", "entities": [{"text": "May", "label": "PERSON"}]}
+{"text": "Will sent me the report this morning.", "entities": [{"text": "Will", "label": "PERSON"}]}
+{"text": "Aisha Rahman will lead the client call.", "entities": [{"text": "Aisha Rahman", "label": "PERSON"}]}
+{"text": "Please ask João Pereira whether the build is ready.", "entities": [{"text": "João Pereira", "label": "PERSON"}]}
+{"text": "Saoirse O'Connor signed the approval form.", "entities": [{"text": "Saoirse O'Connor", "label": "PERSON"}]}
+{"text": "Mohammed Al-Farsi owns the security review.", "entities": [{"text": "Mohammed Al-Farsi", "label": "PERSON"}]}
+{"text": "Li Wei requested access to the dashboard.", "entities": [{"text": "Li Wei", "label": "PERSON"}]}
+{"text": "Nguyễn Minh Anh sent the revised document.", "entities": [{"text": "Nguyễn Minh Anh", "label": "PERSON"}]}
+{"text": "Mary-Kate Olsen was added to the attendee list.", "entities": [{"text": "Mary-Kate Olsen", "label": "PERSON"}]}
+{"text": "I spoke with Alex Johnson about the outage.", "entities": [{"text": "Alex Johnson", "label": "PERSON"}]}
+{"text": "Forward this to Priya Patel before lunch.", "entities": [{"text": "Priya Patel", "label": "PERSON"}]}
+{"text": "Daniel Kim owns the database migration.", "entities": [{"text": "Daniel Kim", "label": "PERSON"}]}
+{"text": "Can you summarize Emma Thompson's feedback?", "entities": [{"text": "Emma Thompson", "label": "PERSON"}]}
+{"text": "The recipients are Marcus Lee, Elena García, and Fatima Noor.", "entities": [{"text": "Marcus Lee", "label": "PERSON"}, {"text": "Elena García", "label": "PERSON"}, {"text": "Fatima Noor", "label": "PERSON"}]}
+{"text": "Email me exactly what happened.", "entities": []}
+{"text": "Send the address back to me.", "entities": []}
+{"text": "Repeat the following email address back to me exactly.", "entities": []}
+{"text": "Please contact customer support.", "entities": []}
+{"text": "The account manager field is null.", "entities": []}
+{"text": "The customer record failed validation.", "entities": []}
+{"text": "John Deere reported quarterly earnings.", "entities": []}
+{"text": "The Smith machine is broken.", "entities": []}
+{"text": "May is next month.", "entities": []}
+{"text": "Rose is my favorite flower.", "entities": []}
+{"text": "Jordan is a country in the Middle East.", "entities": []}
+{"text": "Will this deployment work?", "entities": []}
+{"text": "Apple released a software update.", "entities": []}
+{"text": "OpenAI released a new model.", "entities": []}
+{"text": "Morgan Stanley published the report.", "entities": []}
+{"text": "Johnson & Johnson announced earnings.", "entities": []}
+{"text": "const John = new User();", "entities": []}
+{"text": "class JohnSmithFactory {}", "entities": []}
+{"text": "git checkout john-smith", "entities": []}
+{"text": "const SarahChen = await loadUser();", "entities": []}
+{"text": "The Johnson controller failed during testing.", "entities": []}
+{"text": "michael_service failed to start.", "entities": []}
+{"text": "The New York office is closed today.", "entities": []}
+{"text": "Please update the Michael field in the schema.", "entities": []}
+{"text": "The report should be sent back exactly as received.", "entities": []}

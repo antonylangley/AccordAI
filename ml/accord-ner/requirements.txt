@@ -1,0 +1,6 @@
+transformers[torch]
+datasets
+evaluate
+seqeval
+accelerate
+numpy
