@@ -5,3 +5,7 @@ models/*
 !models/.gitkeep
 results/*
 !results/.gitkeep
+
+data/train/*.jsonl
+data/validation/*.jsonl
+data/test/*.jsonl
