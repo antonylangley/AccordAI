@@ -27,6 +27,7 @@ type EntityCandidate = ExternalEntityCandidate;
 export type ScanOptions = {
   seedRedactionMap?: RedactionMap;
   additionalCandidates?: ExternalEntityCandidate[];
+  disableBuiltInPersonDetection?: boolean;
 };
 
 type RedactionResult = {
@@ -433,7 +434,14 @@ export function redactSensitiveText(text: string) {
 }
 
 export function redactTextWithSummary(text: string, options: ScanOptions = {}): RedactionResult {
-  const candidates = [...detectEntityCandidates(text), ...normalizeExternalCandidates(text, options.additionalCandidates)]
+  const builtInCandidates = detectEntityCandidates(text);
+
+  const candidates = [
+    ...(options.disableBuiltInPersonDetection
+      ? builtInCandidates.filter((candidate) => candidate.type !== "PERSON")
+      : builtInCandidates),
+    ...normalizeExternalCandidates(text, options.additionalCandidates)
+  ]
     .map((candidate) => validateEntityCandidate(candidate, text))
     .filter((candidate): candidate is EntityCandidate => Boolean(candidate))
     .sort((a, b) => a.start - b.start || entityTypePriority[b.type] - entityTypePriority[a.type] || b.confidence - a.confidence);
@@ -484,6 +492,33 @@ export function validateEntityCandidate(candidate: EntityCandidate, fullText: st
     const lowerWords = tokens.map((token) => token.lower);
     const normalizedPhrase = normalizePhrase(trimmed);
     const nonParticleWords = lowerWords.filter((word) => !personParticles.has(word));
+
+    const isAccordNerCandidate =
+      normalizedCandidate.detector === "accord_ner_v0_1" &&
+      normalizedCandidate.confidence >= 0.8;
+
+    if (isAccordNerCandidate) {
+      if (tokens.length < 1 || tokens.length > 6) return null;
+      if (!candidateTextMatchesTokens(trimmed, tokens)) return null;
+
+      const contextSignals = Array.from(
+        new Set([
+          ...normalizedCandidate.contextSignals,
+          ...getPersonContextSignals(
+            fullText,
+            normalizedCandidate.start,
+            normalizedCandidate.end
+          ),
+          "ner_person",
+          "local_person_candidate"
+        ])
+      );
+
+      return {
+        ...normalizedCandidate,
+        contextSignals
+      };
+    }
 
     if (tokens.length < 2 || tokens.length > 5) return null;
     if (!candidateTextMatchesTokens(trimmed, tokens)) return null;

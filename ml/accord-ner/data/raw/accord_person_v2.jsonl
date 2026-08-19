@@ -1,0 +1,200 @@
+{"text": "Send the report to John Smith tomorrow.", "entities": [{"text": "John Smith", "label": "PERSON"}]}
+{"text": "Ask Sarah Chen to approve the document.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "Michael Rodriguez said the deployment can proceed.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Please copy Antony Langley on the email.", "entities": [{"text": "Antony Langley", "label": "PERSON"}]}
+{"text": "José de la Cruz reviewed the contract.", "entities": [{"text": "José de la Cruz", "label": "PERSON"}]}
+{"text": "Jean-Pierre Dupont joined the meeting.", "entities": [{"text": "Jean-Pierre Dupont", "label": "PERSON"}]}
+{"text": "Dr. Sarah Chen reviewed the patient record.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "CEO Michael Rodriguez approved the purchase.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Sarah Chen and Michael Rodriguez reviewed the report.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}, {"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Ask Jordan to approve the report.", "entities": [{"text": "Jordan", "label": "PERSON"}]}
+{"text": "Rose reviewed the document yesterday.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "May approved the proposal.", "entities": [{"text": "May", "label": "PERSON"}]}
+{"text": "Will sent me the report this morning.", "entities": [{"text": "Will", "label": "PERSON"}]}
+{"text": "Aisha Rahman will lead the client call.", "entities": [{"text": "Aisha Rahman", "label": "PERSON"}]}
+{"text": "Please ask João Pereira whether the build is ready.", "entities": [{"text": "João Pereira", "label": "PERSON"}]}
+{"text": "Saoirse O'Connor signed the approval form.", "entities": [{"text": "Saoirse O'Connor", "label": "PERSON"}]}
+{"text": "Mohammed Al-Farsi owns the security review.", "entities": [{"text": "Mohammed Al-Farsi", "label": "PERSON"}]}
+{"text": "Li Wei requested access to the dashboard.", "entities": [{"text": "Li Wei", "label": "PERSON"}]}
+{"text": "Nguyễn Minh Anh sent the revised document.", "entities": [{"text": "Nguyễn Minh Anh", "label": "PERSON"}]}
+{"text": "Mary-Kate Olsen was added to the attendee list.", "entities": [{"text": "Mary-Kate Olsen", "label": "PERSON"}]}
+{"text": "I spoke with Alex Johnson about the outage.", "entities": [{"text": "Alex Johnson", "label": "PERSON"}]}
+{"text": "Forward this to Priya Patel before lunch.", "entities": [{"text": "Priya Patel", "label": "PERSON"}]}
+{"text": "Daniel Kim owns the database migration.", "entities": [{"text": "Daniel Kim", "label": "PERSON"}]}
+{"text": "Can you summarize Emma Thompson's feedback?", "entities": [{"text": "Emma Thompson", "label": "PERSON"}]}
+{"text": "The recipients are Marcus Lee, Elena García, and Fatima Noor.", "entities": [{"text": "Marcus Lee", "label": "PERSON"}, {"text": "Elena García", "label": "PERSON"}, {"text": "Fatima Noor", "label": "PERSON"}]}
+{"text": "Email me exactly what happened.", "entities": []}
+{"text": "Send the address back to me.", "entities": []}
+{"text": "Repeat the following email address back to me exactly.", "entities": []}
+{"text": "Please contact customer support.", "entities": []}
+{"text": "The account manager field is null.", "entities": []}
+{"text": "The customer record failed validation.", "entities": []}
+{"text": "John Deere reported quarterly earnings.", "entities": []}
+{"text": "The Smith machine is broken.", "entities": []}
+{"text": "May is next month.", "entities": []}
+{"text": "Rose is my favorite flower.", "entities": []}
+{"text": "Jordan is a country in the Middle East.", "entities": []}
+{"text": "Will this deployment work?", "entities": []}
+{"text": "Apple released a software update.", "entities": []}
+{"text": "OpenAI released a new model.", "entities": []}
+{"text": "Morgan Stanley published the report.", "entities": []}
+{"text": "Johnson & Johnson announced earnings.", "entities": []}
+{"text": "const John = new User();", "entities": []}
+{"text": "class JohnSmithFactory {}", "entities": []}
+{"text": "git checkout john-smith", "entities": []}
+{"text": "const SarahChen = await loadUser();", "entities": []}
+{"text": "The Johnson controller failed during testing.", "entities": []}
+{"text": "michael_service failed to start.", "entities": []}
+{"text": "The New York office is closed today.", "entities": []}
+{"text": "Please update the Michael field in the schema.", "entities": []}
+{"text": "The report should be sent back exactly as received.", "entities": []}
+{"text": "Rachel Green will present the findings at noon.", "entities": [{"text": "Rachel Green", "label": "PERSON"}]}
+{"text": "Please send the draft to Omar Hassan for review.", "entities": [{"text": "Omar Hassan", "label": "PERSON"}]}
+{"text": "Kevin Brooks approved the reimbursement.", "entities": [{"text": "Kevin Brooks", "label": "PERSON"}]}
+{"text": "Nina Kapoor is handling the vendor renewal.", "entities": [{"text": "Nina Kapoor", "label": "PERSON"}]}
+{"text": "Marcus Bennett requested a copy of the audit log.", "entities": [{"text": "Marcus Bennett", "label": "PERSON"}]}
+{"text": "Leah Cohen owns the onboarding checklist.", "entities": [{"text": "Leah Cohen", "label": "PERSON"}]}
+{"text": "Ethan Walker will join the architecture review.", "entities": [{"text": "Ethan Walker", "label": "PERSON"}]}
+{"text": "Sophia Martinez signed off on the change request.", "entities": [{"text": "Sophia Martinez", "label": "PERSON"}]}
+{"text": "Henry Davis updated the project timeline.", "entities": [{"text": "Henry Davis", "label": "PERSON"}]}
+{"text": "Maya Singh is leading the migration.", "entities": [{"text": "Maya Singh", "label": "PERSON"}]}
+{"text": "Please ask Olivia Brown to confirm the numbers.", "entities": [{"text": "Olivia Brown", "label": "PERSON"}]}
+{"text": "Noah Williams scheduled the follow-up meeting.", "entities": [{"text": "Noah Williams", "label": "PERSON"}]}
+{"text": "Isabella Rossi reviewed the legal notes.", "entities": [{"text": "Isabella Rossi", "label": "PERSON"}]}
+{"text": "Lucas Martin sent the final spreadsheet.", "entities": [{"text": "Lucas Martin", "label": "PERSON"}]}
+{"text": "Grace Lee approved the access request.", "entities": [{"text": "Grace Lee", "label": "PERSON"}]}
+{"text": "Benjamin Clark opened the incident ticket.", "entities": [{"text": "Benjamin Clark", "label": "PERSON"}]}
+{"text": "Chloe Adams is waiting on the revised estimate.", "entities": [{"text": "Chloe Adams", "label": "PERSON"}]}
+{"text": "Diego Morales joined the customer call.", "entities": [{"text": "Diego Morales", "label": "PERSON"}]}
+{"text": "Hannah Wilson drafted the response.", "entities": [{"text": "Hannah Wilson", "label": "PERSON"}]}
+{"text": "Arjun Mehta completed the security questionnaire.", "entities": [{"text": "Arjun Mehta", "label": "PERSON"}]}
+{"text": "Please copy Emily Carter on the reply.", "entities": [{"text": "Emily Carter", "label": "PERSON"}]}
+{"text": "Jacob Miller owns the API migration.", "entities": [{"text": "Jacob Miller", "label": "PERSON"}]}
+{"text": "Zoe Turner will review the pull request.", "entities": [{"text": "Zoe Turner", "label": "PERSON"}]}
+{"text": "Caleb Foster requested the latest build.", "entities": [{"text": "Caleb Foster", "label": "PERSON"}]}
+{"text": "Mia Anderson approved the travel request.", "entities": [{"text": "Mia Anderson", "label": "PERSON"}]}
+{"text": "Jordan approved the budget yesterday.", "entities": [{"text": "Jordan", "label": "PERSON"}]}
+{"text": "Our distributor opened a new warehouse in Jordan.", "entities": []}
+{"text": "I emailed May about the contract.", "entities": [{"text": "May", "label": "PERSON"}]}
+{"text": "The renewal is scheduled for May.", "entities": []}
+{"text": "Will approved the change request.", "entities": [{"text": "Will", "label": "PERSON"}]}
+{"text": "Will the migration finish tonight?", "entities": []}
+{"text": "Rose signed the release form.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "Rose is used throughout the color palette.", "entities": []}
+{"text": "Mark reviewed the spreadsheet.", "entities": [{"text": "Mark", "label": "PERSON"}]}
+{"text": "Please mark the spreadsheet as final.", "entities": []}
+{"text": "Bill approved the invoice.", "entities": [{"text": "Bill", "label": "PERSON"}]}
+{"text": "Please bill the customer next week.", "entities": []}
+{"text": "Grace joined the planning call.", "entities": [{"text": "Grace", "label": "PERSON"}]}
+{"text": "The service should shut down with grace.", "entities": []}
+{"text": "Hope sent the revised proposal.", "entities": [{"text": "Hope", "label": "PERSON"}]}
+{"text": "We hope the deployment succeeds.", "entities": []}
+{"text": "Faith reviewed the application.", "entities": [{"text": "Faith", "label": "PERSON"}]}
+{"text": "The team acted in good faith.", "entities": []}
+{"text": "Hunter requested access to the repository.", "entities": [{"text": "Hunter", "label": "PERSON"}]}
+{"text": "The hunter process scans for stale jobs.", "entities": []}
+{"text": "Summer approved the campaign copy.", "entities": [{"text": "Summer", "label": "PERSON"}]}
+{"text": "The internship starts this summer.", "entities": []}
+{"text": "April joined the design review.", "entities": [{"text": "April", "label": "PERSON"}]}
+{"text": "The rollout begins in April.", "entities": []}
+{"text": "Grant signed the approval form.", "entities": [{"text": "Grant", "label": "PERSON"}]}
+{"text": "The service will grant access after verification.", "entities": []}
+{"text": "Chase sent the updated forecast.", "entities": [{"text": "Chase", "label": "PERSON"}]}
+{"text": "Please chase the vendor for an answer.", "entities": []}
+{"text": "Pat reviewed the document.", "entities": [{"text": "Pat", "label": "PERSON"}]}
+{"text": "Apply the security patch before release.", "entities": []}
+{"text": "Saoirse O'Connor will chair the review.", "entities": [{"text": "Saoirse O'Connor", "label": "PERSON"}]}
+{"text": "Please ask Niamh O'Brien to confirm the schedule.", "entities": [{"text": "Niamh O'Brien", "label": "PERSON"}]}
+{"text": "Jean-Pierre Moreau approved the contract.", "entities": [{"text": "Jean-Pierre Moreau", "label": "PERSON"}]}
+{"text": "Ana-María López joined the meeting.", "entities": [{"text": "Ana-María López", "label": "PERSON"}]}
+{"text": "José María García sent the revised estimate.", "entities": [{"text": "José María García", "label": "PERSON"}]}
+{"text": "João da Silva owns the deployment plan.", "entities": [{"text": "João da Silva", "label": "PERSON"}]}
+{"text": "María del Carmen Ruiz reviewed the account.", "entities": [{"text": "María del Carmen Ruiz", "label": "PERSON"}]}
+{"text": "Luca De Santis approved the design.", "entities": [{"text": "Luca De Santis", "label": "PERSON"}]}
+{"text": "Ludwig van der Meer signed the document.", "entities": [{"text": "Ludwig van der Meer", "label": "PERSON"}]}
+{"text": "Amir Al-Hassan will present the report.", "entities": [{"text": "Amir Al-Hassan", "label": "PERSON"}]}
+{"text": "Nguyễn Hoàng Anh joined the support call.", "entities": [{"text": "Nguyễn Hoàng Anh", "label": "PERSON"}]}
+{"text": "Trần Minh Đức approved the proposal.", "entities": [{"text": "Trần Minh Đức", "label": "PERSON"}]}
+{"text": "Wei Zhang reviewed the customer notes.", "entities": [{"text": "Wei Zhang", "label": "PERSON"}]}
+{"text": "Li Na will handle the escalation.", "entities": [{"text": "Li Na", "label": "PERSON"}]}
+{"text": "Yuki Tanaka sent the updated plan.", "entities": [{"text": "Yuki Tanaka", "label": "PERSON"}]}
+{"text": "Haruto Sato approved the exception.", "entities": [{"text": "Haruto Sato", "label": "PERSON"}]}
+{"text": "Min-jun Park joined the call.", "entities": [{"text": "Min-jun Park", "label": "PERSON"}]}
+{"text": "Seo-yeon Kim reviewed the draft.", "entities": [{"text": "Seo-yeon Kim", "label": "PERSON"}]}
+{"text": "Aarav Reddy signed the agreement.", "entities": [{"text": "Aarav Reddy", "label": "PERSON"}]}
+{"text": "Élodie Martin approved the request.", "entities": [{"text": "Élodie Martin", "label": "PERSON"}]}
+{"text": "John Deere raised its annual guidance.", "entities": []}
+{"text": "John Deere announced a new manufacturing facility.", "entities": []}
+{"text": "Morgan Stanley upgraded the stock.", "entities": []}
+{"text": "Morgan Stanley reported higher quarterly revenue.", "entities": []}
+{"text": "Goldman Sachs published a market outlook.", "entities": []}
+{"text": "Johnson & Johnson launched a new product.", "entities": []}
+{"text": "Charles Schwab lowered several trading fees.", "entities": []}
+{"text": "Ralph Lauren opened a flagship store.", "entities": []}
+{"text": "Tommy Hilfiger released a new collection.", "entities": []}
+{"text": "Michael Kors reported stronger sales.", "entities": []}
+{"text": "Ford Motor Company announced a recall.", "entities": []}
+{"text": "Dell Technologies published its earnings report.", "entities": []}
+{"text": "Wells Fargo updated its lending forecast.", "entities": []}
+{"text": "Baker Hughes announced a new energy contract.", "entities": []}
+{"text": "McKinsey & Company published a survey.", "entities": []}
+{"text": "Warner Bros. released the trailer.", "entities": []}
+{"text": "JPMorgan Chase reported record revenue.", "entities": []}
+{"text": "Procter & Gamble raised its outlook.", "entities": []}
+{"text": "Estée Lauder announced leadership changes.", "entities": []}
+{"text": "Harley-Davidson introduced a new motorcycle.", "entities": []}
+{"text": "Update the Jordan column before running the migration.", "entities": []}
+{"text": "The May field should accept null values.", "entities": []}
+{"text": "Rename the Will flag to shouldDeploy.", "entities": []}
+{"text": "The Rose theme token is deprecated.", "entities": []}
+{"text": "The Mark enum is unused.", "entities": []}
+{"text": "The Bill table contains legacy invoice rows.", "entities": []}
+{"text": "The Grace timeout is configured in milliseconds.", "entities": []}
+{"text": "The Hope queue is stuck in retry mode.", "entities": []}
+{"text": "The Hunter worker scans the message backlog.", "entities": []}
+{"text": "The Summer feature flag is disabled.", "entities": []}
+{"text": "The April release branch is protected.", "entities": []}
+{"text": "The Grant permission was removed from the role.", "entities": []}
+{"text": "The Chase job retries failed payments.", "entities": []}
+{"text": "The Pat variable is never initialized.", "entities": []}
+{"text": "Michael is a required property in this JSON schema.", "entities": []}
+{"text": "JohnsonController returned a 500 response.", "entities": []}
+{"text": "SarahChenService failed its unit tests.", "entities": []}
+{"text": "AlexJohnsonFactory should implement the interface.", "entities": []}
+{"text": "user_jordan_id is missing from the payload.", "entities": []}
+{"text": "const May = config.releaseMonth;", "entities": []}
+{"text": "function willRetry() { return true; }", "entities": []}
+{"text": "class RoseThemeProvider {}", "entities": []}
+{"text": "git checkout feature/michael-field", "entities": []}
+{"text": "SELECT john FROM users WHERE active = true;", "entities": []}
+{"text": "The smith_hash column stores a checksum.", "entities": []}
+{"text": "Summarize the quarterly revenue trend.", "entities": []}
+{"text": "Rewrite this paragraph in a more concise style.", "entities": []}
+{"text": "Explain why this SQL query is slow.", "entities": []}
+{"text": "Create a checklist for the deployment.", "entities": []}
+{"text": "Compare these two API responses.", "entities": []}
+{"text": "What does this error message mean?", "entities": []}
+{"text": "Draft a short project status update.", "entities": []}
+{"text": "Convert this JSON object into TypeScript types.", "entities": []}
+{"text": "Explain the difference between OAuth and SAML.", "entities": []}
+{"text": "Review this function for edge cases.", "entities": []}
+{"text": "Summarize the attached meeting notes.", "entities": []}
+{"text": "Create test cases for this parser.", "entities": []}
+{"text": "Why is the build failing on Windows?", "entities": []}
+{"text": "Explain how this database migration works.", "entities": []}
+{"text": "Suggest a clearer name for this variable.", "entities": []}
+{"text": "Rewrite the customer response without changing the meaning.", "entities": []}
+{"text": "Generate a unit test for the validation function.", "entities": []}
+{"text": "Summarize the risks in this architecture.", "entities": []}
+{"text": "Explain this regular expression.", "entities": []}
+{"text": "Turn these requirements into acceptance criteria.", "entities": []}
+{"text": "Rachel Green, Omar Hassan, and Nina Kapoor approved the plan.", "entities": [{"text": "Rachel Green", "label": "PERSON"}, {"text": "Omar Hassan", "label": "PERSON"}, {"text": "Nina Kapoor", "label": "PERSON"}]}
+{"text": "Please copy Kevin Brooks and Leah Cohen on the response.", "entities": [{"text": "Kevin Brooks", "label": "PERSON"}, {"text": "Leah Cohen", "label": "PERSON"}]}
+{"text": "Ethan Walker met with Sophia Martinez yesterday.", "entities": [{"text": "Ethan Walker", "label": "PERSON"}, {"text": "Sophia Martinez", "label": "PERSON"}]}
+{"text": "Ask Henry Davis, Maya Singh, and Olivia Brown to review it.", "entities": [{"text": "Henry Davis", "label": "PERSON"}, {"text": "Maya Singh", "label": "PERSON"}, {"text": "Olivia Brown", "label": "PERSON"}]}
+{"text": "Noah Williams spoke to Isabella Rossi before the meeting.", "entities": [{"text": "Noah Williams", "label": "PERSON"}, {"text": "Isabella Rossi", "label": "PERSON"}]}
+{"text": "Grace Lee <grace@example.com> approved the request.", "entities": [{"text": "Grace Lee", "label": "PERSON"}]}
+{"text": "The note was signed by Jean-Pierre Moreau.", "entities": [{"text": "Jean-Pierre Moreau", "label": "PERSON"}]}
+{"text": "Please send this to (Aisha Rahman) before noon.", "entities": [{"text": "Aisha Rahman", "label": "PERSON"}]}
+{"text": "The owner is José de la Cruz.", "entities": [{"text": "José de la Cruz", "label": "PERSON"}]}
+{"text": "Reviewer: Nguyễn Hoàng Anh.", "entities": [{"text": "Nguyễn Hoàng Anh", "label": "PERSON"}]}

@@ -115,6 +115,12 @@ def main() -> None:
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--model", default=MODEL_NAME)
     parser.add_argument(
+        "--threshold",
+        type=float,
+        default=0.0,
+        help="Minimum confidence for accepting a PERSON prediction.",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=Path("results/baseline_errors.json"),
@@ -143,7 +149,7 @@ def main() -> None:
 
         for prediction in predictions:
             # dslim/distilbert-NER uses PER as its person label.
-            if prediction.get("entity_group") != "PER":
+            if prediction.get("entity_group") not in {"PER", "PERSON"}:
                 continue
 
             predicted_people.append(
@@ -162,6 +168,12 @@ def main() -> None:
             row["text"],
             predicted_people,
         )
+
+        predicted_people = [
+            person
+            for person in predicted_people
+            if person["score"] >= args.threshold
+        ]
 
         gold = exact_entity_set(row["entities"])
         pred = {

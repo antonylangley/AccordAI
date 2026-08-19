@@ -1,9 +1,14 @@
 import { defineBackground } from "wxt/utils/define-background";
 import { governAttachmentBatch, moveVault, rehydrateAssistantText, scanDraft } from "../src/governance/scan-session";
 import type { AccordGuardMessage, AccordGuardResponse } from "../src/messaging/types";
+import { warmPersonDetector } from "../src/person-detection/person-detector";
 import { recordGuardTelemetry } from "../src/telemetry/client";
 
 export default defineBackground(() => {
+  // Warm the packaged NER model when the MV3 service worker starts. Failure is
+  // non-fatal because detectPersonCandidates keeps the local rule fallback.
+  void warmPersonDetector().catch(() => undefined);
+
   chrome.runtime.onMessage.addListener((message: AccordGuardMessage, _sender, sendResponse) => {
     if (!message || typeof message !== "object" || !("type" in message) || !message.type.startsWith("accord.")) {
       return false;

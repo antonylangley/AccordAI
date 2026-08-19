@@ -13,6 +13,9 @@ export default defineConfig({
     },
     permissions: ["storage"],
     host_permissions: ["https://chatgpt.com/*", "http://127.0.0.1:3000/*", "http://localhost:3000/*"],
+    content_security_policy: {
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+    },
     action: {
       default_title: "Accord Guard",
       default_icon: {

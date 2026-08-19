@@ -115,7 +115,7 @@ def main() -> None:
         predicted_people = []
 
         for prediction in raw_predictions:
-            if prediction.get("entity_group") != "PER":
+            if prediction.get("entity_group") not in {"PER", "PERSON"}:
                 continue
 
             predicted_people.append(

@@ -584,7 +584,19 @@ async function runGovernanceScan(text: string, stage: ChatScanResult["stage"], s
   const personDetection = await detectPersonCandidates(text);
   const scan = scanText(text, stage, sensitivity, {
     seedRedactionMap,
-    additionalCandidates: personDetection.candidates
+    additionalCandidates: personDetection.candidates,
+    disableBuiltInPersonDetection: true
+  });
+
+  console.info("[Accord PERSON debug]", {
+    nerStatus: personDetection.coverage.nerStatus,
+    nerCandidateCount: personDetection.candidates.length,
+    finalPersonDetectors: scan.entities
+      .filter((entity) => entity.type === "PERSON")
+      .map((entity) => ({
+        detector: entity.detector,
+        confidence: entity.confidence
+      }))
   });
 
   return {

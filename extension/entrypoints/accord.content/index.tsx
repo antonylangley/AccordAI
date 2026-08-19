@@ -144,6 +144,9 @@ export default defineContentScript({
           )
           .then((response) => {
             if (!response.ok || response.result == null || !("action" in response.result) || sequence !== scanSeq.current) return;
+          
+            console.warn("[Accord PERSON result]", response.result.personDetection);
+          
             applyScanState(response.result, text);
           })
           .catch(() => {

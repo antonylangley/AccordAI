@@ -45,8 +45,8 @@ describe("Accord Guard scan session", () => {
     ]);
     expect(result.sanitizedText).toContain("[PERSON_1]");
     expect(result.sanitizedText).toContain("[EMAIL_1]");
-    expect(result.personDetection.nerStatus).toBe("unavailable");
-    expect(result.personDetection.model.name).toBe("none");
+    expect(result.personDetection.nerStatus).toBe("error");
+    expect(result.personDetection.model.name).toBe("accord-ner-v0.1");
   });
 
   test("keeps exact repeated entities stable in one conversation", async () => {

@@ -12,6 +12,10 @@ build/
 extension/.output/
 extension/.wxt/
 
+# generated local NER runtime assets
+extension/public/models/accord-ner-v0.1/
+extension/public/ort/
+
 # local env
 .env
 .env.*

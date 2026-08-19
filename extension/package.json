@@ -7,11 +7,13 @@
     "dev": "wxt",
     "build": "wxt build -b chrome",
     "prepare": "wxt prepare",
+    "prepare:ner": "node scripts/prepare-ner-assets.mjs",
     "typecheck": "wxt prepare && tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
     "@accord/governance-core": "workspace:*",
+    "@huggingface/transformers": "^4.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
