@@ -5,43 +5,79 @@ import { fileURLToPath } from "node:url";
 const extensionRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(extensionRoot, "..");
 
-const bestModelRoot = resolve(repoRoot, "ml/accord-ner/models/accord-ner-v0.1/best");
-const onnxExportRoot = resolve(repoRoot, "ml/accord-ner/models/accord-ner-v0.1/onnx");
-const modelDestination = resolve(extensionRoot, "public/models/accord-ner-v0.1");
+const bestModelRoot = resolve(
+  repoRoot,
+  "ml/accord-ner/models/accord-ner-v0.2-fixed/best"
+);
+
+const onnxExportRoot = resolve(
+  repoRoot,
+  "ml/accord-ner/models/accord-ner-v0.2-fixed/onnx"
+);
+
+const modelDestination = resolve(
+  extensionRoot,
+  "public/models/accord-ner-v0.2"
+);
+
+const legacyModelDestination = resolve(
+  extensionRoot,
+  "public/models/accord-ner-v0.1"
+);
+
 const wasmDestination = resolve(extensionRoot, "public/ort");
 
 await assertDirectory(bestModelRoot, "trained model checkpoint");
 await assertDirectory(onnxExportRoot, "ONNX export");
 
+await rm(legacyModelDestination, { recursive: true, force: true });
 await rm(modelDestination, { recursive: true, force: true });
 await mkdir(join(modelDestination, "onnx"), { recursive: true });
 
 const bestFiles = await readdir(bestModelRoot, { withFileTypes: true });
+
 for (const entry of bestFiles) {
   if (!entry.isFile() || !isTokenizerOrConfig(entry.name)) continue;
-  await cp(join(bestModelRoot, entry.name), join(modelDestination, entry.name));
+
+  await cp(
+    join(bestModelRoot, entry.name),
+    join(modelDestination, entry.name)
+  );
 }
 
 const onnxFiles = await findFiles(
   onnxExportRoot,
   (name) => name.endsWith(".onnx") || name.endsWith(".onnx_data")
 );
-const modelOnnx =
-  onnxFiles.find((path) => basename(path) === "model.onnx") ??
-  onnxFiles.find((path) => path.endsWith(".onnx"));
+
+const modelOnnx = onnxFiles.find(
+  (path) => basename(path) === "model_quantized.onnx"
+);
 
 if (!modelOnnx) {
-  throw new Error(`No ONNX model found under ${onnxExportRoot}`);
+  throw new Error(
+    `No quantized ONNX model named model_quantized.onnx found under ${onnxExportRoot}`
+  );
 }
 
-await cp(modelOnnx, join(modelDestination, "onnx/model.onnx"));
+const browserModelPath = join(
+  modelDestination,
+  "onnx/model_quantized.onnx"
+);
+
+await cp(modelOnnx, browserModelPath);
 
 for (const source of onnxFiles.filter((path) => path.endsWith(".onnx_data"))) {
-  await cp(source, join(modelDestination, "onnx", basename(source)));
+  await cp(
+    source,
+    join(modelDestination, "onnx", basename(source))
+  );
 }
 
 const ortDist = await findOrtDist();
-const wasmFiles = (await readdir(ortDist)).filter((name) => name.endsWith(".wasm"));
+const wasmFiles = (await readdir(ortDist)).filter((name) =>
+  name.endsWith(".wasm")
+);
 
 if (!wasmFiles.length) {
   throw new Error(`No ONNX Runtime WASM files found in ${ortDist}`);
@@ -51,16 +87,20 @@ await rm(wasmDestination, { recursive: true, force: true });
 await mkdir(wasmDestination, { recursive: true });
 
 for (const file of wasmFiles) {
-  await cp(join(ortDist, file), join(wasmDestination, file));
+  await cp(
+    join(ortDist, file),
+    join(wasmDestination, file)
+  );
 }
 
-const modelStats = await stat(join(modelDestination, "onnx/model.onnx"));
+const modelStats = await stat(browserModelPath);
 
 console.log(
   `Prepared Accord NER browser model: ${(modelStats.size / 1024 / 1024).toFixed(1)} MiB`
 );
 console.log(`Copied ${wasmFiles.length} ONNX Runtime WASM asset(s).`);
 console.log(`Model assets: ${modelDestination}`);
+console.log(`Browser ONNX: ${browserModelPath}`);
 console.log(`WASM assets:  ${wasmDestination}`);
 
 function isTokenizerOrConfig(name) {
@@ -74,15 +114,27 @@ function isTokenizerOrConfig(name) {
 }
 
 async function findOrtDist() {
-  const direct = resolve(extensionRoot, "node_modules/onnxruntime-web/dist");
+  const direct = resolve(
+    extensionRoot,
+    "node_modules/onnxruntime-web/dist"
+  );
+
   if (await isDirectory(direct)) return direct;
 
   const pnpmRoot = resolve(repoRoot, "node_modules/.pnpm");
+
   if (await isDirectory(pnpmRoot)) {
-    const entries = await readdir(pnpmRoot, { withFileTypes: true });
+    const entries = await readdir(pnpmRoot, {
+      withFileTypes: true
+    });
 
     for (const entry of entries) {
-      if (!entry.isDirectory() || !entry.name.startsWith("onnxruntime-web@")) continue;
+      if (
+        !entry.isDirectory() ||
+        !entry.name.startsWith("onnxruntime-web@")
+      ) {
+        continue;
+      }
 
       const candidate = resolve(
         pnpmRoot,
@@ -115,7 +167,9 @@ async function isDirectory(path) {
 
 async function findFiles(root, predicate) {
   const found = [];
-  const entries = await readdir(root, { withFileTypes: true });
+  const entries = await readdir(root, {
+    withFileTypes: true
+  });
 
   for (const entry of entries) {
     const path = join(root, entry.name);

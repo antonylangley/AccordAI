@@ -1,11 +1,17 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { MAX_GUARDED_TEXT_ATTACHMENT_BYTES } from "../attachments/policy";
 import type { AttachmentExtractionKind } from "../attachments/policy";
 import { governAttachmentBatch, rehydrateAssistantText, scanDraft } from "./scan-session";
 
+const personDetector = vi.hoisted(() => ({ detectPersonCandidates: vi.fn() }));
+
+vi.mock("../person-detection/person-detector", () => personDetector);
+
 const store: Record<string, unknown> = {};
 
 beforeEach(() => {
+  personDetector.detectPersonCandidates.mockReset();
+  personDetector.detectPersonCandidates.mockImplementation(async () => personResult("", []));
   for (const key of Object.keys(store)) delete store[key];
   globalThis.chrome = {
     storage: {
@@ -58,7 +64,8 @@ describe("Accord Guard attachment governance", () => {
           'const customer = {\n  name: "Brian McGinty",\n  email: "brian.mcginty@example.com",\n};'
         )
       ],
-      "attachments:pii"
+      "attachments:pii",
+      ["Brian McGinty"]
     );
 
     expect(result.batchAction).toBe("allow");
@@ -87,7 +94,7 @@ describe("Accord Guard attachment governance", () => {
   });
 
   test("D: governs names in filenames before host handoff", async () => {
-    const result = await govern([file("John_Smith_review.txt", "Review is complete.")], "attachments:filename");
+    const result = await govern([file("John_Smith_review.txt", "Review is complete.")], "attachments:filename", ["John Smith"]);
 
     expect(result.batchAction).toBe("allow");
     expect(result.results[0].sanitizedName).toContain("[PERSON_1]");
@@ -96,6 +103,9 @@ describe("Accord Guard attachment governance", () => {
   });
 
   test("E: shares prompt and attachment placeholder vault", async () => {
+    personDetector.detectPersonCandidates.mockImplementation(async (text: string) =>
+      personResult(text, text.includes("John Smith") ? ["John Smith"] : [])
+    );
     await scanDraft({
       surface: "chatgpt",
       conversationKey: "attachments:shared",
@@ -105,7 +115,7 @@ describe("Accord Guard attachment governance", () => {
       includeSanitizedText: true
     });
 
-    const result = await govern([file("reviewer.ts", 'const reviewer = "John Smith";')], "attachments:shared");
+    const result = await govern([file("reviewer.ts", 'const reviewer = "John Smith";')], "attachments:shared", ["John Smith"]);
 
     expect(result.batchAction).toBe("allow");
     expect(result.results[0].sanitizedText).toContain("[PERSON_1]");
@@ -115,7 +125,8 @@ describe("Accord Guard attachment governance", () => {
   test("F: redacts multiple people and rehydrates later response placeholders", async () => {
     const result = await govern(
       [file("approvals.ts", 'const approver = "Mary Jones";\nconst reviewer = "David O\'Connor";')],
-      "attachments:multiple"
+      "attachments:multiple",
+      ["Mary Jones", "David O'Connor"]
     );
 
     expect(result.batchAction).toBe("allow");
@@ -132,7 +143,7 @@ describe("Accord Guard attachment governance", () => {
     expect(resolved.text).toContain("David O'Connor");
   });
 
-  test("redacts lowercase human-list names in governed source attachments", async () => {
+  test("redacts explicit lowercase neural candidates in governed source attachments", async () => {
     const result = await govern(
       [
         file(
@@ -140,7 +151,8 @@ describe("Accord Guard attachment governance", () => {
           'const guests = [\n  "neta rogovsky",\n  "kevin trejos",\n  "brandon gizzo"\n];'
         )
       ],
-      "attachments:lowercase-guests"
+      "attachments:lowercase-guests",
+      ["neta rogovsky", "kevin trejos", "brandon gizzo"]
     );
 
     expect(result.batchAction).toBe("allow");
@@ -160,7 +172,8 @@ describe("Accord Guard attachment governance", () => {
           'const recipients = [\n  "neta rogovsky",\n  "kevin trejos"\n];'
         )
       ],
-      "attachments:lowercase-recipients"
+      "attachments:lowercase-recipients",
+      ["neta rogovsky", "kevin trejos"]
     );
 
     expect(result.batchAction).toBe("allow");
@@ -191,7 +204,8 @@ describe("Accord Guard attachment governance", () => {
           "pdf_text"
         )
       ],
-      "attachments:extracted-pdf"
+      "attachments:extracted-pdf",
+      ["Jordan Example"]
     );
 
     expect(result.batchAction).toBe("allow");
@@ -244,7 +258,11 @@ describe("Accord Guard attachment governance", () => {
   });
 
   test("privacy boundary: safe result does not return raw sensitive filename or content", async () => {
-    const result = await govern([file("John_Smith_notes.txt", "Email John Smith at john@gmail.com.")], "attachments:privacy");
+    const result = await govern(
+      [file("John_Smith_notes.txt", "Email John Smith at john@gmail.com.")],
+      "attachments:privacy",
+      ["John Smith"]
+    );
     const serialized = JSON.stringify(result);
 
     expect(serialized).not.toContain("John_Smith_notes");
@@ -313,11 +331,39 @@ function file(
   };
 }
 
-function govern(attachments: ReturnType<typeof file>[], conversationKey: string) {
+function govern(attachments: ReturnType<typeof file>[], conversationKey: string, people: readonly string[] = []) {
+  personDetector.detectPersonCandidates.mockImplementation(async (text: string) =>
+    personResult(text, people.filter((person) => text.includes(person)))
+  );
   return governAttachmentBatch({
     surface: "chatgpt",
     conversationKey,
     sensitivity: "Internal",
     attachments
   });
+}
+
+function personResult(text: string, people: readonly string[]) {
+  return {
+    candidates: people.map((originalText) => {
+      const start = text.indexOf(originalText);
+      return {
+        type: "PERSON" as const,
+        originalText,
+        start,
+        end: start + originalText.length,
+        confidence: 0.99,
+        detector: "accord_ner_v0_2_test",
+        contextSignals: ["ner_person"]
+      };
+    }),
+    coverage: {
+      mode: "local-ner" as const,
+      nerStatus: "ready" as const,
+      detector: "accord_ner_v0_2_test",
+      candidateCount: people.length,
+      timedOut: false,
+      model: { name: "accord-ner-v0.2", assetSizeBytes: 0, executionContext: "service_worker" as const }
+    }
+  };
 }

@@ -1,0 +1,600 @@
+{"text": "Send the report to John Smith tomorrow.", "entities": [{"text": "John Smith", "label": "PERSON"}]}
+{"text": "Ask Sarah Chen to approve the document.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "Michael Rodriguez said the deployment can proceed.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Please copy Antony Langley on the email.", "entities": [{"text": "Antony Langley", "label": "PERSON"}]}
+{"text": "José de la Cruz reviewed the contract.", "entities": [{"text": "José de la Cruz", "label": "PERSON"}]}
+{"text": "Jean-Pierre Dupont joined the meeting.", "entities": [{"text": "Jean-Pierre Dupont", "label": "PERSON"}]}
+{"text": "Dr. Sarah Chen reviewed the patient record.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}]}
+{"text": "CEO Michael Rodriguez approved the purchase.", "entities": [{"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Sarah Chen and Michael Rodriguez reviewed the report.", "entities": [{"text": "Sarah Chen", "label": "PERSON"}, {"text": "Michael Rodriguez", "label": "PERSON"}]}
+{"text": "Ask Jordan to approve the report.", "entities": [{"text": "Jordan", "label": "PERSON"}]}
+{"text": "Rose reviewed the document yesterday.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "May approved the proposal.", "entities": [{"text": "May", "label": "PERSON"}]}
+{"text": "Will sent me the report this morning.", "entities": [{"text": "Will", "label": "PERSON"}]}
+{"text": "Aisha Rahman will lead the client call.", "entities": [{"text": "Aisha Rahman", "label": "PERSON"}]}
+{"text": "Please ask João Pereira whether the build is ready.", "entities": [{"text": "João Pereira", "label": "PERSON"}]}
+{"text": "Saoirse O'Connor signed the approval form.", "entities": [{"text": "Saoirse O'Connor", "label": "PERSON"}]}
+{"text": "Mohammed Al-Farsi owns the security review.", "entities": [{"text": "Mohammed Al-Farsi", "label": "PERSON"}]}
+{"text": "Li Wei requested access to the dashboard.", "entities": [{"text": "Li Wei", "label": "PERSON"}]}
+{"text": "Nguyễn Minh Anh sent the revised document.", "entities": [{"text": "Nguyễn Minh Anh", "label": "PERSON"}]}
+{"text": "Mary-Kate Olsen was added to the attendee list.", "entities": [{"text": "Mary-Kate Olsen", "label": "PERSON"}]}
+{"text": "I spoke with Alex Johnson about the outage.", "entities": [{"text": "Alex Johnson", "label": "PERSON"}]}
+{"text": "Forward this to Priya Patel before lunch.", "entities": [{"text": "Priya Patel", "label": "PERSON"}]}
+{"text": "Daniel Kim owns the database migration.", "entities": [{"text": "Daniel Kim", "label": "PERSON"}]}
+{"text": "Can you summarize Emma Thompson's feedback?", "entities": [{"text": "Emma Thompson", "label": "PERSON"}]}
+{"text": "The recipients are Marcus Lee, Elena García, and Fatima Noor.", "entities": [{"text": "Marcus Lee", "label": "PERSON"}, {"text": "Elena García", "label": "PERSON"}, {"text": "Fatima Noor", "label": "PERSON"}]}
+{"text": "Email me exactly what happened.", "entities": []}
+{"text": "Send the address back to me.", "entities": []}
+{"text": "Repeat the following email address back to me exactly.", "entities": []}
+{"text": "Please contact customer support.", "entities": []}
+{"text": "The account manager field is null.", "entities": []}
+{"text": "The customer record failed validation.", "entities": []}
+{"text": "John Deere reported quarterly earnings.", "entities": []}
+{"text": "The Smith machine is broken.", "entities": []}
+{"text": "May is next month.", "entities": []}
+{"text": "Rose is my favorite flower.", "entities": []}
+{"text": "Jordan is a country in the Middle East.", "entities": []}
+{"text": "Will this deployment work?", "entities": []}
+{"text": "Apple released a software update.", "entities": []}
+{"text": "OpenAI released a new model.", "entities": []}
+{"text": "Morgan Stanley published the report.", "entities": []}
+{"text": "Johnson & Johnson announced earnings.", "entities": []}
+{"text": "const John = new User();", "entities": []}
+{"text": "class JohnSmithFactory {}", "entities": []}
+{"text": "git checkout john-smith", "entities": []}
+{"text": "const SarahChen = await loadUser();", "entities": []}
+{"text": "The Johnson controller failed during testing.", "entities": []}
+{"text": "michael_service failed to start.", "entities": []}
+{"text": "The New York office is closed today.", "entities": []}
+{"text": "Please update the Michael field in the schema.", "entities": []}
+{"text": "The report should be sent back exactly as received.", "entities": []}
+{"text": "Rachel Green will present the findings at noon.", "entities": [{"text": "Rachel Green", "label": "PERSON"}]}
+{"text": "Please send the draft to Omar Hassan for review.", "entities": [{"text": "Omar Hassan", "label": "PERSON"}]}
+{"text": "Kevin Brooks approved the reimbursement.", "entities": [{"text": "Kevin Brooks", "label": "PERSON"}]}
+{"text": "Nina Kapoor is handling the vendor renewal.", "entities": [{"text": "Nina Kapoor", "label": "PERSON"}]}
+{"text": "Marcus Bennett requested a copy of the audit log.", "entities": [{"text": "Marcus Bennett", "label": "PERSON"}]}
+{"text": "Leah Cohen owns the onboarding checklist.", "entities": [{"text": "Leah Cohen", "label": "PERSON"}]}
+{"text": "Ethan Walker will join the architecture review.", "entities": [{"text": "Ethan Walker", "label": "PERSON"}]}
+{"text": "Sophia Martinez signed off on the change request.", "entities": [{"text": "Sophia Martinez", "label": "PERSON"}]}
+{"text": "Henry Davis updated the project timeline.", "entities": [{"text": "Henry Davis", "label": "PERSON"}]}
+{"text": "Maya Singh is leading the migration.", "entities": [{"text": "Maya Singh", "label": "PERSON"}]}
+{"text": "Please ask Olivia Brown to confirm the numbers.", "entities": [{"text": "Olivia Brown", "label": "PERSON"}]}
+{"text": "Noah Williams scheduled the follow-up meeting.", "entities": [{"text": "Noah Williams", "label": "PERSON"}]}
+{"text": "Isabella Rossi reviewed the legal notes.", "entities": [{"text": "Isabella Rossi", "label": "PERSON"}]}
+{"text": "Lucas Martin sent the final spreadsheet.", "entities": [{"text": "Lucas Martin", "label": "PERSON"}]}
+{"text": "Grace Lee approved the access request.", "entities": [{"text": "Grace Lee", "label": "PERSON"}]}
+{"text": "Benjamin Clark opened the incident ticket.", "entities": [{"text": "Benjamin Clark", "label": "PERSON"}]}
+{"text": "Chloe Adams is waiting on the revised estimate.", "entities": [{"text": "Chloe Adams", "label": "PERSON"}]}
+{"text": "Diego Morales joined the customer call.", "entities": [{"text": "Diego Morales", "label": "PERSON"}]}
+{"text": "Hannah Wilson drafted the response.", "entities": [{"text": "Hannah Wilson", "label": "PERSON"}]}
+{"text": "Arjun Mehta completed the security questionnaire.", "entities": [{"text": "Arjun Mehta", "label": "PERSON"}]}
+{"text": "Please copy Emily Carter on the reply.", "entities": [{"text": "Emily Carter", "label": "PERSON"}]}
+{"text": "Jacob Miller owns the API migration.", "entities": [{"text": "Jacob Miller", "label": "PERSON"}]}
+{"text": "Zoe Turner will review the pull request.", "entities": [{"text": "Zoe Turner", "label": "PERSON"}]}
+{"text": "Caleb Foster requested the latest build.", "entities": [{"text": "Caleb Foster", "label": "PERSON"}]}
+{"text": "Mia Anderson approved the travel request.", "entities": [{"text": "Mia Anderson", "label": "PERSON"}]}
+{"text": "Jordan approved the budget yesterday.", "entities": [{"text": "Jordan", "label": "PERSON"}]}
+{"text": "Our distributor opened a new warehouse in Jordan.", "entities": []}
+{"text": "I emailed May about the contract.", "entities": [{"text": "May", "label": "PERSON"}]}
+{"text": "The renewal is scheduled for May.", "entities": []}
+{"text": "Will approved the change request.", "entities": [{"text": "Will", "label": "PERSON"}]}
+{"text": "Will the migration finish tonight?", "entities": []}
+{"text": "Rose signed the release form.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "Rose is used throughout the color palette.", "entities": []}
+{"text": "Mark reviewed the spreadsheet.", "entities": [{"text": "Mark", "label": "PERSON"}]}
+{"text": "Please mark the spreadsheet as final.", "entities": []}
+{"text": "Bill approved the invoice.", "entities": [{"text": "Bill", "label": "PERSON"}]}
+{"text": "Please bill the customer next week.", "entities": []}
+{"text": "Grace joined the planning call.", "entities": [{"text": "Grace", "label": "PERSON"}]}
+{"text": "The service should shut down with grace.", "entities": []}
+{"text": "Hope sent the revised proposal.", "entities": [{"text": "Hope", "label": "PERSON"}]}
+{"text": "We hope the deployment succeeds.", "entities": []}
+{"text": "Faith reviewed the application.", "entities": [{"text": "Faith", "label": "PERSON"}]}
+{"text": "The team acted in good faith.", "entities": []}
+{"text": "Hunter requested access to the repository.", "entities": [{"text": "Hunter", "label": "PERSON"}]}
+{"text": "The hunter process scans for stale jobs.", "entities": []}
+{"text": "Summer approved the campaign copy.", "entities": [{"text": "Summer", "label": "PERSON"}]}
+{"text": "The internship starts this summer.", "entities": []}
+{"text": "April joined the design review.", "entities": [{"text": "April", "label": "PERSON"}]}
+{"text": "The rollout begins in April.", "entities": []}
+{"text": "Grant signed the approval form.", "entities": [{"text": "Grant", "label": "PERSON"}]}
+{"text": "The service will grant access after verification.", "entities": []}
+{"text": "Chase sent the updated forecast.", "entities": [{"text": "Chase", "label": "PERSON"}]}
+{"text": "Please chase the vendor for an answer.", "entities": []}
+{"text": "Pat reviewed the document.", "entities": [{"text": "Pat", "label": "PERSON"}]}
+{"text": "Apply the security patch before release.", "entities": []}
+{"text": "Saoirse O'Connor will chair the review.", "entities": [{"text": "Saoirse O'Connor", "label": "PERSON"}]}
+{"text": "Please ask Niamh O'Brien to confirm the schedule.", "entities": [{"text": "Niamh O'Brien", "label": "PERSON"}]}
+{"text": "Jean-Pierre Moreau approved the contract.", "entities": [{"text": "Jean-Pierre Moreau", "label": "PERSON"}]}
+{"text": "Ana-María López joined the meeting.", "entities": [{"text": "Ana-María López", "label": "PERSON"}]}
+{"text": "José María García sent the revised estimate.", "entities": [{"text": "José María García", "label": "PERSON"}]}
+{"text": "João da Silva owns the deployment plan.", "entities": [{"text": "João da Silva", "label": "PERSON"}]}
+{"text": "María del Carmen Ruiz reviewed the account.", "entities": [{"text": "María del Carmen Ruiz", "label": "PERSON"}]}
+{"text": "Luca De Santis approved the design.", "entities": [{"text": "Luca De Santis", "label": "PERSON"}]}
+{"text": "Ludwig van der Meer signed the document.", "entities": [{"text": "Ludwig van der Meer", "label": "PERSON"}]}
+{"text": "Amir Al-Hassan will present the report.", "entities": [{"text": "Amir Al-Hassan", "label": "PERSON"}]}
+{"text": "Nguyễn Hoàng Anh joined the support call.", "entities": [{"text": "Nguyễn Hoàng Anh", "label": "PERSON"}]}
+{"text": "Trần Minh Đức approved the proposal.", "entities": [{"text": "Trần Minh Đức", "label": "PERSON"}]}
+{"text": "Wei Zhang reviewed the customer notes.", "entities": [{"text": "Wei Zhang", "label": "PERSON"}]}
+{"text": "Li Na will handle the escalation.", "entities": [{"text": "Li Na", "label": "PERSON"}]}
+{"text": "Yuki Tanaka sent the updated plan.", "entities": [{"text": "Yuki Tanaka", "label": "PERSON"}]}
+{"text": "Haruto Sato approved the exception.", "entities": [{"text": "Haruto Sato", "label": "PERSON"}]}
+{"text": "Min-jun Park joined the call.", "entities": [{"text": "Min-jun Park", "label": "PERSON"}]}
+{"text": "Seo-yeon Kim reviewed the draft.", "entities": [{"text": "Seo-yeon Kim", "label": "PERSON"}]}
+{"text": "Aarav Reddy signed the agreement.", "entities": [{"text": "Aarav Reddy", "label": "PERSON"}]}
+{"text": "Élodie Martin approved the request.", "entities": [{"text": "Élodie Martin", "label": "PERSON"}]}
+{"text": "John Deere raised its annual guidance.", "entities": []}
+{"text": "John Deere announced a new manufacturing facility.", "entities": []}
+{"text": "Morgan Stanley upgraded the stock.", "entities": []}
+{"text": "Morgan Stanley reported higher quarterly revenue.", "entities": []}
+{"text": "Goldman Sachs published a market outlook.", "entities": []}
+{"text": "Johnson & Johnson launched a new product.", "entities": []}
+{"text": "Charles Schwab lowered several trading fees.", "entities": []}
+{"text": "Ralph Lauren opened a flagship store.", "entities": []}
+{"text": "Tommy Hilfiger released a new collection.", "entities": []}
+{"text": "Michael Kors reported stronger sales.", "entities": []}
+{"text": "Ford Motor Company announced a recall.", "entities": []}
+{"text": "Dell Technologies published its earnings report.", "entities": []}
+{"text": "Wells Fargo updated its lending forecast.", "entities": []}
+{"text": "Baker Hughes announced a new energy contract.", "entities": []}
+{"text": "McKinsey & Company published a survey.", "entities": []}
+{"text": "Warner Bros. released the trailer.", "entities": []}
+{"text": "JPMorgan Chase reported record revenue.", "entities": []}
+{"text": "Procter & Gamble raised its outlook.", "entities": []}
+{"text": "Estée Lauder announced leadership changes.", "entities": []}
+{"text": "Harley-Davidson introduced a new motorcycle.", "entities": []}
+{"text": "Update the Jordan column before running the migration.", "entities": []}
+{"text": "The May field should accept null values.", "entities": []}
+{"text": "Rename the Will flag to shouldDeploy.", "entities": []}
+{"text": "The Rose theme token is deprecated.", "entities": []}
+{"text": "The Mark enum is unused.", "entities": []}
+{"text": "The Bill table contains legacy invoice rows.", "entities": []}
+{"text": "The Grace timeout is configured in milliseconds.", "entities": []}
+{"text": "The Hope queue is stuck in retry mode.", "entities": []}
+{"text": "The Hunter worker scans the message backlog.", "entities": []}
+{"text": "The Summer feature flag is disabled.", "entities": []}
+{"text": "The April release branch is protected.", "entities": []}
+{"text": "The Grant permission was removed from the role.", "entities": []}
+{"text": "The Chase job retries failed payments.", "entities": []}
+{"text": "The Pat variable is never initialized.", "entities": []}
+{"text": "Michael is a required property in this JSON schema.", "entities": []}
+{"text": "JohnsonController returned a 500 response.", "entities": []}
+{"text": "SarahChenService failed its unit tests.", "entities": []}
+{"text": "AlexJohnsonFactory should implement the interface.", "entities": []}
+{"text": "user_jordan_id is missing from the payload.", "entities": []}
+{"text": "const May = config.releaseMonth;", "entities": []}
+{"text": "function willRetry() { return true; }", "entities": []}
+{"text": "class RoseThemeProvider {}", "entities": []}
+{"text": "git checkout feature/michael-field", "entities": []}
+{"text": "SELECT john FROM users WHERE active = true;", "entities": []}
+{"text": "The smith_hash column stores a checksum.", "entities": []}
+{"text": "Summarize the quarterly revenue trend.", "entities": []}
+{"text": "Rewrite this paragraph in a more concise style.", "entities": []}
+{"text": "Explain why this SQL query is slow.", "entities": []}
+{"text": "Create a checklist for the deployment.", "entities": []}
+{"text": "Compare these two API responses.", "entities": []}
+{"text": "What does this error message mean?", "entities": []}
+{"text": "Draft a short project status update.", "entities": []}
+{"text": "Convert this JSON object into TypeScript types.", "entities": []}
+{"text": "Explain the difference between OAuth and SAML.", "entities": []}
+{"text": "Review this function for edge cases.", "entities": []}
+{"text": "Summarize the attached meeting notes.", "entities": []}
+{"text": "Create test cases for this parser.", "entities": []}
+{"text": "Why is the build failing on Windows?", "entities": []}
+{"text": "Explain how this database migration works.", "entities": []}
+{"text": "Suggest a clearer name for this variable.", "entities": []}
+{"text": "Rewrite the customer response without changing the meaning.", "entities": []}
+{"text": "Generate a unit test for the validation function.", "entities": []}
+{"text": "Summarize the risks in this architecture.", "entities": []}
+{"text": "Explain this regular expression.", "entities": []}
+{"text": "Turn these requirements into acceptance criteria.", "entities": []}
+{"text": "Rachel Green, Omar Hassan, and Nina Kapoor approved the plan.", "entities": [{"text": "Rachel Green", "label": "PERSON"}, {"text": "Omar Hassan", "label": "PERSON"}, {"text": "Nina Kapoor", "label": "PERSON"}]}
+{"text": "Please copy Kevin Brooks and Leah Cohen on the response.", "entities": [{"text": "Kevin Brooks", "label": "PERSON"}, {"text": "Leah Cohen", "label": "PERSON"}]}
+{"text": "Ethan Walker met with Sophia Martinez yesterday.", "entities": [{"text": "Ethan Walker", "label": "PERSON"}, {"text": "Sophia Martinez", "label": "PERSON"}]}
+{"text": "Ask Henry Davis, Maya Singh, and Olivia Brown to review it.", "entities": [{"text": "Henry Davis", "label": "PERSON"}, {"text": "Maya Singh", "label": "PERSON"}, {"text": "Olivia Brown", "label": "PERSON"}]}
+{"text": "Noah Williams spoke to Isabella Rossi before the meeting.", "entities": [{"text": "Noah Williams", "label": "PERSON"}, {"text": "Isabella Rossi", "label": "PERSON"}]}
+{"text": "Grace Lee <grace@example.com> approved the request.", "entities": [{"text": "Grace Lee", "label": "PERSON"}]}
+{"text": "The note was signed by Jean-Pierre Moreau.", "entities": [{"text": "Jean-Pierre Moreau", "label": "PERSON"}]}
+{"text": "Please send this to (Aisha Rahman) before noon.", "entities": [{"text": "Aisha Rahman", "label": "PERSON"}]}
+{"text": "The owner is José de la Cruz.", "entities": [{"text": "José de la Cruz", "label": "PERSON"}]}
+{"text": "Reviewer: Nguyễn Hoàng Anh.", "entities": [{"text": "Nguyễn Hoàng Anh", "label": "PERSON"}]}
+{"text": "Can you draft a follow-up email to Renata Vogel about the Q3 vendor renewal?", "entities": [{"text": "Renata Vogel", "label": "PERSON"}]}
+{"text": "Summarize the meeting notes and flag anything Dmitri Kovacs still owes us.", "entities": [{"text": "Dmitri Kovacs", "label": "PERSON"}]}
+{"text": "Rewrite this paragraph so it sounds less blunt before I send it to Hana Okonkwo.", "entities": [{"text": "Hana Okonkwo", "label": "PERSON"}]}
+{"text": "Please schedule a 30-minute sync with Bertrand Achebe next Tuesday afternoon.", "entities": [{"text": "Bertrand Achebe", "label": "PERSON"}]}
+{"text": "What's a polite way to tell Sofia Marchetti that the deadline slipped again?", "entities": [{"text": "Sofia Marchetti", "label": "PERSON"}]}
+{"text": "Turn these bullet points into a performance review draft for Kwame Boateng.", "entities": [{"text": "Kwame Boateng", "label": "PERSON"}]}
+{"text": "Draft a handover doc since Ingrid Falk is going on leave in two weeks.", "entities": [{"text": "Ingrid Falk", "label": "PERSON"}]}
+{"text": "Write a short Slack message asking Tobias Reinholt to approve the purchase order.", "entities": [{"text": "Tobias Reinholt", "label": "PERSON"}]}
+{"text": "Help me prep talking points for my one-on-one with Adaeze Nwosu.", "entities": [{"text": "Adaeze Nwosu", "label": "PERSON"}]}
+{"text": "Can you reformat this spreadsheet summary the way Victoria Hartnell likes it?", "entities": [{"text": "Victoria Hartnell", "label": "PERSON"}]}
+{"text": "I need a professional decline to the panel invitation from Yusuf Baraka.", "entities": [{"text": "Yusuf Baraka", "label": "PERSON"}]}
+{"text": "Explain to Lena Vasquez why the migration window moved to Sunday night.", "entities": [{"text": "Lena Vasquez", "label": "PERSON"}]}
+{"text": "Draft an intro email connecting me with Oliver Ashgrove on the procurement side.", "entities": [{"text": "Oliver Ashgrove", "label": "PERSON"}]}
+{"text": "Condense this incident timeline into three bullets for Priyanka Raghunathan.", "entities": [{"text": "Priyanka Raghunathan", "label": "PERSON"}]}
+{"text": "Write a thank-you note to Marguerite Delacroix for covering my on-call shift.", "entities": [{"text": "Marguerite Delacroix", "label": "PERSON"}]}
+{"text": "Can you check whether this contract clause matches what Nadia Al-Sayegh proposed?", "entities": [{"text": "Nadia Al-Sayegh", "label": "PERSON"}]}
+{"text": "Make this rejection letter warmer without promising anything to Colin Farrow.", "entities": [{"text": "Colin Farrow", "label": "PERSON"}]}
+{"text": "Draft the agenda for Thursday's steering committee, chaired by Benedikt Haas.", "entities": [{"text": "Benedikt Haas", "label": "PERSON"}]}
+{"text": "Summarize this 40-page RFP so Teodora Iliescu can skim it before lunch.", "entities": [{"text": "Teodora Iliescu", "label": "PERSON"}]}
+{"text": "Give me three options for responding to Malik Ferreira's budget pushback.", "entities": [{"text": "Malik Ferreira", "label": "PERSON"}]}
+{"text": "Write a status update for leadership highlighting the fix Camille Boutin shipped.", "entities": [{"text": "Camille Boutin", "label": "PERSON"}]}
+{"text": "Help me phrase a request for extra headcount to Gerhardt Lindqvist.", "entities": [{"text": "Gerhardt Lindqvist", "label": "PERSON"}]}
+{"text": "Proofread this client memo before it goes out under Rosalind Achterberg's name.", "entities": [{"text": "Rosalind Achterberg", "label": "PERSON"}]}
+{"text": "What questions should I ask Isadora Quintanilla during the vendor evaluation call?", "entities": [{"text": "Isadora Quintanilla", "label": "PERSON"}]}
+{"text": "Draft a gentle reminder that Ruslan Petrosyan hasn't submitted his timesheet.", "entities": [{"text": "Ruslan Petrosyan", "label": "PERSON"}]}
+{"text": "Rewrite this onboarding checklist so a new analyst like Bianca Toussaint can follow it.", "entities": [{"text": "Bianca Toussaint", "label": "PERSON"}]}
+{"text": "Please summarize the customer complaint thread and tag Devendra Kulkarni for follow-up.", "entities": [{"text": "Devendra Kulkarni", "label": "PERSON"}]}
+{"text": "Compose a short apology to the client after the demo Anneliese Brandt ran crashed.", "entities": [{"text": "Anneliese Brandt", "label": "PERSON"}]}
+{"text": "Can you outline a 90-day plan for the role Frederick Osei is stepping into?", "entities": [{"text": "Frederick Osei", "label": "PERSON"}]}
+{"text": "Draft an email asking Solveig Andresen whether the audit findings are final.", "entities": [{"text": "Solveig Andresen", "label": "PERSON"}]}
+{"text": "Turn my messy notes from the retro into an action list assigned to Xiomara Beltran.", "entities": [{"text": "Xiomara Beltran", "label": "PERSON"}]}
+{"text": "Write a paragraph explaining the pricing change that Hugo Lindenmayer can reuse verbatim.", "entities": [{"text": "Hugo Lindenmayer", "label": "PERSON"}]}
+{"text": "Help me push back politely on the scope creep Sabine Ostrowski keeps adding.", "entities": [{"text": "Sabine Ostrowski", "label": "PERSON"}]}
+{"text": "Summarize what changed in the policy doc since Ravi Thangavelu last reviewed it.", "entities": [{"text": "Ravi Thangavelu", "label": "PERSON"}]}
+{"text": "Draft a message letting the team know Cordelia Mbeki will run standup this week.", "entities": [{"text": "Cordelia Mbeki", "label": "PERSON"}]}
+{"text": "Rework this job description so it appeals to candidates like Nikolaj Sorensen.", "entities": [{"text": "Nikolaj Sorensen", "label": "PERSON"}]}
+{"text": "Give me a tactful way to say no to the offsite proposal from Antonella Ricci.", "entities": [{"text": "Antonella Ricci", "label": "PERSON"}]}
+{"text": "Draft release notes based on the changelog Emeka Chukwuma pasted into the channel.", "entities": [{"text": "Emeka Chukwuma", "label": "PERSON"}]}
+{"text": "Can you write an executive summary that answers Beatrix Halvorsen's three concerns?", "entities": [{"text": "Beatrix Halvorsen", "label": "PERSON"}]}
+{"text": "Write a short note to Amara Diallo confirming the interview loop is set for Friday.", "entities": [{"text": "Amara Diallo", "label": "PERSON"}]}
+{"text": "can you ping marcus about the invoice before he logs off?", "entities": [{"text": "marcus", "label": "PERSON"}]}
+{"text": "draft a quick note to elena saying the deck is ready for review", "entities": [{"text": "elena", "label": "PERSON"}]}
+{"text": "remind me to ask hiroshi tanaka whether the audit sample is big enough", "entities": [{"text": "hiroshi tanaka", "label": "PERSON"}]}
+{"text": "summarize this thread for my manager, her name is june", "entities": [{"text": "june", "label": "PERSON"}]}
+{"text": "tell jonas i'll be ten minutes late to the design sync", "entities": [{"text": "jonas", "label": "PERSON"}]}
+{"text": "write a polite nudge to fatima about the missing expense receipts", "entities": [{"text": "fatima", "label": "PERSON"}]}
+{"text": "can you make this shorter, my lead ana hates long emails", "entities": [{"text": "ana", "label": "PERSON"}]}
+{"text": "need help replying to olusegun without sounding defensive", "entities": [{"text": "olusegun", "label": "PERSON"}]}
+{"text": "what should i say to mei-ling when she asks about the delay", "entities": [{"text": "mei-ling", "label": "PERSON"}]}
+{"text": "rewrite this so it doesn't sound like i'm blaming rafal for the outage", "entities": [{"text": "rafal", "label": "PERSON"}]}
+{"text": "ask bernadette if she can join the client call at four", "entities": [{"text": "bernadette", "label": "PERSON"}]}
+{"text": "give me talking points for my skip level with tomasz", "entities": [{"text": "tomasz", "label": "PERSON"}]}
+{"text": "draft a handoff message since ingvild is covering my accounts next week", "entities": [{"text": "ingvild", "label": "PERSON"}]}
+{"text": "help me tell zubair that we're going with the other vendor", "entities": [{"text": "zubair", "label": "PERSON"}]}
+{"text": "can you check if lorenzo already replied to the security questionnaire", "entities": [{"text": "lorenzo", "label": "PERSON"}]}
+{"text": "write a birthday message for my coworker aoife, keep it low key", "entities": [{"text": "aoife", "label": "PERSON"}]}
+{"text": "summarize what nguyen said in the standup notes below", "entities": [{"text": "nguyen", "label": "PERSON"}]}
+{"text": "i need to escalate this to sundeep without stepping on my manager's toes", "entities": [{"text": "sundeep", "label": "PERSON"}]}
+{"text": "make this feedback for kelly sound constructive instead of harsh", "entities": [{"text": "kelly", "label": "PERSON"}]}
+{"text": "tell yannick the staging environment is back up", "entities": [{"text": "yannick", "label": "PERSON"}]}
+{"text": "Please forward the compliance packet to Þórunn Sigurðardóttir before end of day.", "entities": [{"text": "Þórunn Sigurðardóttir", "label": "PERSON"}]}
+{"text": "Draft a reply to Nguyễn Thị Bích Hằng about the localization timeline.", "entities": [{"text": "Nguyễn Thị Bích Hằng", "label": "PERSON"}]}
+{"text": "Can you translate this update for Björn Óskarsson on the Reykjavik team?", "entities": [{"text": "Björn Óskarsson", "label": "PERSON"}]}
+{"text": "Ask Wojciech Szczepański whether the warehouse integration passed UAT.", "entities": [{"text": "Wojciech Szczepański", "label": "PERSON"}]}
+{"text": "Summarize the procurement thread for Ekaterina Zhukovskaya in two sentences.", "entities": [{"text": "Ekaterina Zhukovskaya", "label": "PERSON"}]}
+{"text": "Write a formal introduction for Dr. Chidinma Okereke-Ajayi at the partner briefing.", "entities": [{"text": "Chidinma Okereke-Ajayi", "label": "PERSON"}]}
+{"text": "Let Kanchana Wijesinghe know the API keys were rotated last night.", "entities": [{"text": "Kanchana Wijesinghe", "label": "PERSON"}]}
+{"text": "Draft a contract amendment cover note addressed to Seán Ó Ríordáin.", "entities": [{"text": "Seán Ó Ríordáin", "label": "PERSON"}]}
+{"text": "Could you check the Arabic copy that Mariam Al-Khatib sent this morning?", "entities": [{"text": "Mariam Al-Khatib", "label": "PERSON"}]}
+{"text": "Prepare a short bio for Ayşegül Demirtaş for the conference program.", "entities": [{"text": "Ayşegül Demirtaş", "label": "PERSON"}]}
+{"text": "Please confirm with Tshepo Modisane that the Johannesburg office signed off.", "entities": [{"text": "Tshepo Modisane", "label": "PERSON"}]}
+{"text": "Rewrite the escalation summary so Kimiko Watanabe-Ford can present it upward.", "entities": [{"text": "Kimiko Watanabe-Ford", "label": "PERSON"}]}
+{"text": "Send the revised SOW to Aleksandrs Bērziņš and note the new payment terms.", "entities": [{"text": "Aleksandrs Bērziņš", "label": "PERSON"}]}
+{"text": "What's the best way to ask Siosaia Fifita for an extension on the deliverable?", "entities": [{"text": "Siosaia Fifita", "label": "PERSON"}]}
+{"text": "Draft an offer letter paragraph for Oluwaseun Adebayo-Grant in the Lagos office.", "entities": [{"text": "Oluwaseun Adebayo-Grant", "label": "PERSON"}]}
+{"text": "Ask Xóchitl Ramírez-Peña to review the Spanish glossary terms.", "entities": [{"text": "Xóchitl Ramírez-Peña", "label": "PERSON"}]}
+{"text": "Summarize the risk register in plain language for Pjotr Van der Molen.", "entities": [{"text": "Pjotr Van der Molen", "label": "PERSON"}]}
+{"text": "Let me know if Rukmini Balasubramanian approved the data retention exception.", "entities": [{"text": "Rukmini Balasubramanian", "label": "PERSON"}]}
+{"text": "Write a short congratulations to Anastasiia Kovalenko on closing the renewal.", "entities": [{"text": "Anastasiia Kovalenko", "label": "PERSON"}]}
+{"text": "Check whether Mohammed bin Rashid Al-Fahim is still the signing authority here.", "entities": [{"text": "Mohammed bin Rashid Al-Fahim", "label": "PERSON"}]}
+{"text": "Loop in Georgina Astley and Petar Mihailović on the SOC 2 evidence request.", "entities": [{"text": "Georgina Astley", "label": "PERSON"}, {"text": "Petar Mihailović", "label": "PERSON"}]}
+{"text": "can you draft a note to hallie and desmond about the postponed roadmap review", "entities": [{"text": "hallie", "label": "PERSON"}, {"text": "desmond", "label": "PERSON"}]}
+{"text": "Ingeborg Rasmussen wants a summary of what Tarun Chatterjee agreed to on the call.", "entities": [{"text": "Ingeborg Rasmussen", "label": "PERSON"}, {"text": "Tarun Chatterjee", "label": "PERSON"}]}
+{"text": "Split the migration tasks between Noor Haddad and Vittorio Peluso, then draft the plan.", "entities": [{"text": "Noor Haddad", "label": "PERSON"}, {"text": "Vittorio Peluso", "label": "PERSON"}]}
+{"text": "Write meeting minutes noting that Abebe Tesfaye, Marisol Quintero, and Lars Hjelmeland attended.", "entities": [{"text": "Abebe Tesfaye", "label": "PERSON"}, {"text": "Marisol Quintero", "label": "PERSON"}, {"text": "Lars Hjelmeland", "label": "PERSON"}]}
+{"text": "Please cc rohit and also let annika know the invoice was reissued.", "entities": [{"text": "rohit", "label": "PERSON"}, {"text": "annika", "label": "PERSON"}]}
+{"text": "Compare the two proposals from Ferdinand Okpara and Yelena Brodskaya for the board.", "entities": [{"text": "Ferdinand Okpara", "label": "PERSON"}, {"text": "Yelena Brodskaya", "label": "PERSON"}]}
+{"text": "Draft an email thanking Halvard Nyström for the intro and asking Ines Cabral for pricing.", "entities": [{"text": "Halvard Nyström", "label": "PERSON"}, {"text": "Ines Cabral", "label": "PERSON"}]}
+{"text": "Summarize the disagreement between Chiara Bonetti and Emmanuel Nkemdirim without taking sides.", "entities": [{"text": "Chiara Bonetti", "label": "PERSON"}, {"text": "Emmanuel Nkemdirim", "label": "PERSON"}]}
+{"text": "Who should own the runbook, Sanne Vermeulen or Tadeusz Wojciechowski?", "entities": [{"text": "Sanne Vermeulen", "label": "PERSON"}, {"text": "Tadeusz Wojciechowski", "label": "PERSON"}]}
+{"text": "Morgan Stanley and Baker Hughes both revised their outlook for the quarter.", "entities": []}
+{"text": "We're standardizing on Jenkins and Grafana for the new deployment pipeline.", "entities": []}
+{"text": "Please book a conference room in the Marcus building for the vendor demo.", "entities": []}
+{"text": "The Dell laptops shipped late, so onboarding slipped by a week.", "entities": []}
+{"text": "Can you summarize the Wells Fargo settlement coverage for the compliance digest?", "entities": []}
+{"text": "Our Victoria office reported higher churn than the Adelaide branch last quarter.", "entities": []}
+{"text": "Rename the branch from feature/marco-polo-cache to feature/geo-cache before merging.", "entities": []}
+{"text": "August revenue beat forecast, but May and June are still under review.", "entities": []}
+{"text": "The Kelly criterion sizing model is in the appendix of the risk deck.", "entities": []}
+{"text": "We migrated the Grace Hopper conference budget line into the recruiting cost center.", "entities": []}
+{"text": "hey can you clean up this email to omar before i hit send", "entities": [{"text": "omar", "label": "PERSON"}]}
+{"text": "i keep forgetting to loop in dagmar on the budget thread", "entities": [{"text": "dagmar", "label": "PERSON"}]}
+{"text": "who should i talk to about the license renewal, siobhan or the finance team", "entities": [{"text": "siobhan", "label": "PERSON"}]}
+{"text": "write something short telling akiko the samples arrived damaged", "entities": [{"text": "akiko", "label": "PERSON"}]}
+{"text": "can u rephrase this so it doesnt sound passive aggressive toward hendrik", "entities": [{"text": "hendrik", "label": "PERSON"}]}
+{"text": "make a checklist for whoever takes over after leilani leaves", "entities": [{"text": "leilani", "label": "PERSON"}]}
+{"text": "quick draft: thanking basile for the referral", "entities": [{"text": "basile", "label": "PERSON"}]}
+{"text": "i owe magdalena a response about the training budget, help me write it", "entities": [{"text": "magdalena", "label": "PERSON"}]}
+{"text": "summarize the ticket history so gustavo can pick it up monday", "entities": [{"text": "gustavo", "label": "PERSON"}]}
+{"text": "need a one liner explaining why we picked the second option, for anneke", "entities": [{"text": "anneke", "label": "PERSON"}]}
+{"text": "how do i tell søren that his deck needs a full rewrite", "entities": [{"text": "søren", "label": "PERSON"}]}
+{"text": "put together an agenda, chidi is running the retro this time", "entities": [{"text": "chidi", "label": "PERSON"}]}
+{"text": "draft something casual asking rasheeda if she wants to co-present", "entities": [{"text": "rasheeda", "label": "PERSON"}]}
+{"text": "can you fix the tone here, thandiwe reads everything literally", "entities": [{"text": "thandiwe", "label": "PERSON"}]}
+{"text": "reply to bogdan and say we need another week for the audit", "entities": [{"text": "bogdan", "label": "PERSON"}]}
+{"text": "give me a nicer way to say no to piotr's request for a discount", "entities": [{"text": "piotr", "label": "PERSON"}]}
+{"text": "i need to update my manager rosalía on the churn numbers", "entities": [{"text": "rosalía", "label": "PERSON"}]}
+{"text": "shorten this paragraph, it's going to gwendolyn in legal", "entities": [{"text": "gwendolyn", "label": "PERSON"}]}
+{"text": "help me write a note congratulating tomiwa on the promotion", "entities": [{"text": "tomiwa", "label": "PERSON"}]}
+{"text": "can you check if the numbers janneke sent match the ledger", "entities": [{"text": "janneke", "label": "PERSON"}]}
+{"text": "Draft a quick DM to keiko asking for the updated org chart.", "entities": [{"text": "keiko", "label": "PERSON"}]}
+{"text": "Ask fernanda whether the localization vendor ever countersigned.", "entities": [{"text": "fernanda", "label": "PERSON"}]}
+{"text": "Rewrite this for clarity before it reaches ivo in operations.", "entities": [{"text": "ivo", "label": "PERSON"}]}
+{"text": "Can you summarize the escalation so ndidi doesn't have to read the whole thread?", "entities": [{"text": "ndidi", "label": "PERSON"}]}
+{"text": "Write a short intro paragraph for karolina at the kickoff.", "entities": [{"text": "karolina", "label": "PERSON"}]}
+{"text": "Turn this into a bulleted brief that hyun-woo can translate.", "entities": [{"text": "hyun-woo", "label": "PERSON"}]}
+{"text": "Send a reminder to lucía about the vendor security review.", "entities": [{"text": "lucía", "label": "PERSON"}]}
+{"text": "Ask bartholomew to confirm the room booking for the offsite.", "entities": [{"text": "bartholomew", "label": "PERSON"}]}
+{"text": "Help me phrase feedback for arjun without sounding like a lecture.", "entities": [{"text": "arjun", "label": "PERSON"}]}
+{"text": "Note in the summary that mireille approved the exception.", "entities": [{"text": "mireille", "label": "PERSON"}]}
+{"text": "Please share the revised forecast with Þorbjörg Einarsdóttir before the board packet closes.", "entities": [{"text": "Þorbjörg Einarsdóttir", "label": "PERSON"}]}
+{"text": "Could you summarize the vendor scorecard for Lê Minh Tuấn?", "entities": [{"text": "Lê Minh Tuấn", "label": "PERSON"}]}
+{"text": "Draft a note to Grzegorz Wiśniewski explaining the new expense policy.", "entities": [{"text": "Grzegorz Wiśniewski", "label": "PERSON"}]}
+{"text": "Ask Aigerim Nurlanovna whether the Almaty office needs a second reviewer.", "entities": [{"text": "Aigerim Nurlanovna", "label": "PERSON"}]}
+{"text": "Write a formal thank-you to Ravindranath Subramaniam for hosting the site visit.", "entities": [{"text": "Ravindranath Subramaniam", "label": "PERSON"}]}
+{"text": "Confirm with Nkechi Uzoamaka-Eze that the supplier audit is scheduled.", "entities": [{"text": "Nkechi Uzoamaka-Eze", "label": "PERSON"}]}
+{"text": "Rework this executive brief so Hrafnhildur Jónsdóttir can present it in Oslo.", "entities": [{"text": "Hrafnhildur Jónsdóttir", "label": "PERSON"}]}
+{"text": "Let Ye-jin Park know the QA environment will be down Saturday.", "entities": [{"text": "Ye-jin Park", "label": "PERSON"}]}
+{"text": "Draft a polite escalation to Md. Shafiqul Islam about the missing invoices.", "entities": [{"text": "Shafiqul Islam", "label": "PERSON"}]}
+{"text": "Summarize the change request for Oleksandr Bondarenko in under 100 words.", "entities": [{"text": "Oleksandr Bondarenko", "label": "PERSON"}]}
+{"text": "Ask Ana-Maria Ștefănescu to double-check the Romanian translations.", "entities": [{"text": "Ana-Maria Ștefănescu", "label": "PERSON"}]}
+{"text": "Prepare a briefing note for Chukwuemeka Obiora ahead of the regulator call.", "entities": [{"text": "Chukwuemeka Obiora", "label": "PERSON"}]}
+{"text": "Please verify that Katsuhiro Nakamura signed the NDA last quarter.", "entities": [{"text": "Katsuhiro Nakamura", "label": "PERSON"}]}
+{"text": "Write a short update for Amaia Etxebarria on the warehouse consolidation.", "entities": [{"text": "Amaia Etxebarria", "label": "PERSON"}]}
+{"text": "Can you draft the renewal proposal addressed to Séverine Beauchamp-Roy?", "entities": [{"text": "Séverine Beauchamp-Roy", "label": "PERSON"}]}
+{"text": "Tell Bashir Ould Ahmed that the shipment cleared customs this morning.", "entities": [{"text": "Bashir Ould Ahmed", "label": "PERSON"}]}
+{"text": "Draft an apology to Nadezhda Aleksandrovna Ryabova for the double booking.", "entities": [{"text": "Nadezhda Aleksandrovna Ryabova", "label": "PERSON"}]}
+{"text": "Ask Sipho Ndlovu-Khumalo to walk us through the pricing model on Wednesday.", "entities": [{"text": "Sipho Ndlovu-Khumalo", "label": "PERSON"}]}
+{"text": "Summarize the compliance gaps for Iolanda Ferreira da Silva.", "entities": [{"text": "Iolanda Ferreira da Silva", "label": "PERSON"}]}
+{"text": "Draft a message to Hafsteinn Guðmundsson about the data residency question.", "entities": [{"text": "Hafsteinn Guðmundsson", "label": "PERSON"}]}
+{"text": "Let me know whether Praneetha Venkataraman has access to the reporting dashboard.", "entities": [{"text": "Praneetha Venkataraman", "label": "PERSON"}]}
+{"text": "Write a formal invitation for Ilkka Väänänen to join the advisory panel.", "entities": [{"text": "Ilkka Väänänen", "label": "PERSON"}]}
+{"text": "Ask Rania Abou Zeid whether the Beirut contract needs a local counterparty.", "entities": [{"text": "Rania Abou Zeid", "label": "PERSON"}]}
+{"text": "Please prepare talking points for Ngozi Ifeanyichukwu's town hall.", "entities": [{"text": "Ngozi Ifeanyichukwu", "label": "PERSON"}]}
+{"text": "Can you check the figures Jarosław Kaczmarczyk submitted for Q2?", "entities": [{"text": "Jarosław Kaczmarczyk", "label": "PERSON"}]}
+{"text": "Draft a handover summary since Bat-Erdene Ganbold is rotating off the account.", "entities": [{"text": "Bat-Erdene Ganbold", "label": "PERSON"}]}
+{"text": "Send the security questionnaire to Yiannis Papadopoulos-Stavrou.", "entities": [{"text": "Yiannis Papadopoulos-Stavrou", "label": "PERSON"}]}
+{"text": "Summarize this legal opinion for Hasnaa El Idrissi in plain English.", "entities": [{"text": "Hasnaa El Idrissi", "label": "PERSON"}]}
+{"text": "Write a short bio for Sushmita Bandyopadhyay for the newsletter.", "entities": [{"text": "Sushmita Bandyopadhyay", "label": "PERSON"}]}
+{"text": "Ask Sigrún Hallgrímsdóttir to reconcile the two revenue tables.", "entities": [{"text": "Sigrún Hallgrímsdóttir", "label": "PERSON"}]}
+{"text": "Draft a follow-up to Boubacar Sangaré-Konaté about the pilot results.", "entities": [{"text": "Boubacar Sangaré-Konaté", "label": "PERSON"}]}
+{"text": "Let Aleksandra Đorđević know the migration is delayed by two days.", "entities": [{"text": "Aleksandra Đorđević", "label": "PERSON"}]}
+{"text": "Ask Wanjiru Kamau-Njoroge whether the Nairobi hires have laptops yet.", "entities": [{"text": "Wanjiru Kamau-Njoroge", "label": "PERSON"}]}
+{"text": "Write a note to Kealoha Kahananui explaining the new PTO carryover rule.", "entities": [{"text": "Kealoha Kahananui", "label": "PERSON"}]}
+{"text": "Draft an email to Zdeněk Procházka confirming the workshop dates.", "entities": [{"text": "Zdeněk Procházka", "label": "PERSON"}]}
+{"text": "Summarize the retention data for Ayodeji Fagbemi before the QBR.", "entities": [{"text": "Ayodeji Fagbemi", "label": "PERSON"}]}
+{"text": "Ask Ferran Casals i Riera to review the Catalan landing page.", "entities": [{"text": "Ferran Casals i Riera", "label": "PERSON"}]}
+{"text": "Draft a reference letter paragraph for Salomé Mokoena-Dube.", "entities": [{"text": "Salomé Mokoena-Dube", "label": "PERSON"}]}
+{"text": "Let Emiliano Bustos-Iriarte know the SOW needs a signature today.", "entities": [{"text": "Emiliano Bustos-Iriarte", "label": "PERSON"}]}
+{"text": "Ask Krzysztof Nowakowski whether the Warsaw team can absorb the extra scope.", "entities": [{"text": "Krzysztof Nowakowski", "label": "PERSON"}]}
+{"text": "Prepare a one-pager for Nurbek Toktogulov summarizing the partnership terms.", "entities": [{"text": "Nurbek Toktogulov", "label": "PERSON"}]}
+{"text": "Can you translate this policy note for Şükrü Karaosmanoğlu?", "entities": [{"text": "Şükrü Karaosmanoğlu", "label": "PERSON"}]}
+{"text": "Ask Thandolwethu Mahlangu to confirm the vendor's certification paperwork.", "entities": [{"text": "Thandolwethu Mahlangu", "label": "PERSON"}]}
+{"text": "Write a short note to Dagný Þorláksdóttir about the delayed reimbursement.", "entities": [{"text": "Dagný Þorláksdóttir", "label": "PERSON"}]}
+{"text": "Draft a scope clarification for Ruslana Hryhorenko before we resubmit.", "entities": [{"text": "Ruslana Hryhorenko", "label": "PERSON"}]}
+{"text": "Let Miroslav Hlaváček know the staging credentials were reset.", "entities": [{"text": "Miroslav Hlaváček", "label": "PERSON"}]}
+{"text": "Prepare a risk summary for Adebimpe Oyelaran-Fashola in two paragraphs.", "entities": [{"text": "Adebimpe Oyelaran-Fashola", "label": "PERSON"}]}
+{"text": "Ask Lorcán Mac Gabhann to send the signed statement of work.", "entities": [{"text": "Lorcán Mac Gabhann", "label": "PERSON"}]}
+{"text": "Summarize the SLA breaches for Marijke van den Broek-Hoogland.", "entities": [{"text": "Marijke van den Broek-Hoogland", "label": "PERSON"}]}
+{"text": "Can you draft the internal announcement about Osvaldo Quispe Mamani joining us?", "entities": [{"text": "Osvaldo Quispe Mamani", "label": "PERSON"}]}
+{"text": "Draft a note letting Roosmarijn Bakker know that Yusra Benali will cover the sprint review.", "entities": [{"text": "Roosmarijn Bakker", "label": "PERSON"}, {"text": "Yusra Benali", "label": "PERSON"}]}
+{"text": "who's picking up the escalation, ola or matteo? draft a message either way", "entities": [{"text": "ola", "label": "PERSON"}, {"text": "matteo", "label": "PERSON"}]}
+{"text": "Compare the timelines proposed by Ottoline Whitfield, Kanwal Bhatti, and Serik Dzhaksybekov.", "entities": [{"text": "Ottoline Whitfield", "label": "PERSON"}, {"text": "Kanwal Bhatti", "label": "PERSON"}, {"text": "Serik Dzhaksybekov", "label": "PERSON"}]}
+{"text": "Ask Meera Rajagopalan to brief Nils Holmqvist before the customer call, and cc Ebele Anozie.", "entities": [{"text": "Meera Rajagopalan", "label": "PERSON"}, {"text": "Nils Holmqvist", "label": "PERSON"}, {"text": "Ebele Anozie", "label": "PERSON"}]}
+{"text": "i need to tell zenobia and ravindu that the offsite is cancelled", "entities": [{"text": "zenobia", "label": "PERSON"}, {"text": "ravindu", "label": "PERSON"}]}
+{"text": "Write minutes noting that Tiago Albuquerque chaired the session while Milena Vukašinović took notes.", "entities": [{"text": "Tiago Albuquerque", "label": "PERSON"}, {"text": "Milena Vukašinović", "label": "PERSON"}]}
+{"text": "Draft an intro connecting Aditi Mukhopadhyay with Corentin Lefevre about the API partnership.", "entities": [{"text": "Aditi Mukhopadhyay", "label": "PERSON"}, {"text": "Corentin Lefevre", "label": "PERSON"}]}
+{"text": "Should the runbook go to Faisal Al-Muhairi, Petra Novotná, or both?", "entities": [{"text": "Faisal Al-Muhairi", "label": "PERSON"}, {"text": "Petra Novotná", "label": "PERSON"}]}
+{"text": "Let Rahel Gebremariam know that Casimir Zielonka approved her budget request.", "entities": [{"text": "Rahel Gebremariam", "label": "PERSON"}, {"text": "Casimir Zielonka", "label": "PERSON"}]}
+{"text": "Summarize the thread: Ainsley Fothergill raised the risk, Deniz Yalçınkaya disputed it, and Hiroko Fujisawa proposed a compromise.", "entities": [{"text": "Ainsley Fothergill", "label": "PERSON"}, {"text": "Deniz Yalçınkaya", "label": "PERSON"}, {"text": "Hiroko Fujisawa", "label": "PERSON"}]}
+{"text": "can you draft standup notes mentioning that lakshmi, teo, and abdirahman are all blocked", "entities": [{"text": "lakshmi", "label": "PERSON"}, {"text": "teo", "label": "PERSON"}, {"text": "abdirahman", "label": "PERSON"}]}
+{"text": "Write a message thanking Grigore Munteanu for the demo and asking Sunita Poudel to schedule a follow-up.", "entities": [{"text": "Grigore Munteanu", "label": "PERSON"}, {"text": "Sunita Poudel", "label": "PERSON"}]}
+{"text": "Ask whether Elouan Kerhervé or Tinashe Chikwanha owns the incident postmortem.", "entities": [{"text": "Elouan Kerhervé", "label": "PERSON"}, {"text": "Tinashe Chikwanha", "label": "PERSON"}]}
+{"text": "Draft an email to the working group led by Camilla Sørheim, with Youssef Boukhari and Aparna Vasireddy as reviewers.", "entities": [{"text": "Camilla Sørheim", "label": "PERSON"}, {"text": "Youssef Boukhari", "label": "PERSON"}, {"text": "Aparna Vasireddy", "label": "PERSON"}]}
+{"text": "Note in the CRM that Anushka Wijeratne replaced Bård Kristoffersen as the account contact.", "entities": [{"text": "Anushka Wijeratne", "label": "PERSON"}, {"text": "Bård Kristoffersen", "label": "PERSON"}]}
+{"text": "help me phrase this so neither farrukh nor giulietta feels blamed for the delay", "entities": [{"text": "farrukh", "label": "PERSON"}, {"text": "giulietta", "label": "PERSON"}]}
+{"text": "Prepare a comparison of the two audit findings raised by Isabelle Duquesnoy and Kofi Amankwaa.", "entities": [{"text": "Isabelle Duquesnoy", "label": "PERSON"}, {"text": "Kofi Amankwaa", "label": "PERSON"}]}
+{"text": "Write a short announcement that Zsófia Németh, Ilias Vlachopoulos, Mateusz Grabowski, and Nomvula Sithole are joining the platform team.", "entities": [{"text": "Zsófia Németh", "label": "PERSON"}, {"text": "Ilias Vlachopoulos", "label": "PERSON"}, {"text": "Mateusz Grabowski", "label": "PERSON"}, {"text": "Nomvula Sithole", "label": "PERSON"}]}
+{"text": "Ask Renaud Delcourt-Vigneron to confirm the schedule with Batsheva Rosenzweig.", "entities": [{"text": "Renaud Delcourt-Vigneron", "label": "PERSON"}, {"text": "Batsheva Rosenzweig", "label": "PERSON"}]}
+{"text": "Draft a reply explaining to Chinelo Okafor-Madu why Timo Rautiainen reassigned the ticket.", "entities": [{"text": "Chinelo Okafor-Madu", "label": "PERSON"}, {"text": "Timo Rautiainen", "label": "PERSON"}]}
+{"text": "Austin flagged three errors in the reconciliation file this morning.", "entities": [{"text": "Austin", "label": "PERSON"}]}
+{"text": "The Austin office is closing, so Phoenix will absorb its support volume.", "entities": []}
+{"text": "Can you ask Sydney to re-run the payroll export before noon?", "entities": [{"text": "Sydney", "label": "PERSON"}]}
+{"text": "Our data center in Sydney had a brief power interruption overnight.", "entities": []}
+{"text": "Dakota is the only person on the team with production database access.", "entities": [{"text": "Dakota", "label": "PERSON"}]}
+{"text": "North Dakota has different sales tax rules than the neighboring states.", "entities": []}
+{"text": "Draft a reply to Florence explaining why we rejected the change request.", "entities": [{"text": "Florence", "label": "PERSON"}]}
+{"text": "Route returns through Salem while the Florence warehouse is being retrofitted.", "entities": []}
+{"text": "Georgia said she'd take over vendor onboarding starting Monday.", "entities": [{"text": "Georgia", "label": "PERSON"}]}
+{"text": "Sales in Georgia grew faster than in any other southeastern market.", "entities": []}
+{"text": "Milan pushed the hotfix without telling anyone on the release channel.", "entities": [{"text": "Milan", "label": "PERSON"}]}
+{"text": "The Milan team will handle EMEA support during the holiday week.", "entities": []}
+{"text": "Please cc Kent when you send the revised statement of work.", "entities": [{"text": "Kent", "label": "PERSON"}]}
+{"text": "We lease three floors in Kent for the customer service operation.", "entities": []}
+{"text": "Salem asked whether the retention policy applies to archived tickets.", "entities": [{"text": "Salem", "label": "PERSON"}]}
+{"text": "our dallas site failed the fire inspection again", "entities": []}
+{"text": "can you tell dallas that the invoice was already paid last week", "entities": [{"text": "dallas", "label": "PERSON"}]}
+{"text": "the savannah warehouse still runs on the legacy inventory system", "entities": []}
+{"text": "remind me to thank savannah for covering the client call yesterday", "entities": [{"text": "savannah", "label": "PERSON"}]}
+{"text": "York remains our second largest distribution point in the region.", "entities": []}
+{"text": "draft a short note asking york whether he still needs vpn access", "entities": [{"text": "york", "label": "PERSON"}]}
+{"text": "Ask Phoenix whether the new hire's laptop was ordered.", "entities": [{"text": "Phoenix", "label": "PERSON"}]}
+{"text": "April is out sick, so someone else needs to run the sprint demo.", "entities": [{"text": "April", "label": "PERSON"}]}
+{"text": "Renewals land every April, so August is our quietest month for contracts.", "entities": []}
+{"text": "August signed off on the design review yesterday afternoon.", "entities": [{"text": "August", "label": "PERSON"}]}
+{"text": "Summer travel and the autumn hiring slowdown both distort the quarterly numbers.", "entities": []}
+{"text": "Summer will be presenting the customer research findings on Thursday.", "entities": [{"text": "Summer", "label": "PERSON"}]}
+{"text": "Autumn owns the analytics dashboard now that the handover is finished.", "entities": [{"text": "Autumn", "label": "PERSON"}]}
+{"text": "Rose left detailed comments on the second draft of the policy.", "entities": [{"text": "Rose", "label": "PERSON"}]}
+{"text": "please attach the rose gold packaging mockups to the creative brief", "entities": []}
+{"text": "Grant is on parental leave until the middle of next month.", "entities": [{"text": "Grant", "label": "PERSON"}]}
+{"text": "The research grant expires two months before the pilot finishes.", "entities": []}
+{"text": "Ask Mark whether the legal team ever returned the redlines.", "entities": [{"text": "Mark", "label": "PERSON"}]}
+{"text": "Be frank in the retro and mark every step where the process broke down.", "entities": []}
+{"text": "Frank thinks the migration estimate is off by at least a month.", "entities": [{"text": "Frank", "label": "PERSON"}]}
+{"text": "Bill escalated the outage to the vendor's on-call engineer.", "entities": [{"text": "Bill", "label": "PERSON"}]}
+{"text": "The supplier sent the bill to the wrong cost center again.", "entities": []}
+{"text": "Sterling wrote the original spec, so loop him in on the rewrite.", "entities": [{"text": "Sterling", "label": "PERSON"}]}
+{"text": "We invoice our UK clients in sterling rather than euros.", "entities": []}
+{"text": "Hope has been covering the support queue since Tuesday.", "entities": [{"text": "Hope", "label": "PERSON"}]}
+{"text": "The hope is that every penny of the training budget is spent before year end.", "entities": []}
+{"text": "Penny approved the travel request but flagged the hotel rate.", "entities": [{"text": "Penny", "label": "PERSON"}]}
+{"text": "Can you check whether Pearson ever replied about the training licenses?", "entities": [{"text": "Pearson", "label": "PERSON"}]}
+{"text": "The Pearson correlation between the two metrics is weaker than expected.", "entities": []}
+{"text": "Ruby has been leading the accessibility audit for the past two sprints.", "entities": [{"text": "Ruby", "label": "PERSON"}]}
+{"text": "We pinned the Ruby version in the Dockerfile to avoid the build break.", "entities": []}
+{"text": "Ada volunteered to mentor the two new analytics interns.", "entities": [{"text": "Ada", "label": "PERSON"}]}
+{"text": "Ada is still the required language for that avionics subsystem.", "entities": []}
+{"text": "Watson is the interviewer for the second round on Friday.", "entities": [{"text": "Watson", "label": "PERSON"}]}
+{"text": "Watson Discovery was evaluated for the knowledge base but ruled out on cost.", "entities": []}
+{"text": "Atlas said the warehouse team can absorb the extra shifts.", "entities": [{"text": "Atlas", "label": "PERSON"}]}
+{"text": "Rename the service from atlas-gateway to edge-gateway in the manifest.", "entities": []}
+{"text": "Aurora is drafting the incident report and will share it by end of day.", "entities": [{"text": "Aurora", "label": "PERSON"}]}
+{"text": "Project Aurora is now tracked under the platform portfolio.", "entities": []}
+{"text": "Sierra pointed out that the SLA figures don't match the dashboard.", "entities": [{"text": "Sierra", "label": "PERSON"}]}
+{"text": "Our Sierra release branch was cut from main last Thursday.", "entities": []}
+{"text": "Mercedes runs the Madrid support desk and knows the escalation path.", "entities": [{"text": "Mercedes", "label": "PERSON"}]}
+{"text": "Push the config change to the mercedes-integration repo, not the main one.", "entities": []}
+{"text": "Can you loop in Marsh about the insurance renewal paperwork?", "entities": [{"text": "Marsh", "label": "PERSON"}]}
+{"text": "Marsh McLennan updated its cyber insurance underwriting criteria.", "entities": []}
+{"text": "ask baker whether the warehouse contract was countersigned", "entities": [{"text": "baker", "label": "PERSON"}]}
+{"text": "Baker McKenzie is reviewing the cross-border data transfer clause.", "entities": []}
+{"text": "Let Hamilton know the procurement portal is locked for maintenance.", "entities": [{"text": "Hamilton", "label": "PERSON"}]}
+{"text": "Booz Allen Hamilton won the federal modernization contract.", "entities": []}
+{"text": "Gartner asked me to double-check the headcount forecast before the review.", "entities": [{"text": "Gartner", "label": "PERSON"}]}
+{"text": "Gartner placed two of our competitors in the leaders quadrant.", "entities": []}
+{"text": "Kelvin asked for a summary of the quarterly attrition numbers.", "entities": [{"text": "Kelvin", "label": "PERSON"}]}
+{"text": "The Kalman filter smoothing step is documented in the modeling appendix.", "entities": []}
+{"text": "Marlowe volunteered to write the postmortem for last week's outage.", "entities": [{"text": "Marlowe", "label": "PERSON"}]}
+{"text": "We applied a Bonferroni correction before reporting the significance levels.", "entities": []}
+{"text": "tell jordan i moved our one on one to thursday", "entities": [{"text": "jordan", "label": "PERSON"}]}
+{"text": "Levenshtein distance works better than exact matching for this dedupe job.", "entities": []}
+{"text": "can you check if reed submitted the compliance attestation yet", "entities": [{"text": "reed", "label": "PERSON"}]}
+{"text": "Dijkstra's algorithm is overkill for a dependency graph this small.", "entities": []}
+{"text": "i think chance is the one who owns the billing integration now", "entities": [{"text": "chance", "label": "PERSON"}]}
+{"text": "Switch the encoder to a Gaussian kernel and rerun the benchmark.", "entities": []}
+{"text": "let sky know the offsite budget was approved", "entities": [{"text": "sky", "label": "PERSON"}]}
+{"text": "Set up a Markov chain baseline before we try anything more elaborate.", "entities": []}
+{"text": "forward the audit findings to page in the risk team", "entities": [{"text": "page", "label": "PERSON"}]}
+{"text": "The Gini coefficient and the Nyquist limit are both defined in the appendix.", "entities": []}
+{"text": "Please have Fisher review the exception request before it goes to legal.", "entities": [{"text": "Fisher", "label": "PERSON"}]}
+{"text": "the sentry dashboard is showing a spike in unhandled exceptions", "entities": []}
+{"text": "Nelson raised a concern about the data retention window in the design doc.", "entities": [{"text": "Nelson", "label": "PERSON"}]}
+{"text": "Charles Schwab published new guidance for retirement plan sponsors.", "entities": []}
+{"text": "Ask Cooper to reconcile the two versions of the pricing sheet.", "entities": [{"text": "Cooper", "label": "PERSON"}]}
+{"text": "We hired Grant Thornton to run the internal controls assessment.", "entities": []}
+{"text": "Bishop is presenting the roadmap to the executive committee on Monday.", "entities": [{"text": "Bishop", "label": "PERSON"}]}
+{"text": "Ernst & Young flagged two material weaknesses in the draft report.", "entities": []}
+{"text": "Please schedule thirty minutes with Hutton from the treasury team.", "entities": [{"text": "Hutton", "label": "PERSON"}]}
+{"text": "Robert Half sent over three candidate profiles for the analyst role.", "entities": []}
+{"text": "Colby is handling the SOC 2 evidence collection this cycle.", "entities": [{"text": "Colby", "label": "PERSON"}]}
+{"text": "Our benefits broker is Willis Towers Watson, not Mercer.", "entities": []}
+{"text": "can you write a thank you note to winter for staying late during the cutover", "entities": [{"text": "winter", "label": "PERSON"}]}
+{"text": "Jones Lang LaSalle handled the lease negotiation for the Dublin site.", "entities": []}
+{"text": "Alvarez & Marsal was brought in for the restructuring workstream.", "entities": []}
+{"text": "Moody's downgraded the outlook for two of our component suppliers.", "entities": []}
+{"text": "Duff & Phelps produced the valuation used in the board deck.", "entities": []}
+{"text": "Perkins Coie sent the updated privacy policy language yesterday.", "entities": []}
+{"text": "the marriott near the venue is fully booked for conference week", "entities": []}
+{"text": "Skadden Arps flagged an antitrust risk in the acquisition memo.", "entities": []}
+{"text": "Goldman Sachs revised its commodity outlook for the second half of the year.", "entities": []}
+{"text": "The Bayesian prior in the renewal forecast model needs to be re-tuned.", "entities": []}
+{"text": "The Paris deployment region is still running on the older instance family.", "entities": []}
+{"text": "Morgan Lewis returned the redlined services agreement early this morning.", "entities": []}
+{"text": "Hamming distance is a cheaper check than a full string comparison here.", "entities": []}
+{"text": "The blackout window for changes runs through the last week of March.", "entities": []}
+{"text": "Latham & Watkins is handling the securities filing review for the offering.", "entities": []}
+{"text": "We switched the deduplication job to a Jaccard similarity score.", "entities": []}
+{"text": "Our Madison office lease comes up for renewal in the spring.", "entities": []}
+{"text": "Kirkland & Ellis flagged an indemnity gap in the draft purchase agreement.", "entities": []}
+{"text": "The Poisson distribution assumption breaks down for our burst traffic patterns.", "entities": []}
+{"text": "Can you summarize the last three weeks of customer support tickets?", "entities": []}
+{"text": "Cravath Swaine & Moore was retained for the appellate work.", "entities": []}
+{"text": "Cohen's kappa is low, so the annotation guidelines clearly need work.", "entities": []}
+{"text": "The Jackson facility handles all southeastern returns processing.", "entities": []}
+{"text": "Wachtell Lipton advised the acquirer on the structure of the tender offer.", "entities": []}
+{"text": "Run a Shapiro-Wilk test before assuming normality in the residuals.", "entities": []}
+{"text": "All performance reviews must be submitted by the end of May.", "entities": []}
+{"text": "Debevoise & Plimpton produced the sanctions compliance memo we circulated.", "entities": []}
+{"text": "The Fourier transform step is the slowest part of the audio pipeline.", "entities": []}
+{"text": "We consolidated the Charlotte and Raleigh sales territories last quarter.", "entities": []}
+{"text": "Our EU merger filings are being prepared by Freshfields Bruckhaus Deringer.", "entities": []}
+{"text": "Boolean flags in the config file are being parsed as strings.", "entities": []}
+{"text": "Draft an agenda for the quarterly business review with the usual sections.", "entities": []}
+{"text": "Allen & Overy sent the revised facility agreement late yesterday.", "entities": []}
+{"text": "Pareto analysis showed that four accounts drive most of the ticket volume.", "entities": []}
+{"text": "Shipping costs out of Reading have climbed since the depot relocated.", "entities": []}
+{"text": "Clifford Chance is advising on the cross-border restructuring workstream.", "entities": []}
+{"text": "The Jacobian matrix computation is what keeps blowing up memory.", "entities": []}
+{"text": "Contract renewals cluster in January and July every single year.", "entities": []}
+{"text": "Bain & Company delivered the market entry study last Friday.", "entities": []}
+{"text": "the kafka consumer group rebalanced three times during the deploy", "entities": []}
+{"text": "The Bristol plant reported a minor safety incident on the night shift.", "entities": []}
+{"text": "Oliver Wyman benchmarked our claims processing costs against industry peers.", "entities": []}
+{"text": "Set the Gauss-Seidel iteration limit to fifty in the solver config.", "entities": []}
+{"text": "Rewrite this policy paragraph so it fits on a single slide.", "entities": []}
+{"text": "Roland Berger presented three scenarios for the aftermarket business.", "entities": []}
+{"text": "The Prometheus scrape interval was raised to sixty seconds to cut load.", "entities": []}
+{"text": "Warehouse capacity in Nelson is capped until the extension is finished.", "entities": []}
+{"text": "Kearney was shortlisted alongside two other supply chain consultancies.", "entities": []}
+{"text": "The Hudson build agents were decommissioned years before I joined.", "entities": []}
+{"text": "Winter storage costs are consistently higher at the northern facilities.", "entities": []}
+{"text": "we still haven't heard back from korn ferry about the cfo search", "entities": []}
+{"text": "The Rankine scale conversion is wrong in the sensor adapter.", "entities": []}
+{"text": "The Warwick campus will host the engineering all-hands in October.", "entities": []}
+{"text": "Heidrick & Struggles submitted a fee proposal for the board search.", "entities": []}
+{"text": "The Cartesian product join is generating billions of intermediate rows.", "entities": []}
+{"text": "what's a polite way to ask for an extension on the compliance deadline", "entities": []}
+{"text": "Aon Hewitt updated the pension discount rate assumptions for the filing.", "entities": []}
+{"text": "The Kendall tau correlation is reported alongside Spearman in the appendix.", "entities": []}
+{"text": "our lincoln branch is the only one still using paper timesheets", "entities": []}
+{"text": "Charles River Associates produced the economic damages model for the case.", "entities": []}
+{"text": "The Bellman-Ford implementation handles negative edge weights correctly.", "entities": []}
+{"text": "Spring hiring is capped until the budget refresh is approved.", "entities": []}
+{"text": "Berkshire Hathaway disclosed a larger position in the utility sector.", "entities": []}
+{"text": "Our Wasserstein distance metric replaced KL divergence in the drift monitor.", "entities": []}
+{"text": "The Hamilton site passed its ISO audit without a single finding.", "entities": []}
+{"text": "Raymond James downgraded the sector to neutral earlier this week.", "entities": []}
+{"text": "The Nash equilibrium framing was used in the competitive pricing simulation.", "entities": []}
+{"text": "Turn these meeting notes into a list of action items with owners and dates.", "entities": []}
+{"text": "Edward Jones opened two additional branches in the northern region.", "entities": []}
+{"text": "Rename the class from HarrisFilter to CornerDetector before merging.", "entities": []}
+{"text": "Vendor deliveries to Windsor are running about two days late.", "entities": []}
+{"text": "Jefferies is running the sell-side process for the carve-out.", "entities": []}
+{"text": "The service account travis-deploy lost permissions after the IAM change.", "entities": []}
+{"text": "The bill of materials has not been updated since the redesign.", "entities": []}
+{"text": "Lazard was engaged as financial advisor on the divestiture.", "entities": []}
+{"text": "our morgan-cache cluster is running hot again during peak hours", "entities": []}
+{"text": "The Aberdeen depot is being merged into the Glasgow operation.", "entities": []}
+{"text": "Stifel published a note questioning our renewal rate assumptions.", "entities": []}
+{"text": "The Hopper GPU nodes are reserved for the training cluster only.", "entities": []}
+{"text": "Explain the difference between our standard and enterprise support tiers.", "entities": []}
+{"text": "Piper Sandler hosted the healthcare investor conference we attended.", "entities": []}
+{"text": "The Weibull distribution fits our hardware failure data better than exponential.", "entities": []}
+{"text": "Our Stanley distribution point serves the northern wholesale accounts.", "entities": []}
+{"text": "Brown Brothers Harriman handles custody for the pension fund.", "entities": []}
+{"text": "Project Kingsley is on hold until the budget review finishes.", "entities": []}
+{"text": "Add a note about the amber status to this week's delivery report.", "entities": []}
+{"text": "Ralph Lauren reported stronger wholesale revenue across Europe.", "entities": []}
+{"text": "The Sinclair reporting suite replaced our legacy BI stack in April.", "entities": []}
+{"text": "The Marion facility is scheduled for decommissioning next year.", "entities": []}
+{"text": "Tommy Bahama opened a flagship store in the new outlet complex.", "entities": []}
+{"text": "the harper design system is now the default for new internal tools", "entities": []}
+{"text": "The crystal report exports started failing after the driver update.", "entities": []}
+{"text": "Calvin Klein moved its fulfillment contract to a different logistics provider.", "entities": []}
+{"text": "Our Everett platform team owns the identity service end to end.", "entities": []}
+{"text": "Freight moving through Alexandria has been delayed by port congestion.", "entities": []}
+{"text": "Marc Jacobs launched a lower-priced diffusion line this season.", "entities": []}
+{"text": "The Beckett release candidate is scheduled to hit staging tomorrow.", "entities": []}
+{"text": "Please review the daisy chain wiring diagram before the site visit.", "entities": []}
+{"text": "Michael Kors consolidated two of its regional distribution centers.", "entities": []}
+{"text": "help me write a short update about the delayed procurement approval", "entities": []}
+{"text": "Our summer intern cohort starts during the second week of June.", "entities": []}
+{"text": "Ben & Jerry's announced a new sourcing standard for its dairy supply.", "entities": []}
+{"text": "Create a checklist for offboarding a contractor at the end of an engagement.", "entities": []}
+{"text": "Johnson Controls quoted us on the HVAC retrofit for the second floor.", "entities": []}
+{"text": "Summarize the key risks in this vendor agreement in plain language.", "entities": []}
+{"text": "Procter & Gamble raised list prices across three of its product lines.", "entities": []}
+{"text": "Can you make this status update shorter without losing the numbers?", "entities": []}
+{"text": "Harley-Davidson trimmed its full-year shipment guidance again.", "entities": []}

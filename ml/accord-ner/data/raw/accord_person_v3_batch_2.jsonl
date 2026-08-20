@@ -1,0 +1,100 @@
+{"text":"hey can you clean up this email to omar before i hit send","entities":[{"text":"omar","label":"PERSON"}]}
+{"text":"i keep forgetting to loop in dagmar on the budget thread","entities":[{"text":"dagmar","label":"PERSON"}]}
+{"text":"who should i talk to about the license renewal, siobhan or the finance team","entities":[{"text":"siobhan","label":"PERSON"}]}
+{"text":"write something short telling akiko the samples arrived damaged","entities":[{"text":"akiko","label":"PERSON"}]}
+{"text":"can u rephrase this so it doesnt sound passive aggressive toward hendrik","entities":[{"text":"hendrik","label":"PERSON"}]}
+{"text":"make a checklist for whoever takes over after leilani leaves","entities":[{"text":"leilani","label":"PERSON"}]}
+{"text":"quick draft: thanking basile for the referral","entities":[{"text":"basile","label":"PERSON"}]}
+{"text":"i owe magdalena a response about the training budget, help me write it","entities":[{"text":"magdalena","label":"PERSON"}]}
+{"text":"summarize the ticket history so gustavo can pick it up monday","entities":[{"text":"gustavo","label":"PERSON"}]}
+{"text":"need a one liner explaining why we picked the second option, for anneke","entities":[{"text":"anneke","label":"PERSON"}]}
+{"text":"how do i tell søren that his deck needs a full rewrite","entities":[{"text":"søren","label":"PERSON"}]}
+{"text":"put together an agenda, chidi is running the retro this time","entities":[{"text":"chidi","label":"PERSON"}]}
+{"text":"draft something casual asking rasheeda if she wants to co-present","entities":[{"text":"rasheeda","label":"PERSON"}]}
+{"text":"can you fix the tone here, thandiwe reads everything literally","entities":[{"text":"thandiwe","label":"PERSON"}]}
+{"text":"reply to bogdan and say we need another week for the audit","entities":[{"text":"bogdan","label":"PERSON"}]}
+{"text":"give me a nicer way to say no to piotr's request for a discount","entities":[{"text":"piotr","label":"PERSON"}]}
+{"text":"i need to update my manager rosalía on the churn numbers","entities":[{"text":"rosalía","label":"PERSON"}]}
+{"text":"shorten this paragraph, it's going to gwendolyn in legal","entities":[{"text":"gwendolyn","label":"PERSON"}]}
+{"text":"help me write a note congratulating tomiwa on the promotion","entities":[{"text":"tomiwa","label":"PERSON"}]}
+{"text":"can you check if the numbers janneke sent match the ledger","entities":[{"text":"janneke","label":"PERSON"}]}
+{"text":"Draft a quick DM to keiko asking for the updated org chart.","entities":[{"text":"keiko","label":"PERSON"}]}
+{"text":"Ask fernanda whether the localization vendor ever countersigned.","entities":[{"text":"fernanda","label":"PERSON"}]}
+{"text":"Rewrite this for clarity before it reaches ivo in operations.","entities":[{"text":"ivo","label":"PERSON"}]}
+{"text":"Can you summarize the escalation so ndidi doesn't have to read the whole thread?","entities":[{"text":"ndidi","label":"PERSON"}]}
+{"text":"Write a short intro paragraph for karolina at the kickoff.","entities":[{"text":"karolina","label":"PERSON"}]}
+{"text":"Turn this into a bulleted brief that hyun-woo can translate.","entities":[{"text":"hyun-woo","label":"PERSON"}]}
+{"text":"Send a reminder to lucía about the vendor security review.","entities":[{"text":"lucía","label":"PERSON"}]}
+{"text":"Ask bartholomew to confirm the room booking for the offsite.","entities":[{"text":"bartholomew","label":"PERSON"}]}
+{"text":"Help me phrase feedback for arjun without sounding like a lecture.","entities":[{"text":"arjun","label":"PERSON"}]}
+{"text":"Note in the summary that mireille approved the exception.","entities":[{"text":"mireille","label":"PERSON"}]}
+{"text":"Please share the revised forecast with Þorbjörg Einarsdóttir before the board packet closes.","entities":[{"text":"Þorbjörg Einarsdóttir","label":"PERSON"}]}
+{"text":"Could you summarize the vendor scorecard for Lê Minh Tuấn?","entities":[{"text":"Lê Minh Tuấn","label":"PERSON"}]}
+{"text":"Draft a note to Grzegorz Wiśniewski explaining the new expense policy.","entities":[{"text":"Grzegorz Wiśniewski","label":"PERSON"}]}
+{"text":"Ask Aigerim Nurlanovna whether the Almaty office needs a second reviewer.","entities":[{"text":"Aigerim Nurlanovna","label":"PERSON"}]}
+{"text":"Write a formal thank-you to Ravindranath Subramaniam for hosting the site visit.","entities":[{"text":"Ravindranath Subramaniam","label":"PERSON"}]}
+{"text":"Confirm with Nkechi Uzoamaka-Eze that the supplier audit is scheduled.","entities":[{"text":"Nkechi Uzoamaka-Eze","label":"PERSON"}]}
+{"text":"Rework this executive brief so Hrafnhildur Jónsdóttir can present it in Oslo.","entities":[{"text":"Hrafnhildur Jónsdóttir","label":"PERSON"}]}
+{"text":"Let Ye-jin Park know the QA environment will be down Saturday.","entities":[{"text":"Ye-jin Park","label":"PERSON"}]}
+{"text":"Draft a polite escalation to Md. Shafiqul Islam about the missing invoices.","entities":[{"text":"Shafiqul Islam","label":"PERSON"}]}
+{"text":"Summarize the change request for Oleksandr Bondarenko in under 100 words.","entities":[{"text":"Oleksandr Bondarenko","label":"PERSON"}]}
+{"text":"Ask Ana-Maria Ștefănescu to double-check the Romanian translations.","entities":[{"text":"Ana-Maria Ștefănescu","label":"PERSON"}]}
+{"text":"Prepare a briefing note for Chukwuemeka Obiora ahead of the regulator call.","entities":[{"text":"Chukwuemeka Obiora","label":"PERSON"}]}
+{"text":"Please verify that Katsuhiro Nakamura signed the NDA last quarter.","entities":[{"text":"Katsuhiro Nakamura","label":"PERSON"}]}
+{"text":"Write a short update for Amaia Etxebarria on the warehouse consolidation.","entities":[{"text":"Amaia Etxebarria","label":"PERSON"}]}
+{"text":"Can you draft the renewal proposal addressed to Séverine Beauchamp-Roy?","entities":[{"text":"Séverine Beauchamp-Roy","label":"PERSON"}]}
+{"text":"Tell Bashir Ould Ahmed that the shipment cleared customs this morning.","entities":[{"text":"Bashir Ould Ahmed","label":"PERSON"}]}
+{"text":"Draft an apology to Nadezhda Aleksandrovna Ryabova for the double booking.","entities":[{"text":"Nadezhda Aleksandrovna Ryabova","label":"PERSON"}]}
+{"text":"Ask Sipho Ndlovu-Khumalo to walk us through the pricing model on Wednesday.","entities":[{"text":"Sipho Ndlovu-Khumalo","label":"PERSON"}]}
+{"text":"Summarize the compliance gaps for Iolanda Ferreira da Silva.","entities":[{"text":"Iolanda Ferreira da Silva","label":"PERSON"}]}
+{"text":"Draft a message to Hafsteinn Guðmundsson about the data residency question.","entities":[{"text":"Hafsteinn Guðmundsson","label":"PERSON"}]}
+{"text":"Let me know whether Praneetha Venkataraman has access to the reporting dashboard.","entities":[{"text":"Praneetha Venkataraman","label":"PERSON"}]}
+{"text":"Write a formal invitation for Ilkka Väänänen to join the advisory panel.","entities":[{"text":"Ilkka Väänänen","label":"PERSON"}]}
+{"text":"Ask Rania Abou Zeid whether the Beirut contract needs a local counterparty.","entities":[{"text":"Rania Abou Zeid","label":"PERSON"}]}
+{"text":"Please prepare talking points for Ngozi Ifeanyichukwu's town hall.","entities":[{"text":"Ngozi Ifeanyichukwu","label":"PERSON"}]}
+{"text":"Can you check the figures Jarosław Kaczmarczyk submitted for Q2?","entities":[{"text":"Jarosław Kaczmarczyk","label":"PERSON"}]}
+{"text":"Draft a handover summary since Bat-Erdene Ganbold is rotating off the account.","entities":[{"text":"Bat-Erdene Ganbold","label":"PERSON"}]}
+{"text":"Send the security questionnaire to Yiannis Papadopoulos-Stavrou.","entities":[{"text":"Yiannis Papadopoulos-Stavrou","label":"PERSON"}]}
+{"text":"Summarize this legal opinion for Hasnaa El Idrissi in plain English.","entities":[{"text":"Hasnaa El Idrissi","label":"PERSON"}]}
+{"text":"Write a short bio for Sushmita Bandyopadhyay for the newsletter.","entities":[{"text":"Sushmita Bandyopadhyay","label":"PERSON"}]}
+{"text":"Ask Sigrún Hallgrímsdóttir to reconcile the two revenue tables.","entities":[{"text":"Sigrún Hallgrímsdóttir","label":"PERSON"}]}
+{"text":"Draft a follow-up to Boubacar Sangaré-Konaté about the pilot results.","entities":[{"text":"Boubacar Sangaré-Konaté","label":"PERSON"}]}
+{"text":"Let Aleksandra Đorđević know the migration is delayed by two days.","entities":[{"text":"Aleksandra Đorđević","label":"PERSON"}]}
+{"text":"Ask Wanjiru Kamau-Njoroge whether the Nairobi hires have laptops yet.","entities":[{"text":"Wanjiru Kamau-Njoroge","label":"PERSON"}]}
+{"text":"Write a note to Kealoha Kahananui explaining the new PTO carryover rule.","entities":[{"text":"Kealoha Kahananui","label":"PERSON"}]}
+{"text":"Draft an email to Zdeněk Procházka confirming the workshop dates.","entities":[{"text":"Zdeněk Procházka","label":"PERSON"}]}
+{"text":"Summarize the retention data for Ayodeji Fagbemi before the QBR.","entities":[{"text":"Ayodeji Fagbemi","label":"PERSON"}]}
+{"text":"Ask Ferran Casals i Riera to review the Catalan landing page.","entities":[{"text":"Ferran Casals i Riera","label":"PERSON"}]}
+{"text":"Draft a reference letter paragraph for Salomé Mokoena-Dube.","entities":[{"text":"Salomé Mokoena-Dube","label":"PERSON"}]}
+{"text":"Let Emiliano Bustos-Iriarte know the SOW needs a signature today.","entities":[{"text":"Emiliano Bustos-Iriarte","label":"PERSON"}]}
+{"text":"Ask Krzysztof Nowakowski whether the Warsaw team can absorb the extra scope.","entities":[{"text":"Krzysztof Nowakowski","label":"PERSON"}]}
+{"text":"Prepare a one-pager for Nurbek Toktogulov summarizing the partnership terms.","entities":[{"text":"Nurbek Toktogulov","label":"PERSON"}]}
+{"text":"Can you translate this policy note for Şükrü Karaosmanoğlu?","entities":[{"text":"Şükrü Karaosmanoğlu","label":"PERSON"}]}
+{"text":"Ask Thandolwethu Mahlangu to confirm the vendor's certification paperwork.","entities":[{"text":"Thandolwethu Mahlangu","label":"PERSON"}]}
+{"text":"Write a short note to Dagný Þorláksdóttir about the delayed reimbursement.","entities":[{"text":"Dagný Þorláksdóttir","label":"PERSON"}]}
+{"text":"Draft a scope clarification for Ruslana Hryhorenko before we resubmit.","entities":[{"text":"Ruslana Hryhorenko","label":"PERSON"}]}
+{"text":"Let Miroslav Hlaváček know the staging credentials were reset.","entities":[{"text":"Miroslav Hlaváček","label":"PERSON"}]}
+{"text":"Prepare a risk summary for Adebimpe Oyelaran-Fashola in two paragraphs.","entities":[{"text":"Adebimpe Oyelaran-Fashola","label":"PERSON"}]}
+{"text":"Ask Lorcán Mac Gabhann to send the signed statement of work.","entities":[{"text":"Lorcán Mac Gabhann","label":"PERSON"}]}
+{"text":"Summarize the SLA breaches for Marijke van den Broek-Hoogland.","entities":[{"text":"Marijke van den Broek-Hoogland","label":"PERSON"}]}
+{"text":"Can you draft the internal announcement about Osvaldo Quispe Mamani joining us?","entities":[{"text":"Osvaldo Quispe Mamani","label":"PERSON"}]}
+{"text":"Draft a note letting Roosmarijn Bakker know that Yusra Benali will cover the sprint review.","entities":[{"text":"Roosmarijn Bakker","label":"PERSON"},{"text":"Yusra Benali","label":"PERSON"}]}
+{"text":"who's picking up the escalation, ola or matteo? draft a message either way","entities":[{"text":"ola","label":"PERSON"},{"text":"matteo","label":"PERSON"}]}
+{"text":"Compare the timelines proposed by Ottoline Whitfield, Kanwal Bhatti, and Serik Dzhaksybekov.","entities":[{"text":"Ottoline Whitfield","label":"PERSON"},{"text":"Kanwal Bhatti","label":"PERSON"},{"text":"Serik Dzhaksybekov","label":"PERSON"}]}
+{"text":"Ask Meera Rajagopalan to brief Nils Holmqvist before the customer call, and cc Ebele Anozie.","entities":[{"text":"Meera Rajagopalan","label":"PERSON"},{"text":"Nils Holmqvist","label":"PERSON"},{"text":"Ebele Anozie","label":"PERSON"}]}
+{"text":"i need to tell zenobia and ravindu that the offsite is cancelled","entities":[{"text":"zenobia","label":"PERSON"},{"text":"ravindu","label":"PERSON"}]}
+{"text":"Write minutes noting that Tiago Albuquerque chaired the session while Milena Vukašinović took notes.","entities":[{"text":"Tiago Albuquerque","label":"PERSON"},{"text":"Milena Vukašinović","label":"PERSON"}]}
+{"text":"Draft an intro connecting Aditi Mukhopadhyay with Corentin Lefevre about the API partnership.","entities":[{"text":"Aditi Mukhopadhyay","label":"PERSON"},{"text":"Corentin Lefevre","label":"PERSON"}]}
+{"text":"Should the runbook go to Faisal Al-Muhairi, Petra Novotná, or both?","entities":[{"text":"Faisal Al-Muhairi","label":"PERSON"},{"text":"Petra Novotná","label":"PERSON"}]}
+{"text":"Let Rahel Gebremariam know that Casimir Zielonka approved her budget request.","entities":[{"text":"Rahel Gebremariam","label":"PERSON"},{"text":"Casimir Zielonka","label":"PERSON"}]}
+{"text":"Summarize the thread: Ainsley Fothergill raised the risk, Deniz Yalçınkaya disputed it, and Hiroko Fujisawa proposed a compromise.","entities":[{"text":"Ainsley Fothergill","label":"PERSON"},{"text":"Deniz Yalçınkaya","label":"PERSON"},{"text":"Hiroko Fujisawa","label":"PERSON"}]}
+{"text":"can you draft standup notes mentioning that lakshmi, teo, and abdirahman are all blocked","entities":[{"text":"lakshmi","label":"PERSON"},{"text":"teo","label":"PERSON"},{"text":"abdirahman","label":"PERSON"}]}
+{"text":"Write a message thanking Grigore Munteanu for the demo and asking Sunita Poudel to schedule a follow-up.","entities":[{"text":"Grigore Munteanu","label":"PERSON"},{"text":"Sunita Poudel","label":"PERSON"}]}
+{"text":"Ask whether Elouan Kerhervé or Tinashe Chikwanha owns the incident postmortem.","entities":[{"text":"Elouan Kerhervé","label":"PERSON"},{"text":"Tinashe Chikwanha","label":"PERSON"}]}
+{"text":"Draft an email to the working group led by Camilla Sørheim, with Youssef Boukhari and Aparna Vasireddy as reviewers.","entities":[{"text":"Camilla Sørheim","label":"PERSON"},{"text":"Youssef Boukhari","label":"PERSON"},{"text":"Aparna Vasireddy","label":"PERSON"}]}
+{"text":"Note in the CRM that Anushka Wijeratne replaced Bård Kristoffersen as the account contact.","entities":[{"text":"Anushka Wijeratne","label":"PERSON"},{"text":"Bård Kristoffersen","label":"PERSON"}]}
+{"text":"help me phrase this so neither farrukh nor giulietta feels blamed for the delay","entities":[{"text":"farrukh","label":"PERSON"},{"text":"giulietta","label":"PERSON"}]}
+{"text":"Prepare a comparison of the two audit findings raised by Isabelle Duquesnoy and Kofi Amankwaa.","entities":[{"text":"Isabelle Duquesnoy","label":"PERSON"},{"text":"Kofi Amankwaa","label":"PERSON"}]}
+{"text":"Write a short announcement that Zsófia Németh, Ilias Vlachopoulos, Mateusz Grabowski, and Nomvula Sithole are joining the platform team.","entities":[{"text":"Zsófia Németh","label":"PERSON"},{"text":"Ilias Vlachopoulos","label":"PERSON"},{"text":"Mateusz Grabowski","label":"PERSON"},{"text":"Nomvula Sithole","label":"PERSON"}]}
+{"text":"Ask Renaud Delcourt-Vigneron to confirm the schedule with Batsheva Rosenzweig.","entities":[{"text":"Renaud Delcourt-Vigneron","label":"PERSON"},{"text":"Batsheva Rosenzweig","label":"PERSON"}]}
+{"text":"Draft a reply explaining to Chinelo Okafor-Madu why Timo Rautiainen reassigned the ticket.","entities":[{"text":"Chinelo Okafor-Madu","label":"PERSON"},{"text":"Timo Rautiainen","label":"PERSON"}]}

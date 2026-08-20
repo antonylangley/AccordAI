@@ -1,0 +1,100 @@
+{"text": "Goldman Sachs revised its commodity outlook for the second half of the year.", "entities": []}
+{"text": "The Bayesian prior in the renewal forecast model needs to be re-tuned.", "entities": []}
+{"text": "The Paris deployment region is still running on the older instance family.", "entities": []}
+{"text": "Morgan Lewis returned the redlined services agreement early this morning.", "entities": []}
+{"text": "Hamming distance is a cheaper check than a full string comparison here.", "entities": []}
+{"text": "The blackout window for changes runs through the last week of March.", "entities": []}
+{"text": "Latham & Watkins is handling the securities filing review for the offering.", "entities": []}
+{"text": "We switched the deduplication job to a Jaccard similarity score.", "entities": []}
+{"text": "Our Madison office lease comes up for renewal in the spring.", "entities": []}
+{"text": "Kirkland & Ellis flagged an indemnity gap in the draft purchase agreement.", "entities": []}
+{"text": "The Poisson distribution assumption breaks down for our burst traffic patterns.", "entities": []}
+{"text": "Can you summarize the last three weeks of customer support tickets?", "entities": []}
+{"text": "Cravath Swaine & Moore was retained for the appellate work.", "entities": []}
+{"text": "Cohen's kappa is low, so the annotation guidelines clearly need work.", "entities": []}
+{"text": "The Jackson facility handles all southeastern returns processing.", "entities": []}
+{"text": "Wachtell Lipton advised the acquirer on the structure of the tender offer.", "entities": []}
+{"text": "Run a Shapiro-Wilk test before assuming normality in the residuals.", "entities": []}
+{"text": "All performance reviews must be submitted by the end of May.", "entities": []}
+{"text": "Debevoise & Plimpton produced the sanctions compliance memo we circulated.", "entities": []}
+{"text": "The Fourier transform step is the slowest part of the audio pipeline.", "entities": []}
+{"text": "We consolidated the Charlotte and Raleigh sales territories last quarter.", "entities": []}
+{"text": "Our EU merger filings are being prepared by Freshfields Bruckhaus Deringer.", "entities": []}
+{"text": "Boolean flags in the config file are being parsed as strings.", "entities": []}
+{"text": "Draft an agenda for the quarterly business review with the usual sections.", "entities": []}
+{"text": "Allen & Overy sent the revised facility agreement late yesterday.", "entities": []}
+{"text": "Pareto analysis showed that four accounts drive most of the ticket volume.", "entities": []}
+{"text": "Shipping costs out of Reading have climbed since the depot relocated.", "entities": []}
+{"text": "Clifford Chance is advising on the cross-border restructuring workstream.", "entities": []}
+{"text": "The Jacobian matrix computation is what keeps blowing up memory.", "entities": []}
+{"text": "Contract renewals cluster in January and July every single year.", "entities": []}
+{"text": "Bain & Company delivered the market entry study last Friday.", "entities": []}
+{"text": "the kafka consumer group rebalanced three times during the deploy", "entities": []}
+{"text": "The Bristol plant reported a minor safety incident on the night shift.", "entities": []}
+{"text": "Oliver Wyman benchmarked our claims processing costs against industry peers.", "entities": []}
+{"text": "Set the Gauss-Seidel iteration limit to fifty in the solver config.", "entities": []}
+{"text": "Rewrite this policy paragraph so it fits on a single slide.", "entities": []}
+{"text": "Roland Berger presented three scenarios for the aftermarket business.", "entities": []}
+{"text": "The Prometheus scrape interval was raised to sixty seconds to cut load.", "entities": []}
+{"text": "Warehouse capacity in Nelson is capped until the extension is finished.", "entities": []}
+{"text": "Kearney was shortlisted alongside two other supply chain consultancies.", "entities": []}
+{"text": "The Hudson build agents were decommissioned years before I joined.", "entities": []}
+{"text": "Winter storage costs are consistently higher at the northern facilities.", "entities": []}
+{"text": "we still haven't heard back from korn ferry about the cfo search", "entities": []}
+{"text": "The Rankine scale conversion is wrong in the sensor adapter.", "entities": []}
+{"text": "The Warwick campus will host the engineering all-hands in October.", "entities": []}
+{"text": "Heidrick & Struggles submitted a fee proposal for the board search.", "entities": []}
+{"text": "The Cartesian product join is generating billions of intermediate rows.", "entities": []}
+{"text": "what's a polite way to ask for an extension on the compliance deadline", "entities": []}
+{"text": "Aon Hewitt updated the pension discount rate assumptions for the filing.", "entities": []}
+{"text": "The Kendall tau correlation is reported alongside Spearman in the appendix.", "entities": []}
+{"text": "our lincoln branch is the only one still using paper timesheets", "entities": []}
+{"text": "Charles River Associates produced the economic damages model for the case.", "entities": []}
+{"text": "The Bellman-Ford implementation handles negative edge weights correctly.", "entities": []}
+{"text": "Spring hiring is capped until the budget refresh is approved.", "entities": []}
+{"text": "Berkshire Hathaway disclosed a larger position in the utility sector.", "entities": []}
+{"text": "Our Wasserstein distance metric replaced KL divergence in the drift monitor.", "entities": []}
+{"text": "The Hamilton site passed its ISO audit without a single finding.", "entities": []}
+{"text": "Raymond James downgraded the sector to neutral earlier this week.", "entities": []}
+{"text": "The Nash equilibrium framing was used in the competitive pricing simulation.", "entities": []}
+{"text": "Turn these meeting notes into a list of action items with owners and dates.", "entities": []}
+{"text": "Edward Jones opened two additional branches in the northern region.", "entities": []}
+{"text": "Rename the class from HarrisFilter to CornerDetector before merging.", "entities": []}
+{"text": "Vendor deliveries to Windsor are running about two days late.", "entities": []}
+{"text": "Jefferies is running the sell-side process for the carve-out.", "entities": []}
+{"text": "The service account travis-deploy lost permissions after the IAM change.", "entities": []}
+{"text": "The bill of materials has not been updated since the redesign.", "entities": []}
+{"text": "Lazard was engaged as financial advisor on the divestiture.", "entities": []}
+{"text": "our morgan-cache cluster is running hot again during peak hours", "entities": []}
+{"text": "The Aberdeen depot is being merged into the Glasgow operation.", "entities": []}
+{"text": "Stifel published a note questioning our renewal rate assumptions.", "entities": []}
+{"text": "The Hopper GPU nodes are reserved for the training cluster only.", "entities": []}
+{"text": "Explain the difference between our standard and enterprise support tiers.", "entities": []}
+{"text": "Piper Sandler hosted the healthcare investor conference we attended.", "entities": []}
+{"text": "The Weibull distribution fits our hardware failure data better than exponential.", "entities": []}
+{"text": "Our Stanley distribution point serves the northern wholesale accounts.", "entities": []}
+{"text": "Brown Brothers Harriman handles custody for the pension fund.", "entities": []}
+{"text": "Project Kingsley is on hold until the budget review finishes.", "entities": []}
+{"text": "Add a note about the amber status to this week's delivery report.", "entities": []}
+{"text": "Ralph Lauren reported stronger wholesale revenue across Europe.", "entities": []}
+{"text": "The Sinclair reporting suite replaced our legacy BI stack in April.", "entities": []}
+{"text": "The Marion facility is scheduled for decommissioning next year.", "entities": []}
+{"text": "Tommy Bahama opened a flagship store in the new outlet complex.", "entities": []}
+{"text": "the harper design system is now the default for new internal tools", "entities": []}
+{"text": "The crystal report exports started failing after the driver update.", "entities": []}
+{"text": "Calvin Klein moved its fulfillment contract to a different logistics provider.", "entities": []}
+{"text": "Our Everett platform team owns the identity service end to end.", "entities": []}
+{"text": "Freight moving through Alexandria has been delayed by port congestion.", "entities": []}
+{"text": "Marc Jacobs launched a lower-priced diffusion line this season.", "entities": []}
+{"text": "The Beckett release candidate is scheduled to hit staging tomorrow.", "entities": []}
+{"text": "Please review the daisy chain wiring diagram before the site visit.", "entities": []}
+{"text": "Michael Kors consolidated two of its regional distribution centers.", "entities": []}
+{"text": "help me write a short update about the delayed procurement approval", "entities": []}
+{"text": "Our summer intern cohort starts during the second week of June.", "entities": []}
+{"text": "Ben & Jerry's announced a new sourcing standard for its dairy supply.", "entities": []}
+{"text": "Create a checklist for offboarding a contractor at the end of an engagement.", "entities": []}
+{"text": "Johnson Controls quoted us on the HVAC retrofit for the second floor.", "entities": []}
+{"text": "Summarize the key risks in this vendor agreement in plain language.", "entities": []}
+{"text": "Procter & Gamble raised list prices across three of its product lines.", "entities": []}
+{"text": "Can you make this status update shorter without losing the numbers?", "entities": []}
+{"text": "Harley-Davidson trimmed its full-year shipment guidance again.", "entities": []}

@@ -1,0 +1,100 @@
+{"text": "Please send the corrected invoice to Ilaria Conti.", "entities": [{"text": "Ilaria Conti", "label": "PERSON"}], "group": "challenge-pos:0", "category": "challenge_positive"}
+{"text": "email samir bhatt the revised schedule", "entities": [{"text": "samir bhatt", "label": "PERSON"}], "group": "challenge-pos:1", "category": "challenge_positive"}
+{"text": "I spoke with Mireille Fontaine after the customer call.", "entities": [{"text": "Mireille Fontaine", "label": "PERSON"}], "group": "challenge-pos:2", "category": "challenge_positive"}
+{"text": "Ask Kofi Mensah to approve the memo.", "entities": [{"text": "Kofi Mensah", "label": "PERSON"}], "group": "challenge-pos:3", "category": "challenge_positive"}
+{"text": "Send this to Ángela Prieto before noon.", "entities": [{"text": "Ángela Prieto", "label": "PERSON"}], "group": "challenge-pos:4", "category": "challenge_positive"}
+{"text": "please cc emre aydin on the response", "entities": [{"text": "emre aydin", "label": "PERSON"}], "group": "challenge-pos:5", "category": "challenge_positive"}
+{"text": "The account owner is Soraya Rahimi.", "entities": [{"text": "Soraya Rahimi", "label": "PERSON"}], "group": "challenge-pos:6", "category": "challenge_positive"}
+{"text": "I need to follow up with Daichi Nakamura.", "entities": [{"text": "Daichi Nakamura", "label": "PERSON"}], "group": "challenge-pos:7", "category": "challenge_positive"}
+{"text": "Tell Ivana Kovac the shipment was delayed.", "entities": [{"text": "Ivana Kovac", "label": "PERSON"}], "group": "challenge-pos:8", "category": "challenge_positive"}
+{"text": "Please ask Tunde Adeyemi to review the exception.", "entities": [{"text": "Tunde Adeyemi", "label": "PERSON"}], "group": "challenge-pos:9", "category": "challenge_positive"}
+{"text": "email yael barak about the renewal", "entities": [{"text": "yael barak", "label": "PERSON"}], "group": "challenge-pos:10", "category": "challenge_positive"}
+{"text": "Send the proposal to Astrid Nilsen.", "entities": [{"text": "Astrid Nilsen", "label": "PERSON"}], "group": "challenge-pos:11", "category": "challenge_positive"}
+{"text": "I spoke with Sebastián Pardo about pricing.", "entities": [{"text": "Sebastián Pardo", "label": "PERSON"}], "group": "challenge-pos:12", "category": "challenge_positive"}
+{"text": "Please notify Maëlle Dubois about the update.", "entities": [{"text": "Maëlle Dubois", "label": "PERSON"}], "group": "challenge-pos:13", "category": "challenge_positive"}
+{"text": "Ask Vikram Sethi to sign the agreement.", "entities": [{"text": "Vikram Sethi", "label": "PERSON"}], "group": "challenge-pos:14", "category": "challenge_positive"}
+{"text": "send this to xiaoyu chen before the meeting", "entities": [{"text": "xiaoyu chen", "label": "PERSON"}], "group": "challenge-pos:15", "category": "challenge_positive"}
+{"text": "The reviewer is Karim Bouaziz.", "entities": [{"text": "Karim Bouaziz", "label": "PERSON"}], "group": "challenge-pos:16", "category": "challenge_positive"}
+{"text": "Please cc Elena Varga on the thread.", "entities": [{"text": "Elena Varga", "label": "PERSON"}], "group": "challenge-pos:17", "category": "challenge_positive"}
+{"text": "I called Pranav Joshi yesterday.", "entities": [{"text": "Pranav Joshi", "label": "PERSON"}], "group": "challenge-pos:18", "category": "challenge_positive"}
+{"text": "Tell Aminata Diallo the customer accepted the terms.", "entities": [{"text": "Aminata Diallo", "label": "PERSON"}], "group": "challenge-pos:19", "category": "challenge_positive"}
+{"text": "Please ask Riku Matsuda to confirm the dates.", "entities": [{"text": "Riku Matsuda", "label": "PERSON"}], "group": "challenge-pos:20", "category": "challenge_positive"}
+{"text": "Send the legal note to Thandi Mbeki.", "entities": [{"text": "Thandi Mbeki", "label": "PERSON"}], "group": "challenge-pos:21", "category": "challenge_positive"}
+{"text": "I spoke with Beatriz Coelho this morning.", "entities": [{"text": "Beatriz Coelho", "label": "PERSON"}], "group": "challenge-pos:22", "category": "challenge_positive"}
+{"text": "Please message Youssef Amrani after the demo.", "entities": [{"text": "Youssef Amrani", "label": "PERSON"}], "group": "challenge-pos:23", "category": "challenge_positive"}
+{"text": "Ask Ewa Lewandowska to review the totals.", "entities": [{"text": "Ewa Lewandowska", "label": "PERSON"}], "group": "challenge-pos:24", "category": "challenge_positive"}
+{"text": "send the report to ilaria conti", "entities": [{"text": "ilaria conti", "label": "PERSON"}], "group": "challenge-pos:25", "category": "challenge_positive"}
+{"text": "follow up with kofi mensah about the approval", "entities": [{"text": "kofi mensah", "label": "PERSON"}], "group": "challenge-pos:26", "category": "challenge_positive"}
+{"text": "please message soraya rahimi", "entities": [{"text": "soraya rahimi", "label": "PERSON"}], "group": "challenge-pos:27", "category": "challenge_positive"}
+{"text": "ask daichi nakamura to join the call", "entities": [{"text": "daichi nakamura", "label": "PERSON"}], "group": "challenge-pos:28", "category": "challenge_positive"}
+{"text": "email ivana kovac the signed copy", "entities": [{"text": "ivana kovac", "label": "PERSON"}], "group": "challenge-pos:29", "category": "challenge_positive"}
+{"text": "tell tunde adeyemi the deadline changed", "entities": [{"text": "tunde adeyemi", "label": "PERSON"}], "group": "challenge-pos:30", "category": "challenge_positive"}
+{"text": "send astrid nilsen the customer notes", "entities": [{"text": "astrid nilsen", "label": "PERSON"}], "group": "challenge-pos:31", "category": "challenge_positive"}
+{"text": "ask sebastián pardo to verify the pricing", "entities": [{"text": "sebastián pardo", "label": "PERSON"}], "group": "challenge-pos:32", "category": "challenge_positive"}
+{"text": "message maëlle dubois after the review", "entities": [{"text": "maëlle dubois", "label": "PERSON"}], "group": "challenge-pos:33", "category": "challenge_positive"}
+{"text": "please contact vikram sethi about access", "entities": [{"text": "vikram sethi", "label": "PERSON"}], "group": "challenge-pos:34", "category": "challenge_positive"}
+{"text": "Robin approved the final copy.", "entities": [{"text": "Robin", "label": "PERSON"}], "group": "challenge-pos:35", "category": "challenge_positive"}
+{"text": "Amber called the vendor.", "entities": [{"text": "Amber", "label": "PERSON"}], "group": "challenge-pos:36", "category": "challenge_positive"}
+{"text": "Lane signed the agreement.", "entities": [{"text": "Lane", "label": "PERSON"}], "group": "challenge-pos:37", "category": "challenge_positive"}
+{"text": "River reviewed the account notes.", "entities": [{"text": "River", "label": "PERSON"}], "group": "challenge-pos:38", "category": "challenge_positive"}
+{"text": "Phoenix approved the reimbursement.", "entities": [{"text": "Phoenix", "label": "PERSON"}], "group": "challenge-pos:39", "category": "challenge_positive"}
+{"text": "The attendees are Petra Novak and Hamed Karimi.", "entities": [{"text": "Petra Novak", "label": "PERSON"}, {"text": "Hamed Karimi", "label": "PERSON"}], "group": "challenge-pos:40", "category": "challenge_positive"}
+{"text": "CC Leandro Silva and Natsuki Ito on the response.", "entities": [{"text": "Leandro Silva", "label": "PERSON"}, {"text": "Natsuki Ito", "label": "PERSON"}], "group": "challenge-pos:41", "category": "challenge_positive"}
+{"text": "Ask Rania Mansour, Oleg Kuznetsov, and Siti Rahma to review this.", "entities": [{"text": "Rania Mansour", "label": "PERSON"}, {"text": "Oleg Kuznetsov", "label": "PERSON"}, {"text": "Siti Rahma", "label": "PERSON"}], "group": "challenge-pos:42", "category": "challenge_positive"}
+{"text": "email petra novak and hamed karimi the final deck", "entities": [{"text": "petra novak", "label": "PERSON"}, {"text": "hamed karimi", "label": "PERSON"}], "group": "challenge-pos:43", "category": "challenge_positive"}
+{"text": "tell leandro silva and natsuki ito the meeting moved", "entities": [{"text": "leandro silva", "label": "PERSON"}, {"text": "natsuki ito", "label": "PERSON"}], "group": "challenge-pos:44", "category": "challenge_positive"}
+{"text": "The client contact is Ghita El Idrissi.", "entities": [{"text": "Ghita El Idrissi", "label": "PERSON"}], "group": "challenge-pos:45", "category": "challenge_positive"}
+{"text": "Please send the report to Cécile Renard.", "entities": [{"text": "Cécile Renard", "label": "PERSON"}], "group": "challenge-pos:46", "category": "challenge_positive"}
+{"text": "I spoke with İpek Yılmaz about the exception.", "entities": [{"text": "İpek Yılmaz", "label": "PERSON"}], "group": "challenge-pos:47", "category": "challenge_positive"}
+{"text": "Tell Nguyễn Bảo Châu the review is complete.", "entities": [{"text": "Nguyễn Bảo Châu", "label": "PERSON"}], "group": "challenge-pos:48", "category": "challenge_positive"}
+{"text": "Please email Anaïs Lefèvre the revised draft.", "entities": [{"text": "Anaïs Lefèvre", "label": "PERSON"}], "group": "challenge-pos:49", "category": "challenge_positive"}
+{"text": "Morgan Stanley reported stronger advisory revenue this quarter.", "entities": [], "group": "challenge-neg:0", "category": "challenge_negative"}
+{"text": "Goldman Sachs expanded its alternatives platform.", "entities": [], "group": "challenge-neg:1", "category": "challenge_negative"}
+{"text": "Ralph Lauren opened a new store in Milan.", "entities": [], "group": "challenge-neg:2", "category": "challenge_negative"}
+{"text": "John Deere increased production at one plant.", "entities": [], "group": "challenge-neg:3", "category": "challenge_negative"}
+{"text": "Charles Schwab launched a redesigned research page.", "entities": [], "group": "challenge-neg:4", "category": "challenge_negative"}
+{"text": "Michael Kors introduced a new travel collection.", "entities": [], "group": "challenge-neg:5", "category": "challenge_negative"}
+{"text": "Parker Hannifin raised its full-year forecast.", "entities": [], "group": "challenge-neg:6", "category": "challenge_negative"}
+{"text": "Franklin Templeton announced a fund merger.", "entities": [], "group": "challenge-neg:7", "category": "challenge_negative"}
+{"text": "Edward Jones updated its branch technology.", "entities": [], "group": "challenge-neg:8", "category": "challenge_negative"}
+{"text": "Robert Half published a hiring survey.", "entities": [], "group": "challenge-neg:9", "category": "challenge_negative"}
+{"text": "The Amber status means the job needs review.", "entities": [], "group": "challenge-neg:10", "category": "challenge_negative"}
+{"text": "The Robin process watches the inbound queue.", "entities": [], "group": "challenge-neg:11", "category": "challenge_negative"}
+{"text": "The Lane sensor failed its calibration check.", "entities": [], "group": "challenge-neg:12", "category": "challenge_negative"}
+{"text": "The River pipeline is delayed by one stage.", "entities": [], "group": "challenge-neg:13", "category": "challenge_negative"}
+{"text": "The Phoenix cluster is healthy.", "entities": [], "group": "challenge-neg:14", "category": "challenge_negative"}
+{"text": "A robin nested near the loading dock.", "entities": [], "group": "challenge-neg:15", "category": "challenge_negative"}
+{"text": "The warning icon should use amber.", "entities": [], "group": "challenge-neg:16", "category": "challenge_negative"}
+{"text": "Keep the truck in the right lane.", "entities": [], "group": "challenge-neg:17", "category": "challenge_negative"}
+{"text": "The warehouse sits across the river.", "entities": [], "group": "challenge-neg:18", "category": "challenge_negative"}
+{"text": "The customer opened an office in Phoenix.", "entities": [], "group": "challenge-neg:19", "category": "challenge_negative"}
+{"text": "The route crosses South Dakota.", "entities": [], "group": "challenge-neg:20", "category": "challenge_negative"}
+{"text": "The account is registered in Georgia.", "entities": [], "group": "challenge-neg:21", "category": "challenge_negative"}
+{"text": "The team will meet in Paris next month.", "entities": [], "group": "challenge-neg:22", "category": "challenge_negative"}
+{"text": "The customer is based in Brooklyn.", "entities": [], "group": "challenge-neg:23", "category": "challenge_negative"}
+{"text": "The regional office moved to Denver.", "entities": [], "group": "challenge-neg:24", "category": "challenge_negative"}
+{"text": "The conference is being held in London.", "entities": [], "group": "challenge-neg:25", "category": "challenge_negative"}
+{"text": "The next checkpoint is scheduled for June.", "entities": [], "group": "challenge-neg:26", "category": "challenge_negative"}
+{"text": "The deadline moved to April.", "entities": [], "group": "challenge-neg:27", "category": "challenge_negative"}
+{"text": "The maintenance window begins at dawn.", "entities": [], "group": "challenge-neg:28", "category": "challenge_negative"}
+{"text": "The sample contains fine clay particles.", "entities": [], "group": "challenge-neg:29", "category": "challenge_negative"}
+{"text": "const amber = theme.warning;", "entities": [], "group": "challenge-neg:30", "category": "challenge_negative"}
+{"text": "function robinHandler(evt) { return evt.id; }", "entities": [], "group": "challenge-neg:31", "category": "challenge_negative"}
+{"text": "The phoenix deployment completed successfully.", "entities": [], "group": "challenge-neg:32", "category": "challenge_negative"}
+{"text": "The london queue contains no pending jobs.", "entities": [], "group": "challenge-neg:33", "category": "challenge_negative"}
+{"text": "The denver shard is read-only.", "entities": [], "group": "challenge-neg:34", "category": "challenge_negative"}
+{"text": "Summarize the attached transactions by category.", "entities": [], "group": "challenge-neg:35", "category": "challenge_negative"}
+{"text": "Draft a response to the client complaint.", "entities": [], "group": "challenge-neg:36", "category": "challenge_negative"}
+{"text": "Create acceptance criteria for this feature.", "entities": [], "group": "challenge-neg:37", "category": "challenge_negative"}
+{"text": "Explain how WebAssembly works in a browser.", "entities": [], "group": "challenge-neg:38", "category": "challenge_negative"}
+{"text": "Refactor this function to reduce duplication.", "entities": [], "group": "challenge-neg:39", "category": "challenge_negative"}
+{"text": "Summarize the internal policy document.", "entities": [], "group": "challenge-neg:40", "category": "challenge_negative"}
+{"text": "Create a rollout checklist for the extension.", "entities": [], "group": "challenge-neg:41", "category": "challenge_negative"}
+{"text": "Rewrite this message in a more professional tone.", "entities": [], "group": "challenge-neg:42", "category": "challenge_negative"}
+{"text": "Explain why this unit test is failing.", "entities": [], "group": "challenge-neg:43", "category": "challenge_negative"}
+{"text": "Create a table comparing the two proposals.", "entities": [], "group": "challenge-neg:44", "category": "challenge_negative"}
+{"text": "Turn these notes into a short status update.", "entities": [], "group": "challenge-neg:45", "category": "challenge_negative"}
+{"text": "Suggest edge cases for the import flow.", "entities": [], "group": "challenge-neg:46", "category": "challenge_negative"}
+{"text": "Draft a release note for this change.", "entities": [], "group": "challenge-neg:47", "category": "challenge_negative"}
+{"text": "Explain the difference between validation and test data.", "entities": [], "group": "challenge-neg:48", "category": "challenge_negative"}
+{"text": "Create a checklist for customer onboarding.", "entities": [], "group": "challenge-neg:49", "category": "challenge_negative"}

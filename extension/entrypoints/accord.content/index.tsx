@@ -145,7 +145,14 @@ export default defineContentScript({
           .then((response) => {
             if (!response.ok || response.result == null || !("action" in response.result) || sequence !== scanSeq.current) return;
           
-            console.warn("[Accord PERSON result]", response.result.personDetection);
+            console.info("[Accord PERSON result]", {
+              nerStatus: response.result.personDetection.nerStatus,
+              candidateCount: response.result.personDetection.candidateCount,
+              finalPersonCount: response.result.entityCounts.PERSON || 0,
+              detectorNames: response.result.personDetection.detector
+                ? [response.result.personDetection.detector]
+                : []
+            });
           
             applyScanState(response.result, text);
           })

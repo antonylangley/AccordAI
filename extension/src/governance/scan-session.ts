@@ -445,9 +445,9 @@ function mergePersonDetection(first: PersonDetectionCoverage, second: PersonDete
 
 function unavailablePersonDetection(): PersonDetectionCoverage {
   return {
-    mode: "hybrid-local-rules",
+    mode: "local-ner",
     nerStatus: "unavailable",
-    detector: "local_person_detector_v1",
+    detector: "accord_ner_v0_2",
     candidateCount: 0,
     timedOut: false,
     model: {
@@ -584,8 +584,7 @@ async function runGovernanceScan(text: string, stage: ChatScanResult["stage"], s
   const personDetection = await detectPersonCandidates(text);
   const scan = scanText(text, stage, sensitivity, {
     seedRedactionMap,
-    additionalCandidates: personDetection.candidates,
-    disableBuiltInPersonDetection: true
+    additionalCandidates: personDetection.candidates
   });
 
   console.info("[Accord PERSON debug]", {

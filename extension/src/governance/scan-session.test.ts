@@ -1,10 +1,16 @@
-import { beforeEach, describe, expect, test } from "vitest";
-import { debugPersonCandidateGenerationForTests, scanText } from "@accord/governance-core";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import { scanText } from "@accord/governance-core";
 import { rehydrateAssistantText, scanDraft } from "./scan-session";
+
+const personDetector = vi.hoisted(() => ({ detectPersonCandidates: vi.fn() }));
+
+vi.mock("../person-detection/person-detector", () => personDetector);
 
 const store: Record<string, unknown> = {};
 
 beforeEach(() => {
+  personDetector.detectPersonCandidates.mockReset();
+  personDetector.detectPersonCandidates.mockImplementation(async () => noPeople());
   for (const key of Object.keys(store)) delete store[key];
   globalThis.chrome = {
     storage: {
@@ -34,7 +40,7 @@ describe("Accord Guard scan session", () => {
   });
 
   test("redacts sensitive person and email text", async () => {
-    const result = await scan("Draft an email to John Smith at john@gmail.com.", "conversation:sensitive");
+    const result = await scan("Draft an email to John Smith at john@gmail.com.", "conversation:sensitive", ["John Smith"]);
 
     expect(result.action).toBe("redact");
     expect(result.entityCounts.PERSON).toBe(1);
@@ -45,21 +51,21 @@ describe("Accord Guard scan session", () => {
     ]);
     expect(result.sanitizedText).toContain("[PERSON_1]");
     expect(result.sanitizedText).toContain("[EMAIL_1]");
-    expect(result.personDetection.nerStatus).toBe("error");
-    expect(result.personDetection.model.name).toBe("accord-ner-v0.1");
+    expect(result.personDetection.nerStatus).toBe("ready");
+    expect(result.personDetection.model.name).toBe("accord-ner-v0.2");
   });
 
   test("keeps exact repeated entities stable in one conversation", async () => {
-    const first = await scan("Tell John Smith the report is ready.", "conversation:stable");
-    const second = await scan("Ask John Smith to review the new draft.", "conversation:stable");
+    const first = await scan("Tell John Smith the report is ready.", "conversation:stable", ["John Smith"]);
+    const second = await scan("Ask John Smith to review the new draft.", "conversation:stable", ["John Smith"]);
 
     expect(first.sanitizedText).toContain("[PERSON_1]");
     expect(second.sanitizedText).toContain("[PERSON_1]");
   });
 
   test("numbers multiple people in conversation order", async () => {
-    await scan("Tell John Smith the report is ready.", "conversation:people");
-    const second = await scan("Ask Mary Jones to review the new draft.", "conversation:people");
+    await scan("Tell John Smith the report is ready.", "conversation:people", ["John Smith"]);
+    const second = await scan("Ask Mary Jones to review the new draft.", "conversation:people", ["Mary Jones"]);
 
     expect(second.sanitizedText).toContain("[PERSON_2]");
   });
@@ -121,7 +127,7 @@ describe("Accord Guard scan session", () => {
   });
 
   test("does not rehydrate unknown placeholders", async () => {
-    await scan("Tell John Smith the report is ready.", "conversation:unknown");
+    await scan("Tell John Smith the report is ready.", "conversation:unknown", ["John Smith"]);
     const result = await rehydrateAssistantText({
       surface: "chatgpt",
       conversationKey: "conversation:unknown",
@@ -133,7 +139,7 @@ describe("Accord Guard scan session", () => {
   });
 
   test("rehydrates exact trusted placeholders", async () => {
-    await scan("Tell John Smith the report is ready.", "conversation:trusted");
+    await scan("Tell John Smith the report is ready.", "conversation:trusted", ["John Smith"]);
     const result = await rehydrateAssistantText({
       surface: "chatgpt",
       conversationKey: "conversation:trusted",
@@ -156,7 +162,7 @@ describe("Accord Guard scan session", () => {
   });
 
   test("rehydrates a new ChatGPT conversation from the recent governed draft vault", async () => {
-    await scan("Write an email to Jordan Example at jordan.example@test.com.", "draft:new-chat");
+    await scan("Write an email to Jordan Example at jordan.example@test.com.", "draft:new-chat", ["Jordan Example"]);
     const result = await rehydrateAssistantText({
       surface: "chatgpt",
       conversationKey: "conversation:new-chat",
@@ -168,7 +174,7 @@ describe("Accord Guard scan session", () => {
   });
 
   test("keeps conversation sessions separated", async () => {
-    await scan("Tell John Smith the report is ready.", "conversation:a");
+    await scan("Tell John Smith the report is ready.", "conversation:a", ["John Smith"]);
     const result = await rehydrateAssistantText({
       surface: "chatgpt",
       conversationKey: "conversation:b",
@@ -188,8 +194,8 @@ describe("Accord Guard scan session", () => {
     ["João da Silva called yesterday.", "João da Silva"],
     ["Nguyễn Văn An approved the memo.", "Nguyễn Văn An"],
     ["Wei Zhang approved the release.", "Wei Zhang"]
-  ])("detects exact PERSON span for %s", async (text, expectedName) => {
-    const result = await scan(text, `conversation:person:${text}`);
+  ])("redacts an explicit neural PERSON span for %s", async (text, expectedName) => {
+    const result = await scan(text, `conversation:person:${text}`, [expectedName]);
     const person = result.decorations.find((decoration) => decoration.type === "PERSON");
 
     expect(result.action).toBe("redact");
@@ -243,17 +249,17 @@ describe("Accord Guard scan session", () => {
     expect(mismatched.entities).toEqual([]);
   });
 
-  test("detects lowercase names in a strong human-list context", async () => {
+  test("redacts explicit neural candidates in a lowercase human list", async () => {
     const text = "write birthday invitations to my friends neta rogovsky, kevin trejos, brandon gizzo.";
-    const result = await scan(text, "conversation:lowercase-list");
+    const result = await scan(text, "conversation:lowercase-list", ["neta rogovsky", "kevin trejos", "brandon gizzo"]);
 
     expect(personSpans(text, result)).toEqual(["neta rogovsky", "kevin trejos", "brandon gizzo"]);
     expect(result.sanitizedText).toBe("write birthday invitations to my friends [PERSON_1], [PERSON_2], [PERSON_3].");
   });
 
-  test("detects coordinated lowercase names after a human action", async () => {
+  test("redacts coordinated explicit neural candidates", async () => {
     const text = "email neta rogovsky and kevin trejos abt saturday";
-    const result = await scan(text, "conversation:coordinated-failure");
+    const result = await scan(text, "conversation:coordinated-failure", ["neta rogovsky", "kevin trejos"]);
 
     expect(result.action).toBe("redact");
     expect(result.detectedEntityCount).toBe(2);
@@ -271,35 +277,11 @@ describe("Accord Guard scan session", () => {
       ["neta rogovsky", "kevin trejos"],
       "email [PERSON_1] and [PERSON_2] abt saturday"
     ]
-  ])("keeps coordinated lowercase names stable while typing: %s", async (text, expectedNames, expectedSanitizedText) => {
-    const result = await scan(text, `conversation:incremental:${text}`);
+  ])("redacts explicit neural candidates while typing: %s", async (text, expectedNames, expectedSanitizedText) => {
+    const result = await scan(text, `conversation:incremental:${text}`, expectedNames);
 
     expect(personSpans(text, result)).toEqual(expectedNames);
     expect(result.sanitizedText).toBe(expectedSanitizedText);
-  });
-
-  test("exposes deterministic coordinated candidate debug evidence for tests", () => {
-    const text = "email neta rogovsky and kevin trejos abt saturday";
-    const candidates = debugPersonCandidateGenerationForTests(text).filter((candidate) =>
-      candidate.source === "coordinated_human_sequence" && ["neta rogovsky", "kevin trejos"].includes(candidate.text)
-    );
-
-    expect(candidates).toEqual([
-      expect.objectContaining({
-        text: "neta rogovsky",
-        start: 6,
-        end: 19,
-        source: "coordinated_human_sequence",
-        contextSignals: expect.arrayContaining(["human_action_context", "coordinated_human_context"])
-      }),
-      expect.objectContaining({
-        text: "kevin trejos",
-        start: 24,
-        end: 36,
-        source: "coordinated_human_sequence",
-        contextSignals: expect.arrayContaining(["inherited_human_action_context", "coordinated_human_context"])
-      })
-    ]);
   });
 
   test.each([
@@ -317,8 +299,8 @@ describe("Accord Guard scan session", () => {
     ["tell jo\u00e3o da silva and mar\u00eda jos\u00e9 garc\u00eda the meeting moved", ["jo\u00e3o da silva", "mar\u00eda jos\u00e9 garc\u00eda"]],
     ["send this to li wei and aisha bint ahmed", ["li wei", "aisha bint ahmed"]],
     ["email sarah connor; miles morales; peter parker about the launch", ["sarah connor", "miles morales", "peter parker"]]
-  ])("detects lowercase context people: %s", async (text, expectedNames) => {
-    const result = await scan(text, `conversation:lowercase:${text}`);
+  ])("redacts explicit lowercase neural candidates: %s", async (text, expectedNames) => {
+    const result = await scan(text, `conversation:lowercase:${text}`, expectedNames);
 
     expect(personSpans(text, result)).toEqual(expectedNames);
   });
@@ -326,20 +308,40 @@ describe("Accord Guard scan session", () => {
   test("keeps coordinated lowercase placeholders stable across later prompts", async () => {
     const firstText = "email neta rogovsky and kevin trejos abt saturday";
     const secondText = "ask kevin trejos to bring drinks and tell neta rogovsky to come early";
-    const first = await scan(firstText, "conversation:coordinated-stable");
-    const second = await scan(secondText, "conversation:coordinated-stable");
+    const first = await scan(firstText, "conversation:coordinated-stable", ["neta rogovsky", "kevin trejos"]);
+    const second = await scan(secondText, "conversation:coordinated-stable", ["kevin trejos", "neta rogovsky"]);
 
     expect(first.sanitizedText).toBe("email [PERSON_1] and [PERSON_2] abt saturday");
     expect(second.sanitizedText).toBe("ask [PERSON_2] to bring drinks and tell [PERSON_1] to come early");
   });
 
   test("uses the same PERSON placeholder across capitalization changes", async () => {
-    const first = await scan("Neta Rogovsky is attending.", "conversation:case-stable");
+    const first = await scan("Neta Rogovsky is attending.", "conversation:case-stable", ["Neta Rogovsky"]);
     const second = await scan("neta rogovsky is bringing dessert.", "conversation:case-stable");
 
     expect(first.sanitizedText).toContain("[PERSON_1]");
     expect(second.sanitizedText).toContain("[PERSON_1]");
     expect(second.sanitizedText).not.toContain("[PERSON_2]");
+  });
+
+  test.each(["Morgan Stanley", "Ralph Lauren", "Johnson Controls"])(
+    "does not redact %s when NER returns no candidates",
+    async (text) => {
+      const result = await scan(text, `conversation:no-person:${text}`);
+      expect(result.entityCounts.PERSON || 0).toBe(0);
+    }
+  );
+
+  test("redacts an explicit Antony Langley neural candidate", async () => {
+    const text = "Tell Antony Langley the report is ready.";
+    const result = await scan(text, "conversation:antony-explicit", ["Antony Langley"]);
+    expect(result.sanitizedText).toContain("[PERSON_1]");
+  });
+
+  test.each(["error", "timeout"] as const)("uses no deterministic PERSON fallback on NER %s", async (nerStatus) => {
+    personDetector.detectPersonCandidates.mockResolvedValueOnce(noPeople(nerStatus));
+    const result = await scan("Tell Antony Langley the report is ready.", `conversation:ner-${nerStatus}`);
+    expect(result.entityCounts.PERSON || 0).toBe(0);
   });
 
   test.each([
@@ -380,7 +382,8 @@ function personSpans(text: string, result: Awaited<ReturnType<typeof scan>>) {
     .map((decoration) => text.slice(decoration.start, decoration.end));
 }
 
-function scan(text: string, conversationKey: string) {
+function scan(text: string, conversationKey: string, people: readonly string[] = []) {
+  personDetector.detectPersonCandidates.mockResolvedValueOnce(personResult(text, people));
   return scanDraft({
     surface: "chatgpt",
     conversationKey,
@@ -389,4 +392,41 @@ function scan(text: string, conversationKey: string) {
     authoritative: true,
     includeSanitizedText: true
   });
+}
+
+function personResult(text: string, people: readonly string[]) {
+  return {
+    candidates: people.map((originalText) => {
+      const start = text.indexOf(originalText);
+      if (start < 0) throw new Error(`Missing explicit PERSON span: ${originalText}`);
+      return {
+        type: "PERSON" as const,
+        originalText,
+        start,
+        end: start + originalText.length,
+        confidence: 0.99,
+        detector: "accord_ner_v0_2_test",
+        contextSignals: ["ner_person"]
+      };
+    }),
+    coverage: {
+      mode: "local-ner" as const,
+      nerStatus: "ready" as const,
+      detector: "accord_ner_v0_2_test",
+      candidateCount: people.length,
+      timedOut: false,
+      model: { name: "accord-ner-v0.2", assetSizeBytes: 0, executionContext: "service_worker" as const }
+    }
+  };
+}
+
+function noPeople(nerStatus: "ready" | "error" | "timeout" = "ready") {
+  return {
+    ...personResult("", []),
+    coverage: {
+      ...personResult("", []).coverage,
+      nerStatus,
+      timedOut: nerStatus === "timeout"
+    }
+  };
 }

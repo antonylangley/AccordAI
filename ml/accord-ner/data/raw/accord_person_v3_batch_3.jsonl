@@ -1,0 +1,100 @@
+{"text":"Austin flagged three errors in the reconciliation file this morning.","entities":[{"text":"Austin","label":"PERSON"}]}
+{"text":"The Austin office is closing, so Phoenix will absorb its support volume.","entities":[]}
+{"text":"Can you ask Sydney to re-run the payroll export before noon?","entities":[{"text":"Sydney","label":"PERSON"}]}
+{"text":"Our data center in Sydney had a brief power interruption overnight.","entities":[]}
+{"text":"Dakota is the only person on the team with production database access.","entities":[{"text":"Dakota","label":"PERSON"}]}
+{"text":"North Dakota has different sales tax rules than the neighboring states.","entities":[]}
+{"text":"Draft a reply to Florence explaining why we rejected the change request.","entities":[{"text":"Florence","label":"PERSON"}]}
+{"text":"Route returns through Salem while the Florence warehouse is being retrofitted.","entities":[]}
+{"text":"Georgia said she'd take over vendor onboarding starting Monday.","entities":[{"text":"Georgia","label":"PERSON"}]}
+{"text":"Sales in Georgia grew faster than in any other southeastern market.","entities":[]}
+{"text":"Milan pushed the hotfix without telling anyone on the release channel.","entities":[{"text":"Milan","label":"PERSON"}]}
+{"text":"The Milan team will handle EMEA support during the holiday week.","entities":[]}
+{"text":"Please cc Kent when you send the revised statement of work.","entities":[{"text":"Kent","label":"PERSON"}]}
+{"text":"We lease three floors in Kent for the customer service operation.","entities":[]}
+{"text":"Salem asked whether the retention policy applies to archived tickets.","entities":[{"text":"Salem","label":"PERSON"}]}
+{"text":"our dallas site failed the fire inspection again","entities":[]}
+{"text":"can you tell dallas that the invoice was already paid last week","entities":[{"text":"dallas","label":"PERSON"}]}
+{"text":"the savannah warehouse still runs on the legacy inventory system","entities":[]}
+{"text":"remind me to thank savannah for covering the client call yesterday","entities":[{"text":"savannah","label":"PERSON"}]}
+{"text":"York remains our second largest distribution point in the region.","entities":[]}
+{"text":"draft a short note asking york whether he still needs vpn access","entities":[{"text":"york","label":"PERSON"}]}
+{"text":"Ask Phoenix whether the new hire's laptop was ordered.","entities":[{"text":"Phoenix","label":"PERSON"}]}
+{"text":"April is out sick, so someone else needs to run the sprint demo.","entities":[{"text":"April","label":"PERSON"}]}
+{"text":"Renewals land every April, so August is our quietest month for contracts.","entities":[]}
+{"text":"August signed off on the design review yesterday afternoon.","entities":[{"text":"August","label":"PERSON"}]}
+{"text":"Summer travel and the autumn hiring slowdown both distort the quarterly numbers.","entities":[]}
+{"text":"Summer will be presenting the customer research findings on Thursday.","entities":[{"text":"Summer","label":"PERSON"}]}
+{"text":"Autumn owns the analytics dashboard now that the handover is finished.","entities":[{"text":"Autumn","label":"PERSON"}]}
+{"text":"Rose left detailed comments on the second draft of the policy.","entities":[{"text":"Rose","label":"PERSON"}]}
+{"text":"please attach the rose gold packaging mockups to the creative brief","entities":[]}
+{"text":"Grant is on parental leave until the middle of next month.","entities":[{"text":"Grant","label":"PERSON"}]}
+{"text":"The research grant expires two months before the pilot finishes.","entities":[]}
+{"text":"Ask Mark whether the legal team ever returned the redlines.","entities":[{"text":"Mark","label":"PERSON"}]}
+{"text":"Be frank in the retro and mark every step where the process broke down.","entities":[]}
+{"text":"Frank thinks the migration estimate is off by at least a month.","entities":[{"text":"Frank","label":"PERSON"}]}
+{"text":"Bill escalated the outage to the vendor's on-call engineer.","entities":[{"text":"Bill","label":"PERSON"}]}
+{"text":"The supplier sent the bill to the wrong cost center again.","entities":[]}
+{"text":"Sterling wrote the original spec, so loop him in on the rewrite.","entities":[{"text":"Sterling","label":"PERSON"}]}
+{"text":"We invoice our UK clients in sterling rather than euros.","entities":[]}
+{"text":"Hope has been covering the support queue since Tuesday.","entities":[{"text":"Hope","label":"PERSON"}]}
+{"text":"The hope is that every penny of the training budget is spent before year end.","entities":[]}
+{"text":"Penny approved the travel request but flagged the hotel rate.","entities":[{"text":"Penny","label":"PERSON"}]}
+{"text":"Can you check whether Pearson ever replied about the training licenses?","entities":[{"text":"Pearson","label":"PERSON"}]}
+{"text":"The Pearson correlation between the two metrics is weaker than expected.","entities":[]}
+{"text":"Ruby has been leading the accessibility audit for the past two sprints.","entities":[{"text":"Ruby","label":"PERSON"}]}
+{"text":"We pinned the Ruby version in the Dockerfile to avoid the build break.","entities":[]}
+{"text":"Ada volunteered to mentor the two new analytics interns.","entities":[{"text":"Ada","label":"PERSON"}]}
+{"text":"Ada is still the required language for that avionics subsystem.","entities":[]}
+{"text":"Watson is the interviewer for the second round on Friday.","entities":[{"text":"Watson","label":"PERSON"}]}
+{"text":"Watson Discovery was evaluated for the knowledge base but ruled out on cost.","entities":[]}
+{"text":"Atlas said the warehouse team can absorb the extra shifts.","entities":[{"text":"Atlas","label":"PERSON"}]}
+{"text":"Rename the service from atlas-gateway to edge-gateway in the manifest.","entities":[]}
+{"text":"Aurora is drafting the incident report and will share it by end of day.","entities":[{"text":"Aurora","label":"PERSON"}]}
+{"text":"Project Aurora is now tracked under the platform portfolio.","entities":[]}
+{"text":"Sierra pointed out that the SLA figures don't match the dashboard.","entities":[{"text":"Sierra","label":"PERSON"}]}
+{"text":"Our Sierra release branch was cut from main last Thursday.","entities":[]}
+{"text":"Mercedes runs the Madrid support desk and knows the escalation path.","entities":[{"text":"Mercedes","label":"PERSON"}]}
+{"text":"Push the config change to the mercedes-integration repo, not the main one.","entities":[]}
+{"text":"Can you loop in Marsh about the insurance renewal paperwork?","entities":[{"text":"Marsh","label":"PERSON"}]}
+{"text":"Marsh McLennan updated its cyber insurance underwriting criteria.","entities":[]}
+{"text":"ask baker whether the warehouse contract was countersigned","entities":[{"text":"baker","label":"PERSON"}]}
+{"text":"Baker McKenzie is reviewing the cross-border data transfer clause.","entities":[]}
+{"text":"Let Hamilton know the procurement portal is locked for maintenance.","entities":[{"text":"Hamilton","label":"PERSON"}]}
+{"text":"Booz Allen Hamilton won the federal modernization contract.","entities":[]}
+{"text":"Gartner asked me to double-check the headcount forecast before the review.","entities":[{"text":"Gartner","label":"PERSON"}]}
+{"text":"Gartner placed two of our competitors in the leaders quadrant.","entities":[]}
+{"text":"Kelvin asked for a summary of the quarterly attrition numbers.","entities":[{"text":"Kelvin","label":"PERSON"}]}
+{"text":"The Kalman filter smoothing step is documented in the modeling appendix.","entities":[]}
+{"text":"Marlowe volunteered to write the postmortem for last week's outage.","entities":[{"text":"Marlowe","label":"PERSON"}]}
+{"text":"We applied a Bonferroni correction before reporting the significance levels.","entities":[]}
+{"text":"tell jordan i moved our one on one to thursday","entities":[{"text":"jordan","label":"PERSON"}]}
+{"text":"Levenshtein distance works better than exact matching for this dedupe job.","entities":[]}
+{"text":"can you check if reed submitted the compliance attestation yet","entities":[{"text":"reed","label":"PERSON"}]}
+{"text":"Dijkstra's algorithm is overkill for a dependency graph this small.","entities":[]}
+{"text":"i think chance is the one who owns the billing integration now","entities":[{"text":"chance","label":"PERSON"}]}
+{"text":"Switch the encoder to a Gaussian kernel and rerun the benchmark.","entities":[]}
+{"text":"let sky know the offsite budget was approved","entities":[{"text":"sky","label":"PERSON"}]}
+{"text":"Set up a Markov chain baseline before we try anything more elaborate.","entities":[]}
+{"text":"forward the audit findings to page in the risk team","entities":[{"text":"page","label":"PERSON"}]}
+{"text":"The Gini coefficient and the Nyquist limit are both defined in the appendix.","entities":[]}
+{"text":"Please have Fisher review the exception request before it goes to legal.","entities":[{"text":"Fisher","label":"PERSON"}]}
+{"text":"the sentry dashboard is showing a spike in unhandled exceptions","entities":[]}
+{"text":"Nelson raised a concern about the data retention window in the design doc.","entities":[{"text":"Nelson","label":"PERSON"}]}
+{"text":"Charles Schwab published new guidance for retirement plan sponsors.","entities":[]}
+{"text":"Ask Cooper to reconcile the two versions of the pricing sheet.","entities":[{"text":"Cooper","label":"PERSON"}]}
+{"text":"We hired Grant Thornton to run the internal controls assessment.","entities":[]}
+{"text":"Bishop is presenting the roadmap to the executive committee on Monday.","entities":[{"text":"Bishop","label":"PERSON"}]}
+{"text":"Ernst & Young flagged two material weaknesses in the draft report.","entities":[]}
+{"text":"Please schedule thirty minutes with Hutton from the treasury team.","entities":[{"text":"Hutton","label":"PERSON"}]}
+{"text":"Robert Half sent over three candidate profiles for the analyst role.","entities":[]}
+{"text":"Colby is handling the SOC 2 evidence collection this cycle.","entities":[{"text":"Colby","label":"PERSON"}]}
+{"text":"Our benefits broker is Willis Towers Watson, not Mercer.","entities":[]}
+{"text":"can you write a thank you note to winter for staying late during the cutover","entities":[{"text":"winter","label":"PERSON"}]}
+{"text":"Jones Lang LaSalle handled the lease negotiation for the Dublin site.","entities":[]}
+{"text":"Alvarez & Marsal was brought in for the restructuring workstream.","entities":[]}
+{"text":"Moody's downgraded the outlook for two of our component suppliers.","entities":[]}
+{"text":"Duff & Phelps produced the valuation used in the board deck.","entities":[]}
+{"text":"Perkins Coie sent the updated privacy policy language yesterday.","entities":[]}
+{"text":"the marriott near the venue is fully booked for conference week","entities":[]}
+{"text":"Skadden Arps flagged an antitrust risk in the acquisition memo.","entities":[]}

@@ -27,7 +27,6 @@ type EntityCandidate = ExternalEntityCandidate;
 export type ScanOptions = {
   seedRedactionMap?: RedactionMap;
   additionalCandidates?: ExternalEntityCandidate[];
-  disableBuiltInPersonDetection?: boolean;
 };
 
 type RedactionResult = {
@@ -98,7 +97,7 @@ const severityWeights: Record<ChatFlagSeverity, number> = {
 };
 
 const entityThresholds: Record<EntityType, number> = {
-  PERSON: 0.74,
+  PERSON: 0.5,
   EMAIL: 0.9,
   PHONE: 0.86,
   ADDRESS: 0.82,
@@ -166,230 +165,6 @@ const entityTypePriority: Record<EntityType, number> = {
   OTHER: 1
 };
 
-const commonPersonFalsePositiveWords = new Set([
-  "a",
-  "about",
-  "access",
-  "account",
-  "accord",
-  "action",
-  "admin",
-  "ai",
-  "api",
-  "application",
-  "approval",
-  "ask",
-  "base",
-  "best",
-  "boss",
-  "business",
-  "birthday",
-  "builder",
-  "case",
-  "candidate",
-  "center",
-  "chat",
-  "claims",
-  "client",
-  "code",
-  "company",
-  "contact",
-  "context",
-  "contract",
-  "compiler",
-  "customer",
-  "dashboard",
-  "data",
-  "dear",
-  "defense",
-  "defensive",
-  "draft",
-  "email",
-  "encryption",
-  "endpoint",
-  "engineering",
-  "employee",
-  "failed",
-  "family",
-  "financial",
-  "files",
-  "follow",
-  "folders",
-  "friends",
-  "governance",
-  "graphql",
-  "hello",
-  "help",
-  "human",
-  "intelligence",
-  "instrumentation",
-  "invitations",
-  "injection",
-  "is",
-  "less",
-  "loan",
-  "list",
-  "manager",
-  "management",
-  "meeting",
-  "message",
-  "medical",
-  "model",
-  "motion",
-  "my",
-  "network",
-  "notice",
-  "null",
-  "office",
-  "operations",
-  "patient",
-  "platform",
-  "planning",
-  "plan",
-  "policy",
-  "portal",
-  "product",
-  "project",
-  "provider",
-  "prompt",
-  "protocol",
-  "records",
-  "out",
-  "query",
-  "reaching",
-  "react",
-  "regex",
-  "request",
-  "report",
-  "resources",
-  "rest",
-  "response",
-  "review",
-  "reviewing",
-  "risk",
-  "sales",
-  "search",
-  "security",
-  "success",
-  "support",
-  "state",
-  "stored",
-  "system",
-  "team",
-  "technical",
-  "template",
-  "typescript",
-  "admins",
-  "users",
-  "validator",
-  "tell",
-  "the",
-  "to",
-  "token",
-  "transfer",
-  "update",
-  "up",
-  "user",
-  "write",
-  "work",
-  "workspace",
-  "york",
-  "you"
-]);
-
-const commonPersonFalsePositivePhrases = new Set([
-  "accord guard",
-  "artificial intelligence platform",
-  "customer support team",
-  "monday client meeting",
-  "new york",
-  "new york office",
-  "openai api",
-  "q3 risk review",
-  "react state update",
-  "representational state transfer"
-]);
-
-const knownCompanyOrProductWords = new Set([
-  "accord",
-  "anthropic",
-  "api",
-  "chat",
-  "chatgpt",
-  "claude",
-  "gemini",
-  "google",
-  "northstar",
-  "openai"
-]);
-
-const commonFirstNames = new Set([
-  "alex",
-  "aisha",
-  "alice",
-  "bob",
-  "david",
-  "jane",
-  "jean-pierre",
-  "joao",
-  "joão",
-  "john",
-  "jose",
-  "josé",
-  "li",
-  "ludwig",
-  "maria",
-  "maría",
-  "mary",
-  "mary-kate",
-  "mike",
-  "mohammed",
-  "nguyễn",
-  "saoirse",
-  "sarah",
-  "wei"
-]);
-
-const personParticles = new Set(["al", "bint", "bin", "da", "de", "del", "der", "di", "dos", "du", "la", "le", "van", "von"]);
-
-const personTokenPattern = /[\p{L}\p{M}]+(?:[-'’][\p{L}\p{M}]+)*/gu;
-
-const humanListTrailingStopWords = new Set([
-  "are",
-  "arrived",
-  "abt",
-  "about",
-  "after",
-  "because",
-  "before",
-  "by",
-  "called",
-  "came",
-  "can",
-  "coming",
-  "could",
-  "is",
-  "left",
-  "next",
-  "needs",
-  "re",
-  "regarding",
-  "should",
-  "that",
-  "the",
-  "to",
-  "today",
-  "tomorrow",
-  "tonight",
-  "was",
-  "were",
-  "will",
-  "would"
-]);
-
-const humanListIntroducerPattern =
-  /\b(?:(?:my|the|these|those|our)\s+)?(?:friends|people|recipients|invitees|attendees|employees|candidates|patients|reviewers|approvers|contacts|customers|clients|team\s+members|participants|guests|coworkers|colleagues)\b(?:\s+(?:are|include|includes))?|\b(?:invite(?:\s+(?:my\s+friends|these\s+people|the\s+attendees|the\s+recipients))?|send(?:\s+this)?\s+to|email(?:\s+the\s+recipients)?|copy|cc|message|contact|ask|tell|write\s+to|reply\s+to)\b/giu;
-
 export function scanText(text: string, stage: ChatScanStage, sensitivity = "Internal", options: ScanOptions = {}): ChatScanResult {
   const redaction = redactTextWithSummary(text, options);
   const flags = dedupeFlags([
@@ -434,12 +209,8 @@ export function redactSensitiveText(text: string) {
 }
 
 export function redactTextWithSummary(text: string, options: ScanOptions = {}): RedactionResult {
-  const builtInCandidates = detectEntityCandidates(text);
-
   const candidates = [
-    ...(options.disableBuiltInPersonDetection
-      ? builtInCandidates.filter((candidate) => candidate.type !== "PERSON")
-      : builtInCandidates),
+    ...detectEntityCandidates(text),
     ...normalizeExternalCandidates(text, options.additionalCandidates)
   ]
     .map((candidate) => validateEntityCandidate(candidate, text))
@@ -466,7 +237,7 @@ export function redactTextWithSummary(text: string, options: ScanOptions = {}): 
   };
 }
 
-export function validateEntityCandidate(candidate: EntityCandidate, fullText: string): EntityCandidate | null {
+export function validateEntityCandidate(candidate: EntityCandidate, _fullText: string): EntityCandidate | null {
   const normalizedCandidate = trimCandidate(candidate);
   const trimmed = normalizedCandidate.originalText;
   if (!trimmed) return null;
@@ -489,104 +260,14 @@ export function validateEntityCandidate(candidate: EntityCandidate, fullText: st
 
   if (normalizedCandidate.type === "PERSON") {
     const tokens = getPersonTokens(trimmed);
-    const lowerWords = tokens.map((token) => token.lower);
-    const normalizedPhrase = normalizePhrase(trimmed);
-    const nonParticleWords = lowerWords.filter((word) => !personParticles.has(word));
+    const isNeuralCandidate =
+      /^accord_ner_v\d+(?:_\d+)*$/i.test(normalizedCandidate.detector) ||
+      normalizedCandidate.contextSignals.includes("ner_person");
 
-    const isAccordNerCandidate =
-      normalizedCandidate.detector === "accord_ner_v0_1" &&
-      normalizedCandidate.confidence >= 0.8;
-
-    if (isAccordNerCandidate) {
-      if (tokens.length < 1 || tokens.length > 6) return null;
-      if (!candidateTextMatchesTokens(trimmed, tokens)) return null;
-
-      const contextSignals = Array.from(
-        new Set([
-          ...normalizedCandidate.contextSignals,
-          ...getPersonContextSignals(
-            fullText,
-            normalizedCandidate.start,
-            normalizedCandidate.end
-          ),
-          "ner_person",
-          "local_person_candidate"
-        ])
-      );
-
-      return {
-        ...normalizedCandidate,
-        contextSignals
-      };
-    }
-
-    if (tokens.length < 2 || tokens.length > 5) return null;
+    if (!isNeuralCandidate || normalizedCandidate.confidence < entityThresholds.PERSON) return null;
+    if (tokens.length < 1 || tokens.length > 6) return null;
     if (!candidateTextMatchesTokens(trimmed, tokens)) return null;
-    if (nonParticleWords.length < 2) return null;
-    if (commonPersonFalsePositivePhrases.has(normalizedPhrase)) return null;
-    if (lowerWords.some((word) => commonPersonFalsePositiveWords.has(word))) return null;
-    if (lowerWords.some((word) => knownCompanyOrProductWords.has(word))) return null;
-    if (/\b(?:my boss|my company|my project|you)\b/i.test(trimmed)) return null;
-
-    const contextSignals = Array.from(
-      new Set([...normalizedCandidate.contextSignals, ...getPersonContextSignals(fullText, normalizedCandidate.start, normalizedCandidate.end)])
-    );
-    const hasExternalPersonSignal =
-      normalizedCandidate.detector.includes("ner") ||
-      normalizedCandidate.detector.includes("person_detector") ||
-      contextSignals.includes("ner_person") ||
-      contextSignals.includes("local_person_candidate");
-    const hasStrongLowercaseEvidence = contextSignals.some((signal) =>
-      [
-        "human_list_context",
-        "human_action_context",
-        "inherited_human_action_context",
-        "coordinated_human_context",
-        "comma_separated_human_list",
-        "direct_human_recipient",
-        "near_email",
-        "conversation_stable"
-      ].includes(signal)
-    );
-    const titleCase = tokens.every((token) => isCapitalizedNameToken(token.text) || personParticles.has(token.lower));
-    const lowercaseContextName = tokens.every((token) => isLowercaseNameToken(token.text) || personParticles.has(token.lower));
-    const hasParticle = lowerWords.some((word) => personParticles.has(word));
-    const hasHumanContext = contextSignals.some((signal) =>
-      [
-        "near_name_context",
-        "near_human_action",
-        "near_email",
-        "near_person_role",
-        "conversation_stable",
-        "human_list_context",
-        "human_action_context",
-        "inherited_human_action_context",
-        "coordinated_human_context",
-        "direct_human_recipient"
-      ].includes(signal)
-    );
-
-    if (lowercaseContextName && !isPlausibleLowercasePersonName(lowerWords, hasStrongLowercaseEvidence) && !hasExternalPersonSignal) return null;
-    if (!titleCase && !lowercaseContextName && !hasExternalPersonSignal) return null;
-
-    const confidence =
-      normalizedCandidate.confidence +
-      (titleCase ? 0.05 : 0) +
-      (lowercaseContextName ? 0.02 : 0) +
-      (tokens.length > 2 ? 0.04 : 0) +
-      (hasParticle ? 0.05 : 0) +
-      (hasExternalPersonSignal ? 0.16 : 0) +
-      (hasStrongLowercaseEvidence ? 0.08 : 0) +
-      (hasHumanContext ? 0.04 : 0) +
-      contextSignals.reduce((score, signal) => score + personSignalWeight(signal), 0);
-
-    if (confidence < entityThresholds.PERSON) return null;
-
-    return {
-      ...normalizedCandidate,
-      confidence: Math.min(0.97, confidence),
-      contextSignals
-    };
+    return normalizedCandidate;
   }
 
   if (normalizedCandidate.confidence < entityThresholds[normalizedCandidate.type]) return null;
@@ -714,10 +395,7 @@ function detectEntityCandidates(text: string): EntityCandidate[] {
       /\b(?:account|acct|routing|iban)\s*(?:number|no\.?|#|id)?\s*[:#]?\s*[A-Z0-9-]{4,}\b/gi,
       0.86,
       "account_regex"
-    ),
-    ...detectCapitalizedPersonCandidates(text),
-    ...detectHumanListPersonCandidates(text),
-    ...detectLowercaseContextPersonCandidates(text)
+    )
   ];
 }
 
@@ -778,6 +456,8 @@ type PersonToken = {
   end: number;
 };
 
+const personTokenPattern = /[\p{L}\p{M}]+(?:[-'’][\p{L}\p{M}]+)*/gu;
+
 function normalizeExternalCandidates(text: string, candidates: ExternalEntityCandidate[] = []): EntityCandidate[] {
   return candidates
     .filter((candidate): candidate is ExternalEntityCandidate => {
@@ -816,7 +496,7 @@ function collectPersonLikeTokens(text: string): PersonToken[] {
     if (typeof match.index !== "number") continue;
     tokens.push({
       text: match[0],
-      lower: normalizeNameToken(match[0]),
+      lower: match[0].toLocaleLowerCase().replace(/[’]/g, "'"),
       start: match.index,
       end: match.index + match[0].length
     });
@@ -845,251 +525,8 @@ function normalizePhrase(text: string) {
   return text.replace(/\s+/g, " ").trim().toLocaleLowerCase();
 }
 
-export function debugPersonCandidateGenerationForTests(text: string) {
-  return detectEntityCandidates(text)
-    .filter((candidate) => candidate.type === "PERSON")
-    .map((candidate) => ({
-      text: candidate.originalText,
-      start: candidate.start,
-      end: candidate.end,
-      source: candidate.detector,
-      contextSignals: candidate.contextSignals
-    }));
-}
-
-function normalizeNameToken(text: string) {
-  return text.toLocaleLowerCase().replace(/[’]/g, "'");
-}
-
-function isCapitalizedNameToken(token: string) {
-  const [first] = Array.from(token);
-  if (!first) return false;
-  return first === first.toLocaleUpperCase() && first !== first.toLocaleLowerCase() && !isAllUppercaseAcronym(token);
-}
-
-function isLowercaseNameToken(token: string) {
-  const [first] = Array.from(token);
-  if (!first) return false;
-  return first === first.toLocaleLowerCase() && first !== first.toLocaleUpperCase();
-}
-
-function isAllUppercaseAcronym(token: string) {
-  const letters = Array.from(token).filter((char) => /\p{L}/u.test(char));
-  return letters.length > 1 && letters.every((char) => char === char.toLocaleUpperCase());
-}
-
 function isKnownEntityType(type: string): type is EntityType {
   return ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT", "SECRET", "OTHER"].includes(type);
-}
-
-function detectCapitalizedPersonCandidates(text: string): EntityCandidate[] {
-  const candidates: EntityCandidate[] = [];
-  const tokens = collectPersonLikeTokens(text);
-
-  for (let index = 0; index < tokens.length; index += 1) {
-    for (let length = 2; length <= 5; length += 1) {
-      const windowTokens = tokens.slice(index, index + length);
-      if (windowTokens.length !== length) continue;
-      if (!tokensAreContiguousNameSpan(text, windowTokens)) continue;
-      if (!isCapitalizedNameToken(windowTokens[0].text)) continue;
-      if (!isCapitalizedNameToken(windowTokens[windowTokens.length - 1].text)) continue;
-      if (!windowTokens.every((token) => isCapitalizedNameToken(token.text) || personParticles.has(token.lower))) continue;
-
-      const originalText = text.slice(windowTokens[0].start, windowTokens[windowTokens.length - 1].end);
-      candidates.push({
-        type: "PERSON",
-        originalText,
-        start: windowTokens[0].start,
-        end: windowTokens[windowTokens.length - 1].end,
-        confidence: 0.62 + (length > 2 ? 0.04 : 0),
-        detector: length > 2 ? "capitalized_multi_token_name" : "capitalized_two_token_name",
-        contextSignals: []
-      });
-    }
-  }
-
-  return candidates;
-}
-
-function detectHumanListPersonCandidates(text: string): EntityCandidate[] {
-  const candidates: EntityCandidate[] = [];
-
-  for (const match of execMatches(text, humanListIntroducerPattern)) {
-    if (typeof match.index !== "number") continue;
-    const listStart = skipListPrefix(text, match.index + match[0].length);
-    const listEnd = findListSegmentEnd(text, listStart);
-    if (listEnd <= listStart) continue;
-
-    const segment = text.slice(listStart, listEnd);
-    const items = splitHumanListItems(segment, listStart);
-    const hasCoordination = items.length > 1 || /\b(?:and)\b|[,;]/iu.test(segment);
-
-    for (const [index, item] of items.entries()) {
-      const listSignals = [
-        "human_list_context",
-        index === 0 ? "human_action_context" : "inherited_human_action_context",
-        ...(hasCoordination ? ["coordinated_human_context"] : []),
-        ...(items.length > 1 ? ["comma_separated_human_list"] : [])
-      ];
-      const candidate = candidateFromListItem(text, item.start, item.end, listSignals);
-      if (candidate) candidates.push(candidate);
-    }
-  }
-
-  return uniqueCandidatesByRange(candidates);
-}
-
-function skipListPrefix(text: string, start: number) {
-  let cursor = start;
-
-  while (cursor < text.length && /[\s:=\[\("'`]/u.test(text[cursor])) {
-    cursor += 1;
-  }
-
-  return cursor;
-}
-
-function findListSegmentEnd(text: string, start: number) {
-  const maxEnd = Math.min(text.length, start + 220);
-  for (let index = start; index < maxEnd; index += 1) {
-    if (/[.!?]/u.test(text[index])) return index;
-    if (text[index] === "]") return index;
-  }
-
-  return maxEnd;
-}
-
-function splitHumanListItems(segment: string, absoluteStart: number) {
-  const items: Array<{ start: number; end: number }> = [];
-  const separator = /\s*(?:,|;|\band\b)\s*/giu;
-  let cursor = 0;
-
-  for (const match of execMatches(segment, separator)) {
-    if (typeof match.index !== "number") continue;
-    items.push({ start: absoluteStart + cursor, end: absoluteStart + match.index });
-    cursor = match.index + match[0].length;
-  }
-
-  items.push({ start: absoluteStart + cursor, end: absoluteStart + segment.length });
-
-  return items.filter((item) => item.end > item.start);
-}
-
-function candidateFromListItem(text: string, start: number, end: number, contextSignals: string[]): EntityCandidate | null {
-  const itemText = text.slice(start, end);
-  let tokens = getPersonTokens(itemText).map((token) => ({
-    ...token,
-    start: token.start + start,
-    end: token.end + start
-  }));
-  const trailingStopIndex = tokens.findIndex((token, index) => index >= 2 && humanListTrailingStopWords.has(token.lower));
-  if (trailingStopIndex >= 2) {
-    tokens = tokens.slice(0, trailingStopIndex);
-  }
-
-  if (tokens.length < 2 || tokens.length > 5) return null;
-  if (!tokensAreContiguousNameSpan(text, tokens)) return null;
-
-  const candidateStart = tokens[0].start;
-  const candidateEnd = tokens[tokens.length - 1].end;
-  const originalText = text.slice(candidateStart, candidateEnd);
-
-  return {
-    type: "PERSON",
-    originalText,
-    start: candidateStart,
-    end: candidateEnd,
-    confidence: 0.72,
-    detector: contextSignals.includes("coordinated_human_context") ? "coordinated_human_sequence" : "human_list_context_name",
-    contextSignals
-  };
-}
-
-function uniqueCandidatesByRange(candidates: EntityCandidate[]) {
-  const seen = new Set<string>();
-  return candidates.filter((candidate) => {
-    const key = `${candidate.type}:${candidate.start}:${candidate.end}:${candidate.originalText}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function detectLowercaseContextPersonCandidates(text: string): EntityCandidate[] {
-  const candidates: EntityCandidate[] = [];
-  const pattern =
-    /\b(?:to|from|for|ask|named|name is|customer|client|employee|candidate|patient|email|message)\s+([\p{L}\p{M}]+(?:[-'’][\p{L}\p{M}]+)?\s+[\p{L}\p{M}]+(?:[-'’][\p{L}\p{M}]+)?)\b/gu;
-
-  for (const match of execMatches(text, pattern)) {
-    if (typeof match.index !== "number" || !match[1]) continue;
-    const nameOffset = match[0].toLowerCase().indexOf(match[1].toLowerCase());
-    const start = match.index + Math.max(nameOffset, 0);
-    candidates.push({
-      type: "PERSON",
-      originalText: match[1],
-      start,
-      end: start + match[1].length,
-      confidence: 0.7,
-      detector: "lowercase_context_name",
-      contextSignals: ["near_name_context"]
-    });
-  }
-
-  return candidates;
-}
-
-function getPersonContextSignals(fullText: string, start: number, end: number) {
-  const before = fullText.slice(Math.max(0, start - 42), start).toLowerCase();
-  const after = fullText.slice(end, Math.min(fullText.length, end + 56)).toLowerCase();
-  const nearby = fullText.slice(Math.max(0, start - 70), Math.min(fullText.length, end + 70));
-  const signals: string[] = [];
-
-  if (/\b(?:to|from|for|ask|tell|reply to|email|message|write|draft|named|name is|dear|hi|hello|customer|client|patient|employee|candidate)\s+$/.test(before)) {
-    signals.push("near_name_context");
-  }
-
-  if (/^\s*(?:approved|emailed|called|said|asked|denied|requested|received|submitted|signed|needs|wants)\b/.test(after)) {
-    signals.push("near_human_action");
-  }
-
-  if (/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i.test(nearby)) {
-    signals.push("near_email");
-  }
-
-  if (/\b(?:employee|candidate|patient|customer|client|manager|reviewer|approver)\b/i.test(nearby)) {
-    signals.push("near_person_role");
-  }
-
-  return signals;
-}
-
-function personSignalWeight(signal: string) {
-  const weights: Record<string, number> = {
-    comma_separated_human_list: 0.08,
-    conversation_stable: 0.24,
-    coordinated_human_context: 0.1,
-    detector_agreement: 0.12,
-    direct_human_recipient: 0.14,
-    human_action_context: 0.12,
-    human_list_context: 0.22,
-    inherited_human_action_context: 0.14,
-    local_person_candidate: 0.12,
-    near_name_context: 0.18,
-    near_human_action: 0.16,
-    near_email: 0.14,
-    near_person_role: 0.1,
-    ner_person: 0.16
-  };
-
-  return weights[signal] || 0;
-}
-
-function isPlausibleLowercasePersonName(words: string[], hasStrongLowercaseEvidence = false) {
-  const nonParticleWords = words.filter((word) => !personParticles.has(word));
-  const hasNegativeToken = nonParticleWords.some((word) => commonPersonFalsePositiveWords.has(word) || knownCompanyOrProductWords.has(word));
-  if (hasNegativeToken || nonParticleWords.length < 2 || nonParticleWords.length > 3) return false;
-  if (hasStrongLowercaseEvidence) return true;
-  return commonFirstNames.has(nonParticleWords[0]);
 }
 
 function filterOverlappingCandidates(candidates: EntityCandidate[]) {

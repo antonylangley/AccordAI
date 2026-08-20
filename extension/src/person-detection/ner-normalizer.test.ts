@@ -60,6 +60,35 @@ describe("NER PERSON normalization", () => {
     ]);
   });
 
+  test("aligns grouped Transformers.js PERSON output to exact source spans", () => {
+    const text = "Antony Langley approved the request; tell marcus elliott it finished.";
+    const candidates = normalizeNerPersonTokens(text, [
+      { entity_group: "PERSON", word: "Antony Langley", score: 0.999 },
+      { entity_group: "PERSON", word: "marcus elliott", score: 0.998 }
+    ]);
+
+    expect(candidates.map(({ originalText, start, end }) => ({ originalText, start, end }))).toEqual([
+      {
+        originalText: "Antony Langley",
+        start: text.indexOf("Antony Langley"),
+        end: text.indexOf("Antony Langley") + "Antony Langley".length
+      },
+      {
+        originalText: "marcus elliott",
+        start: text.indexOf("marcus elliott"),
+        end: text.indexOf("marcus elliott") + "marcus elliott".length
+      }
+    ]);
+  });
+
+  test("rejects offsetless neural output that cannot be aligned exactly", () => {
+    const candidates = normalizeNerPersonTokens("Antony Langley approved the request.", [
+      { entity_group: "PERSON", word: "Antony L.", score: 0.999 }
+    ]);
+
+    expect(candidates).toEqual([]);
+  });
+
   test("rejects missing, invalid, or non-PER token spans", () => {
     const text = "React State Update caused a rerender.";
     const candidates = normalizeNerPersonTokens(text, [
