@@ -7,6 +7,7 @@ export type NerToken = {
   entity_group?: string;
   label?: string;
   score?: number;
+  index?: number;
   start?: number;
   end?: number;
 };

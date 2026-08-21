@@ -1,0 +1,9 @@
+{"text":"Avery Morgan reopened the support case.","category":"ordinary","goldPersonSpans":[{"start":0,"end":12}],"predictedPersonSpans":[{"start":0,"end":5,"confidence":0.9207102656364441,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"cc trevor mills on the customer response","category":"lowercase","goldPersonSpans":[{"start":3,"end":15}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"message kiara james when the build completes","category":"lowercase","goldPersonSpans":[{"start":8,"end":19}],"predictedPersonSpans":[{"start":8,"end":13,"confidence":0.9898868501186371,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"email bruce young before the release","category":"lowercase","goldPersonSpans":[{"start":6,"end":17}],"predictedPersonSpans":[{"start":6,"end":8,"confidence":0.9552522301673889,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"Søren Nielsen completed the Nordic supplier review.","category":"unicode","goldPersonSpans":[{"start":0,"end":13}],"predictedPersonSpans":[{"start":0,"end":1,"confidence":0.8749184608459473,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"Дмитрий Иванов отправил итоговый отчет.","category":"unicode","goldPersonSpans":[{"start":0,"end":14}],"predictedPersonSpans":[{"start":0,"end":38,"confidence":0.9962439017911111,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"Олена Коваль підтвердила отримання документа.","category":"unicode","goldPersonSpans":[{"start":0,"end":12}],"predictedPersonSpans":[{"start":0,"end":44,"confidence":0.995747867383455,"detector":"accord_ner_v0_3"}],"errorType":"boundary"}
+{"text":"김민준 reviewed the authentication evidence.","category":"unicode","goldPersonSpans":[{"start":0,"end":3}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"佐藤 美咲 confirmed the meeting schedule.","category":"unicode","goldPersonSpans":[{"start":0,"end":5}],"predictedPersonSpans":[],"errorType":"FN"}

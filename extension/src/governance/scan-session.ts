@@ -447,7 +447,7 @@ function unavailablePersonDetection(): PersonDetectionCoverage {
   return {
     mode: "local-ner",
     nerStatus: "unavailable",
-    detector: "accord_ner_v0_2",
+    detector: "accord_ner_v0_3_1",
     candidateCount: 0,
     timedOut: false,
     model: {
@@ -585,17 +585,6 @@ async function runGovernanceScan(text: string, stage: ChatScanResult["stage"], s
   const scan = scanText(text, stage, sensitivity, {
     seedRedactionMap,
     additionalCandidates: personDetection.candidates
-  });
-
-  console.info("[Accord PERSON debug]", {
-    nerStatus: personDetection.coverage.nerStatus,
-    nerCandidateCount: personDetection.candidates.length,
-    finalPersonDetectors: scan.entities
-      .filter((entity) => entity.type === "PERSON")
-      .map((entity) => ({
-        detector: entity.detector,
-        confidence: entity.confidence
-      }))
   });
 
   return {

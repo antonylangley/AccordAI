@@ -1,78 +1,46 @@
-import { cp, mkdir, readdir, rm, stat } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { cp, mkdir, readFile, readdir, rm, stat } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const extensionRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = resolve(extensionRoot, "..");
+const productionModelId = "accord-ner-v0.3.1";
+const expectedModelSha256 = "89f4cbeedf5ff9d7513ed740ea4027c90ac2b3c14a05a2484748be09ce9fd354";
+const requiredModelFiles = [
+  "config.json",
+  "tokenizer.json",
+  "tokenizer_config.json",
+  "special_tokens_map.json",
+  "vocab.txt"
+];
 
-const bestModelRoot = resolve(
+const modelSourceRoot = resolve(
   repoRoot,
-  "ml/accord-ner/models/accord-ner-v0.2-fixed/best"
-);
-
-const onnxExportRoot = resolve(
-  repoRoot,
-  "ml/accord-ner/models/accord-ner-v0.2-fixed/onnx"
+  `ml/accord-ner/models/${productionModelId}/browser/${productionModelId}`
 );
 
 const modelDestination = resolve(
   extensionRoot,
-  "public/models/accord-ner-v0.2"
-);
-
-const legacyModelDestination = resolve(
-  extensionRoot,
-  "public/models/accord-ner-v0.1"
+  `public/models/${productionModelId}`
 );
 
 const wasmDestination = resolve(extensionRoot, "public/ort");
+const sourceModelPath = join(modelSourceRoot, "onnx/model_quantized.onnx");
+const browserModelPath = join(modelDestination, "onnx/model_quantized.onnx");
 
-await assertDirectory(bestModelRoot, "trained model checkpoint");
-await assertDirectory(onnxExportRoot, "ONNX export");
+await assertDirectory(modelSourceRoot, "browser-qualified production model");
+await assertFileHash(sourceModelPath, expectedModelSha256);
 
-await rm(legacyModelDestination, { recursive: true, force: true });
 await rm(modelDestination, { recursive: true, force: true });
 await mkdir(join(modelDestination, "onnx"), { recursive: true });
 
-const bestFiles = await readdir(bestModelRoot, { withFileTypes: true });
-
-for (const entry of bestFiles) {
-  if (!entry.isFile() || !isTokenizerOrConfig(entry.name)) continue;
-
-  await cp(
-    join(bestModelRoot, entry.name),
-    join(modelDestination, entry.name)
-  );
+for (const file of requiredModelFiles) {
+  await cp(join(modelSourceRoot, file), join(modelDestination, file));
 }
 
-const onnxFiles = await findFiles(
-  onnxExportRoot,
-  (name) => name.endsWith(".onnx") || name.endsWith(".onnx_data")
-);
-
-const modelOnnx = onnxFiles.find(
-  (path) => basename(path) === "model_quantized.onnx"
-);
-
-if (!modelOnnx) {
-  throw new Error(
-    `No quantized ONNX model named model_quantized.onnx found under ${onnxExportRoot}`
-  );
-}
-
-const browserModelPath = join(
-  modelDestination,
-  "onnx/model_quantized.onnx"
-);
-
-await cp(modelOnnx, browserModelPath);
-
-for (const source of onnxFiles.filter((path) => path.endsWith(".onnx_data"))) {
-  await cp(
-    source,
-    join(modelDestination, "onnx", basename(source))
-  );
-}
+await cp(sourceModelPath, browserModelPath);
+await assertFileHash(browserModelPath, expectedModelSha256);
 
 const ortDist = await findOrtDist();
 const wasmFiles = (await readdir(ortDist)).filter((name) =>
@@ -102,16 +70,6 @@ console.log(`Copied ${wasmFiles.length} ONNX Runtime WASM asset(s).`);
 console.log(`Model assets: ${modelDestination}`);
 console.log(`Browser ONNX: ${browserModelPath}`);
 console.log(`WASM assets:  ${wasmDestination}`);
-
-function isTokenizerOrConfig(name) {
-  return [
-    "config.json",
-    "tokenizer.json",
-    "tokenizer_config.json",
-    "special_tokens_map.json",
-    "vocab.txt"
-  ].includes(name);
-}
 
 async function findOrtDist() {
   const direct = resolve(
@@ -165,21 +123,14 @@ async function isDirectory(path) {
   }
 }
 
-async function findFiles(root, predicate) {
-  const found = [];
-  const entries = await readdir(root, {
-    withFileTypes: true
-  });
+async function assertFileHash(path, expectedSha256) {
+  const digest = createHash("sha256")
+    .update(await readFile(path))
+    .digest("hex");
 
-  for (const entry of entries) {
-    const path = join(root, entry.name);
-
-    if (entry.isDirectory()) {
-      found.push(...(await findFiles(path, predicate)));
-    } else if (entry.isFile() && predicate(entry.name)) {
-      found.push(path);
-    }
+  if (digest !== expectedSha256) {
+    throw new Error(
+      `Unexpected SHA-256 for ${path}: expected ${expectedSha256}, received ${digest}`
+    );
   }
-
-  return found;
 }

@@ -1,0 +1,21 @@
+{"text":"Rebecca Turner signed the updated data agreement.","category":"ordinary","goldPersonSpans":[{"start":0,"end":14}],"predictedPersonSpans":[{"start":0,"end":7,"confidence":0.5998249650001526,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"Samuel Wright scheduled the risk workshop.","category":"ordinary","goldPersonSpans":[{"start":0,"end":13}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Avery Morgan reopened the support case.","category":"ordinary","goldPersonSpans":[{"start":0,"end":12}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Victor Hughes assigned the final action items.","category":"ordinary","goldPersonSpans":[{"start":0,"end":13}],"predictedPersonSpans":[{"start":0,"end":6,"confidence":0.661864161491394,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"email devon carter the finalized agenda","category":"lowercase","goldPersonSpans":[{"start":6,"end":18}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"remind jasmine ford to close the ticket","category":"lowercase","goldPersonSpans":[{"start":7,"end":19}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"cc trevor mills on the customer response","category":"lowercase","goldPersonSpans":[{"start":3,"end":15}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"message kiara james when the build completes","category":"lowercase","goldPersonSpans":[{"start":8,"end":19}],"predictedPersonSpans":[{"start":8,"end":13,"confidence":0.8449548780918121,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"email bruce young before the release","category":"lowercase","goldPersonSpans":[{"start":6,"end":17}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Skyler reported the failed authentication.","category":"first_name_only","goldPersonSpans":[{"start":0,"end":6}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Søren Nielsen completed the Nordic supplier review.","category":"unicode","goldPersonSpans":[{"start":0,"end":13}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"İpek Yılmaz approved the regional access change.","category":"unicode","goldPersonSpans":[{"start":0,"end":11}],"predictedPersonSpans":[{"start":5,"end":11,"confidence":0.9637494534254074,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"Дмитрий Иванов отправил итоговый отчет.","category":"unicode","goldPersonSpans":[{"start":0,"end":14}],"predictedPersonSpans":[{"start":0,"end":1,"confidence":0.9407859444618225,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"Олена Коваль підтвердила отримання документа.","category":"unicode","goldPersonSpans":[{"start":0,"end":12}],"predictedPersonSpans":[{"start":0,"end":1,"confidence":0.9775633215904236,"detector":"accord_ner_v0_2"}],"errorType":"boundary"}
+{"text":"李明 approved the translated contract summary.","category":"unicode","goldPersonSpans":[{"start":0,"end":2}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"김민준 reviewed the authentication evidence.","category":"unicode","goldPersonSpans":[{"start":0,"end":3}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"佐藤 美咲 confirmed the meeting schedule.","category":"unicode","goldPersonSpans":[{"start":0,"end":5}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Jean-Pierre approved the architecture decision.","category":"hyphen_apostrophe_particle","goldPersonSpans":[{"start":0,"end":11}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Ask jean-pierre to review the release notes.","category":"hyphen_apostrophe_particle","goldPersonSpans":[{"start":4,"end":15}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Mary-Jane Watson prepared the customer briefing.","category":"hyphen_apostrophe_particle","goldPersonSpans":[{"start":0,"end":16}],"predictedPersonSpans":[],"errorType":"FN"}
+{"text":"Fatima al-Zahra accepted the security exception.","category":"hyphen_apostrophe_particle","goldPersonSpans":[{"start":0,"end":15}],"predictedPersonSpans":[],"errorType":"FN"}

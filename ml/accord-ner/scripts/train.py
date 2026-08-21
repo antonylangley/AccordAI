@@ -57,6 +57,14 @@ def parse_args() -> argparse.Namespace:
         default="models/accord-ner-v0.1",
         help="Directory for checkpoints and the saved best model.",
     )
+    parser.add_argument(
+        "--base-model",
+        default=MODEL_NAME,
+        help=(
+            "Hugging Face model ID or local checkpoint to fine-tune. "
+            "An existing Accord 3-label checkpoint is continued directly."
+        ),
+    )
     parser.add_argument("--epochs", type=float, default=5.0)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--learning-rate", type=float, default=2e-5)
@@ -188,17 +196,31 @@ def show_alignment_example(
     print()
 
 
-def build_model() -> torch.nn.Module:
+def build_model(base_model: str) -> torch.nn.Module:
     """
     Build Accord's 3-label model while preserving the source checkpoint's
     pretrained O / B-PER / I-PER classifier weights.
     """
-    print(f"Loading pretrained model: {MODEL_NAME}")
+    print(f"Loading pretrained model: {base_model}")
 
-    source_model = AutoModelForTokenClassification.from_pretrained(MODEL_NAME)
+    candidate = AutoModelForTokenClassification.from_pretrained(base_model)
+    candidate_labels = {
+        str(label).upper()
+        for label in candidate.config.label2id
+    }
+    if candidate.config.num_labels == len(LABELS) and candidate_labels == set(LABELS):
+        candidate.config.id2label = ID2LABEL
+        candidate.config.label2id = LABEL2ID
+        print("Continuing from an existing Accord 3-label PERSON checkpoint.")
+        return candidate
+
+    del candidate
+    gc.collect()
+
+    source_model = AutoModelForTokenClassification.from_pretrained(base_model)
 
     model = AutoModelForTokenClassification.from_pretrained(
-        MODEL_NAME,
+        base_model,
         num_labels=len(LABELS),
         id2label=ID2LABEL,
         label2id=LABEL2ID,
@@ -295,7 +317,7 @@ def main() -> None:
     print(f"Validation examples: {len(validation_raw)}")
 
     print("\nLoading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.base_model, use_fast=True)
 
     train_tokenized = train_raw.map(
         lambda example: tokenize_and_align_labels(
@@ -331,7 +353,7 @@ def main() -> None:
 
     show_alignment_example(train_raw, train_tokenized, tokenizer)
 
-    model = build_model()
+    model = build_model(args.base_model)
     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
 
     # Keep this script compatible across recent Transformers versions.
@@ -411,7 +433,7 @@ def main() -> None:
     tokenizer.save_pretrained(str(best_dir))
 
     summary = {
-        "base_model": MODEL_NAME,
+        "base_model": args.base_model,
         "labels": LABELS,
         "seed": args.seed,
         "train_examples": len(train_raw),

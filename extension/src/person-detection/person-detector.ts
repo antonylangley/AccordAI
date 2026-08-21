@@ -1,6 +1,11 @@
 import { env, pipeline } from "@huggingface/transformers";
 import type { ExternalEntityCandidate } from "@accord/governance-core";
-import { normalizeNerPersonTokens, type NerToken } from "./ner-normalizer";
+import type { NerToken } from "./ner-normalizer";
+import {
+  addSourceOffsetsToNerTokens,
+  normalizeOffsetNerPersonTokens,
+  type NerTokenizer
+} from "./ner-offset-normalizer";
 
 export type PersonDetectionStatus = "ready" | "timeout" | "unavailable" | "error";
 
@@ -22,22 +27,24 @@ export type PersonDetectionResult = {
   coverage: PersonDetectionCoverage;
 };
 
-type LocalNerPipeline = (
-  text: string,
-  options?: {
-    ignore_labels?: string[];
-    aggregation_strategy?: "none" | "simple";
-  }
-) => Promise<NerToken[]>;
+type LocalNerPipeline = {
+  (
+    text: string,
+    options?: {
+      ignore_labels?: string[];
+      aggregation_strategy?: "none" | "simple";
+    }
+  ): Promise<unknown>;
+  tokenizer: NerTokenizer;
+};
 
-const MODEL_ID = "accord-ner-v0.2";
+const MODEL_ID = "accord-ner-v0.3.1";
 const MODEL_THRESHOLD = 0.5;
-const MODEL_DETECTOR = "accord_ner_v0_2";
+const MODEL_DETECTOR = "accord_ner_v0_3_1";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 let runtimeConfigured = false;
 let pipelinePromise: Promise<LocalNerPipeline> | null = null;
-let assetProbePromise: Promise<void> | null = null;
 
 export async function warmPersonDetector(): Promise<void> {
   await getNerPipeline();
@@ -78,10 +85,6 @@ export async function detectPersonCandidates(text: string, timeoutMs = DEFAULT_T
     console.error(
       `[Accord NER] local model failed | model=${MODEL_ID} | timedOut=${timedOut} | ${errorDetails.name}: ${errorDetails.message}`
     );
-    if (errorDetails.stack) {
-      console.error("[Accord NER] failure stack", errorDetails.stack);
-    }
-
     return {
       candidates: [],
       coverage: coverage(
@@ -97,12 +100,21 @@ export async function detectPersonCandidates(text: string, timeoutMs = DEFAULT_T
 
 async function detectWithLocalNer(text: string): Promise<ExternalEntityCandidate[]> {
   const classifier = await getNerPipeline();
-  const output = await classifier(text, {
-    ignore_labels: ["O"],
-    aggregation_strategy: "simple"
+  const rawOutput = await classifier(text, {
+    ignore_labels: [],
+    aggregation_strategy: "none"
   });
+  const output = Array.isArray(rawOutput) && !Array.isArray(rawOutput[0])
+    ? rawOutput as NerToken[]
+    : [];
+  const aligned = addSourceOffsetsToNerTokens(text, output, classifier.tokenizer);
 
-  return normalizeNerPersonTokens(text, output, MODEL_DETECTOR)
+  return normalizeOffsetNerPersonTokens(
+    text,
+    aligned,
+    MODEL_DETECTOR,
+    { leadingIPerson: "drop" }
+  )
     .filter((candidate) => candidate.confidence >= MODEL_THRESHOLD)
     .map((candidate) => ({
       ...candidate,
@@ -114,10 +126,9 @@ async function getNerPipeline(): Promise<LocalNerPipeline> {
   configureLocalRuntime();
 
   if (!pipelinePromise) {
-    pipelinePromise = probeLocalAssets()
-      .then(() => pipeline("token-classification", MODEL_ID, {
-        dtype: "q8"
-      }))
+    pipelinePromise = pipeline("token-classification", MODEL_ID, {
+      dtype: "q8"
+    })
       .then((loaded) => loaded as unknown as LocalNerPipeline)
       .catch((error) => {
         pipelinePromise = null;
@@ -141,16 +152,6 @@ function configureLocalRuntime() {
   env.useWasmCache = false;
   env.localModelPath = chrome.runtime.getURL("models/");
 
-  console.info("[Accord NER] fetch runtime", {
-    hasGlobalFetch: typeof globalThis.fetch === "function",
-    hasEnvFetch: typeof env.fetch === "function",
-    sameFetch: env.fetch === globalThis.fetch,
-    useFS: env.useFS,
-    allowLocalModels: env.allowLocalModels,
-    allowRemoteModels: env.allowRemoteModels,
-    localModelPath: env.localModelPath
-  });
-
   if (typeof globalThis.fetch === "function" && env.fetch !== globalThis.fetch) {
     env.fetch = globalThis.fetch.bind(globalThis);
   }
@@ -168,33 +169,6 @@ function configureLocalRuntime() {
   wasm.numThreads = 1;
 
   runtimeConfigured = true;
-}
-
-function probeLocalAssets(): Promise<void> {
-  if (!assetProbePromise) {
-    assetProbePromise = Promise.all([
-      probeLocalAsset("config.json", chrome.runtime.getURL("models/accord-ner-v0.2/config.json")),
-      probeLocalAsset("tokenizer.json", chrome.runtime.getURL("models/accord-ner-v0.2/tokenizer.json")),
-      probeLocalAsset(
-        "ort-wasm-simd-threaded.asyncify.wasm",
-        chrome.runtime.getURL("ort/ort-wasm-simd-threaded.asyncify.wasm")
-      )
-    ]).then(() => undefined);
-  }
-
-  return assetProbePromise;
-}
-
-async function probeLocalAsset(asset: string, url: string): Promise<void> {
-  const response = await globalThis.fetch(url);
-  console.info("[Accord NER] asset probe", {
-    asset,
-    url,
-    ok: response.ok,
-    status: response.status,
-    contentType: response.headers.get("content-type")
-  });
-  await response.body?.cancel();
 }
 
 function coverage(

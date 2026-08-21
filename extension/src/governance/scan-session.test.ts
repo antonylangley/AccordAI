@@ -52,7 +52,7 @@ describe("Accord Guard scan session", () => {
     expect(result.sanitizedText).toContain("[PERSON_1]");
     expect(result.sanitizedText).toContain("[EMAIL_1]");
     expect(result.personDetection.nerStatus).toBe("ready");
-    expect(result.personDetection.model.name).toBe("accord-ner-v0.2");
+    expect(result.personDetection.model.name).toBe("accord-ner-v0.3.1");
   });
 
   test("keeps exact repeated entities stable in one conversation", async () => {
@@ -405,17 +405,17 @@ function personResult(text: string, people: readonly string[]) {
         start,
         end: start + originalText.length,
         confidence: 0.99,
-        detector: "accord_ner_v0_2_test",
+        detector: "accord_ner_v0_3_1_test",
         contextSignals: ["ner_person"]
       };
     }),
     coverage: {
       mode: "local-ner" as const,
       nerStatus: "ready" as const,
-      detector: "accord_ner_v0_2_test",
+      detector: "accord_ner_v0_3_1_test",
       candidateCount: people.length,
       timedOut: false,
-      model: { name: "accord-ner-v0.2", assetSizeBytes: 0, executionContext: "service_worker" as const }
+      model: { name: "accord-ner-v0.3.1", assetSizeBytes: 0, executionContext: "service_worker" as const }
     }
   };
 }

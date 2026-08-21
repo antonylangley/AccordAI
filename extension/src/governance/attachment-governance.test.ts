@@ -353,17 +353,17 @@ function personResult(text: string, people: readonly string[]) {
         start,
         end: start + originalText.length,
         confidence: 0.99,
-        detector: "accord_ner_v0_2_test",
+        detector: "accord_ner_v0_3_1_test",
         contextSignals: ["ner_person"]
       };
     }),
     coverage: {
       mode: "local-ner" as const,
       nerStatus: "ready" as const,
-      detector: "accord_ner_v0_2_test",
+      detector: "accord_ner_v0_3_1_test",
       candidateCount: people.length,
       timedOut: false,
-      model: { name: "accord-ner-v0.2", assetSizeBytes: 0, executionContext: "service_worker" as const }
+      model: { name: "accord-ner-v0.3.1", assetSizeBytes: 0, executionContext: "service_worker" as const }
     }
   };
 }

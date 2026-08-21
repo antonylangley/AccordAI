@@ -1,0 +1,150 @@
+{"text":"Ask Priya Shah to approve the revised access request.","entities":[{"type":"PERSON","start":4,"end":14,"text":"Priya Shah"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:0"}
+{"text":"Daniel Brooks completed the vendor assessment yesterday.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Daniel Brooks"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:1"}
+{"text":"Please route the incident summary to Chloe Bennett.","entities":[{"type":"PERSON","start":37,"end":50,"text":"Chloe Bennett"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:2"}
+{"text":"Ethan Wallace owns the remediation checklist.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Ethan Wallace"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:3"}
+{"text":"Natalie Kim reviewed the quarterly control evidence.","entities":[{"type":"PERSON","start":0,"end":11,"text":"Natalie Kim"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:4"}
+{"text":"Owen Murphy will lead the customer follow-up.","entities":[{"type":"PERSON","start":0,"end":11,"text":"Owen Murphy"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:5"}
+{"text":"Rebecca Turner signed the updated data agreement.","entities":[{"type":"PERSON","start":0,"end":14,"text":"Rebecca Turner"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:6"}
+{"text":"Caleb Foster joined the compliance review.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Caleb Foster"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:7"}
+{"text":"Maya Patel escalated the unusual login activity.","entities":[{"type":"PERSON","start":0,"end":10,"text":"Maya Patel"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:8"}
+{"text":"Lucas Reed prepared the deployment notes.","entities":[{"type":"PERSON","start":0,"end":10,"text":"Lucas Reed"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:9"}
+{"text":"Sofia Ramirez approved the retention exception.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Sofia Ramirez"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:10"}
+{"text":"Henry Collins requested a second security review.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Henry Collins"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:11"}
+{"text":"Grace Mitchell updated the audit workbook.","entities":[{"type":"PERSON","start":0,"end":14,"text":"Grace Mitchell"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:12"}
+{"text":"Noah Sanders reported the missing attachment.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Noah Sanders"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:13"}
+{"text":"Lily Chen accepted the calendar invitation.","entities":[{"type":"PERSON","start":0,"end":9,"text":"Lily Chen"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:14"}
+{"text":"Isaac Coleman verified the backup procedure.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Isaac Coleman"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:15"}
+{"text":"Emma Richardson owns the procurement ticket.","entities":[{"type":"PERSON","start":0,"end":15,"text":"Emma Richardson"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:16"}
+{"text":"Julian Price sent the corrected invoice.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Julian Price"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:17"}
+{"text":"Zoe Harrison documented the policy decision.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Zoe Harrison"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:18"}
+{"text":"Samuel Wright scheduled the risk workshop.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Samuel Wright"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:19"}
+{"text":"Avery Morgan reopened the support case.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Avery Morgan"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:20"}
+{"text":"Claire Evans confirmed the delivery window.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Claire Evans"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:21"}
+{"text":"Nathan Cooper archived the obsolete records.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Nathan Cooper"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:22"}
+{"text":"Leah Parker presented the investigation findings.","entities":[{"type":"PERSON","start":0,"end":11,"text":"Leah Parker"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:23"}
+{"text":"Victor Hughes assigned the final action items.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Victor Hughes"}],"category":"ordinary","group":"browser-benchmark-v1:ordinary:24"}
+{"text":"email devon carter the finalized agenda","entities":[{"type":"PERSON","start":6,"end":18,"text":"devon carter"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:0"}
+{"text":"tell amina yusuf the credentials were rotated","entities":[{"type":"PERSON","start":5,"end":16,"text":"amina yusuf"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:1"}
+{"text":"please notify colin baker about the maintenance window","entities":[{"type":"PERSON","start":14,"end":25,"text":"colin baker"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:2"}
+{"text":"ask lucia romero to verify the export","entities":[{"type":"PERSON","start":4,"end":16,"text":"lucia romero"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:3"}
+{"text":"forward the exception request to harold green","entities":[{"type":"PERSON","start":33,"end":45,"text":"harold green"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:4"}
+{"text":"remind jasmine ford to close the ticket","entities":[{"type":"PERSON","start":7,"end":19,"text":"jasmine ford"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:5"}
+{"text":"cc trevor mills on the customer response","entities":[{"type":"PERSON","start":3,"end":15,"text":"trevor mills"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:6"}
+{"text":"send nadia rahman the updated controls","entities":[{"type":"PERSON","start":5,"end":17,"text":"nadia rahman"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:7"}
+{"text":"invite elliot stone to the privacy review","entities":[{"type":"PERSON","start":7,"end":19,"text":"elliot stone"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:8"}
+{"text":"message kiara james when the build completes","entities":[{"type":"PERSON","start":8,"end":19,"text":"kiara james"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:9"}
+{"text":"have derek owens inspect the access logs","entities":[{"type":"PERSON","start":5,"end":16,"text":"derek owens"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:10"}
+{"text":"let monica bell know the file was quarantined","entities":[{"type":"PERSON","start":4,"end":15,"text":"monica bell"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:11"}
+{"text":"assign the audit task to ryan webb","entities":[{"type":"PERSON","start":25,"end":34,"text":"ryan webb"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:12"}
+{"text":"ask paula diaz for a status update","entities":[{"type":"PERSON","start":4,"end":14,"text":"paula diaz"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:13"}
+{"text":"share the redacted copy with simon clark","entities":[{"type":"PERSON","start":29,"end":40,"text":"simon clark"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:14"}
+{"text":"tell fatima ali the request was approved","entities":[{"type":"PERSON","start":5,"end":15,"text":"fatima ali"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:15"}
+{"text":"email bruce young before the release","entities":[{"type":"PERSON","start":6,"end":17,"text":"bruce young"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:16"}
+{"text":"ping helena cruz about the renewal","entities":[{"type":"PERSON","start":5,"end":16,"text":"helena cruz"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:17"}
+{"text":"ask omar farouk to review the alert","entities":[{"type":"PERSON","start":4,"end":15,"text":"omar farouk"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:18"}
+{"text":"send the meeting link to megan ross","entities":[{"type":"PERSON","start":25,"end":35,"text":"megan ross"}],"category":"lowercase","group":"browser-benchmark-v1:lowercase:19"}
+{"text":"Jordan approved the report after the control review.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Jordan"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:0"}
+{"text":"Taylor confirmed that the incident was contained.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Taylor"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:1"}
+{"text":"Cameron signed the visitor access form.","entities":[{"type":"PERSON","start":0,"end":7,"text":"Cameron"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:2"}
+{"text":"Riley asked for the encrypted archive.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Riley"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:3"}
+{"text":"Casey owns the vendor escalation.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Casey"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:4"}
+{"text":"Morgan submitted the expense exception.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Morgan"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:5"}
+{"text":"Avery completed the employee verification.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Avery"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:6"}
+{"text":"Parker requested an updated timeline.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Parker"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:7"}
+{"text":"Quinn joined the legal review call.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Quinn"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:8"}
+{"text":"Reese approved the temporary permission.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Reese"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:9"}
+{"text":"Skyler reported the failed authentication.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Skyler"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:10"}
+{"text":"Dakota reviewed the customer complaint.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Dakota"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:11"}
+{"text":"Robin accepted responsibility for the follow-up.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Robin"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:12"}
+{"text":"Jamie will present the findings tomorrow.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Jamie"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:13"}
+{"text":"May personally approved the request and signed the form.","entities":[{"type":"PERSON","start":0,"end":3,"text":"May"}],"category":"first_name_only","group":"browser-benchmark-v1:first_name_only:14"}
+{"text":"Élodie Martin validated the French localization notes.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Élodie Martin"}],"category":"unicode","group":"browser-benchmark-v1:unicode:0"}
+{"text":"Please ask Ana María López to sign the privacy addendum.","entities":[{"type":"PERSON","start":11,"end":26,"text":"Ana María López"}],"category":"unicode","group":"browser-benchmark-v1:unicode:1"}
+{"text":"Søren Nielsen completed the Nordic supplier review.","entities":[{"type":"PERSON","start":0,"end":13,"text":"Søren Nielsen"}],"category":"unicode","group":"browser-benchmark-v1:unicode:2"}
+{"text":"Łukasz Kowalski reported the certificate failure.","entities":[{"type":"PERSON","start":0,"end":15,"text":"Łukasz Kowalski"}],"category":"unicode","group":"browser-benchmark-v1:unicode:3"}
+{"text":"İpek Yılmaz approved the regional access change.","entities":[{"type":"PERSON","start":0,"end":11,"text":"İpek Yılmaz"}],"category":"unicode","group":"browser-benchmark-v1:unicode:4"}
+{"text":"Renée Dubois documented the customer consent.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Renée Dubois"}],"category":"unicode","group":"browser-benchmark-v1:unicode:5"}
+{"text":"Jiří Novák prepared the Czech audit response.","entities":[{"type":"PERSON","start":0,"end":10,"text":"Jiří Novák"}],"category":"unicode","group":"browser-benchmark-v1:unicode:6"}
+{"text":"Zoë van Dijk reviewed the incident chronology.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Zoë van Dijk"}],"category":"unicode","group":"browser-benchmark-v1:unicode:7"}
+{"text":"María José García owns the regulatory filing.","entities":[{"type":"PERSON","start":0,"end":17,"text":"María José García"}],"category":"unicode","group":"browser-benchmark-v1:unicode:8"}
+{"text":"João da Silva confirmed the remediation date.","entities":[{"type":"PERSON","start":0,"end":13,"text":"João da Silva"}],"category":"unicode","group":"browser-benchmark-v1:unicode:9"}
+{"text":"Дмитрий Иванов отправил итоговый отчет.","entities":[{"type":"PERSON","start":0,"end":14,"text":"Дмитрий Иванов"}],"category":"unicode","group":"browser-benchmark-v1:unicode:10"}
+{"text":"Олена Коваль підтвердила отримання документа.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Олена Коваль"}],"category":"unicode","group":"browser-benchmark-v1:unicode:11"}
+{"text":"李明 approved the translated contract summary.","entities":[{"type":"PERSON","start":0,"end":2,"text":"李明"}],"category":"unicode","group":"browser-benchmark-v1:unicode:12"}
+{"text":"김민준 reviewed the authentication evidence.","entities":[{"type":"PERSON","start":0,"end":3,"text":"김민준"}],"category":"unicode","group":"browser-benchmark-v1:unicode:13"}
+{"text":"佐藤 美咲 confirmed the meeting schedule.","entities":[{"type":"PERSON","start":0,"end":5,"text":"佐藤 美咲"}],"category":"unicode","group":"browser-benchmark-v1:unicode:14"}
+{"text":"maría josé garcía approved the travel exception.","entities":[{"type":"PERSON","start":0,"end":17,"text":"maría josé garcía"}],"category":"unicode","group":"browser-benchmark-v1:unicode:15"}
+{"text":"joão da silva completed the Portuguese review.","entities":[{"type":"PERSON","start":0,"end":13,"text":"joão da silva"}],"category":"unicode","group":"browser-benchmark-v1:unicode:16"}
+{"text":"élodie martin accepted the updated invitation.","entities":[{"type":"PERSON","start":0,"end":13,"text":"élodie martin"}],"category":"unicode","group":"browser-benchmark-v1:unicode:17"}
+{"text":"sławomir żółć verified the encoding fix.","entities":[{"type":"PERSON","start":0,"end":13,"text":"sławomir żółć"}],"category":"unicode","group":"browser-benchmark-v1:unicode:18"}
+{"text":"núria puig closed the Barcelona support case.","entities":[{"type":"PERSON","start":0,"end":10,"text":"núria puig"}],"category":"unicode","group":"browser-benchmark-v1:unicode:19"}
+{"text":"Jean-Pierre approved the architecture decision.","entities":[{"type":"PERSON","start":0,"end":11,"text":"Jean-Pierre"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:0"}
+{"text":"Ask jean-pierre to review the release notes.","entities":[{"type":"PERSON","start":4,"end":15,"text":"jean-pierre"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:1"}
+{"text":"David O'Connor submitted the insurance certificate.","entities":[{"type":"PERSON","start":0,"end":14,"text":"David O'Connor"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:2"}
+{"text":"Please notify david o'connor before deployment.","entities":[{"type":"PERSON","start":14,"end":28,"text":"david o'connor"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:3"}
+{"text":"Miguel de la Cruz owns the migration checklist.","entities":[{"type":"PERSON","start":0,"end":17,"text":"Miguel de la Cruz"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:4"}
+{"text":"José da Costa signed the processing agreement.","entities":[{"type":"PERSON","start":0,"end":13,"text":"José da Costa"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:5"}
+{"text":"Aisha bint Ahmed reviewed the hiring packet.","entities":[{"type":"PERSON","start":0,"end":16,"text":"Aisha bint Ahmed"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:6"}
+{"text":"Mohammed bin Hassan approved the procurement request.","entities":[{"type":"PERSON","start":0,"end":19,"text":"Mohammed bin Hassan"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:7"}
+{"text":"Anna van der Berg escalated the compliance issue.","entities":[{"type":"PERSON","start":0,"end":17,"text":"Anna van der Berg"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:8"}
+{"text":"Luca D'Amico verified the Italian translation.","entities":[{"type":"PERSON","start":0,"end":12,"text":"Luca D'Amico"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:9"}
+{"text":"Mary-Jane Watson prepared the customer briefing.","entities":[{"type":"PERSON","start":0,"end":16,"text":"Mary-Jane Watson"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:10"}
+{"text":"Charles de Gaulle updated the project record.","entities":[{"type":"PERSON","start":0,"end":17,"text":"Charles de Gaulle"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:11"}
+{"text":"Fatima al-Zahra accepted the security exception.","entities":[{"type":"PERSON","start":0,"end":15,"text":"Fatima al-Zahra"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:12"}
+{"text":"João dos Santos completed the evidence upload.","entities":[{"type":"PERSON","start":0,"end":15,"text":"João dos Santos"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:13"}
+{"text":"Noura bint Khalid scheduled the final interview.","entities":[{"type":"PERSON","start":0,"end":17,"text":"Noura bint Khalid"}],"category":"hyphen_apostrophe_particle","group":"browser-benchmark-v1:hyphen_apostrophe_particle:14"}
+{"text":"Jordan approved the report before lunch.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Jordan"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:0"}
+{"text":"The Jordan office is closing for renovations.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:1"}
+{"text":"May approved the request in her role as controller.","entities":[{"type":"PERSON","start":0,"end":3,"text":"May"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:2"}
+{"text":"The May report is ready for distribution.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:3"}
+{"text":"Rose signed the visitor log at reception.","entities":[{"type":"PERSON","start":0,"end":4,"text":"Rose"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:4"}
+{"text":"The Rose project entered its final phase.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:5"}
+{"text":"Grant reviewed the proposed access controls.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Grant"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:6"}
+{"text":"The grant review begins next quarter.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:7"}
+{"text":"Paris confirmed that she received the encrypted file.","entities":[{"type":"PERSON","start":0,"end":5,"text":"Paris"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:8"}
+{"text":"The Paris office remains open this week.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:9"}
+{"text":"Madison approved the updated vendor terms.","entities":[{"type":"PERSON","start":0,"end":7,"text":"Madison"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:10"}
+{"text":"The Madison migration is behind schedule.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:11"}
+{"text":"Hunter completed the employee onboarding form.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Hunter"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:12"}
+{"text":"The hunter process consumed too much memory.","entities":[],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:13"}
+{"text":"Summer signed the final acknowledgment.","entities":[{"type":"PERSON","start":0,"end":6,"text":"Summer"}],"category":"ambiguous_context","group":"browser-benchmark-v1:ambiguous_context:14"}
+{"text":"Morgan Stanley raised its annual forecast.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:0"}
+{"text":"Ralph Lauren reported stronger wholesale demand.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:1"}
+{"text":"Johnson Controls replaced the building sensors.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:2"}
+{"text":"Goldman Sachs expanded its internal compliance program.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:3"}
+{"text":"General Electric renewed the service contract.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:4"}
+{"text":"Johnson & Johnson announced a product update.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:5"}
+{"text":"The Austin office is closing next Friday.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:6"}
+{"text":"The Paris datacenter passed its resilience test.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:7"}
+{"text":"The June report is ready for review.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:8"}
+{"text":"The deadline moved to Tuesday afternoon.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:9"}
+{"text":"Customer Support Team owns this queue.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:10"}
+{"text":"The Identity Platform group approved the change.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:11"}
+{"text":"Project Atlas entered the validation phase.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:12"}
+{"text":"Operation Phoenix remains confidential.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:13"}
+{"text":"Microsoft Teams experienced a brief outage.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:14"}
+{"text":"Adobe Acrobat opened the document correctly.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:15"}
+{"text":"Salesforce generated the opportunity report.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:16"}
+{"text":"Amazon Web Services hosts the staging environment.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:17"}
+{"text":"React State Update triggered another render.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:18"}
+{"text":"Representational State Transfer is an architectural style.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:19"}
+{"text":"The Jordan office network is offline.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:20"}
+{"text":"The May release includes the encryption fix.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:21"}
+{"text":"The Rose dashboard shows vendor risk.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:22"}
+{"text":"The Grant program has no active participants.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:23"}
+{"text":"The Hunter service restarted automatically.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:24"}
+{"text":"The Summer campaign ends in September.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:25"}
+{"text":"The Madison project passed quality assurance.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:26"}
+{"text":"The Lincoln Center contract was renewed.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:27"}
+{"text":"The Ford account requires additional verification.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:28"}
+{"text":"The Wells Fargo integration is disabled.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:29"}
+{"text":"The New York Office policy applies globally.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:30"}
+{"text":"Human Resources reviewed the role description.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:31"}
+{"text":"Privacy Engineering owns the data inventory.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:32"}
+{"text":"The Monday Client Meeting was cancelled.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:33"}
+{"text":"Black Friday traffic exceeded the forecast.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:34"}
+{"text":"The Apollo module exports a default handler.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:35"}
+{"text":"The Cassandra cluster completed compaction.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:36"}
+{"text":"The Jenkins pipeline failed during packaging.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:37"}
+{"text":"The Docker image contains no embedded credentials.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:38"}
+{"text":"The account identifier is CUSTOMER_EXAMPLE_001.","entities":[],"category":"hard_negative","group":"browser-benchmark-v1:hard_negative:39"}
