@@ -33,7 +33,7 @@ import type {
 import { detectPersonCandidates, type PersonDetectionCoverage } from "../person-detection/person-detector";
 import { getActivePolicyBundle } from "../policy/bundle-client";
 import { evaluatePolicyBundle } from "../policy/evaluator";
-import type { AppliedPolicyDecision } from "../policy/types";
+import type { AppliedPolicyDecision, PolicyEvaluationContext } from "../policy/types";
 import { PlaceholderVault } from "./placeholder-vault";
 
 const vault = new PlaceholderVault();
@@ -653,32 +653,55 @@ async function evaluateActivePolicy(
     redactionCount?: number;
   }
 ) {
-  const bundle = await getActivePolicyBundle();
+  const signals = {
+    text,
+    flags: scan.flags,
+    entityCounts: scan.entityCounts,
+    riskScore: scan.riskScore,
+    redactionCount: options.redactionCount ?? scan.redactions.length,
+    sanitizedTextAvailable: options.sanitizedTextAvailable
+  };
+  const context: PolicyEvaluationContext = {
+    provider: "chatgpt",
+    app: "chatgpt",
+    contentType: options.contentType,
+    userGroups: []
+  };
 
-  return evaluatePolicyBundle(
-    bundle,
-    {
-      text,
-      flags: scan.flags,
-      entityCounts: scan.entityCounts,
-      riskScore: scan.riskScore,
-      redactionCount: options.redactionCount ?? scan.redactions.length,
-      sanitizedTextAvailable: options.sanitizedTextAvailable
-    },
-    {
-      provider: "chatgpt",
-      app: "chatgpt",
-      contentType: options.contentType,
-      userGroups: []
-    }
-  );
+  try {
+    const bundle = await getActivePolicyBundle();
+    return evaluatePolicyBundle(bundle, signals, context);
+  } catch (error) {
+    console.info("[Accord Policy] evaluation unavailable", {
+      errorStage: "bundle_or_evaluator",
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      policyFallback: "accord_core_only"
+    });
+    return evaluatePolicyBundle(null, signals, context);
+  }
 }
 
 function mergeScannerAndPolicyDecision(scannerDecision: ChatPolicyDecision, policy: AppliedPolicyDecision): ChatPolicyDecision {
-  if (!policy.triggered) return scannerDecision;
+  if (!policy.triggered) {
+    console.info("[Accord Policy] decision merge", {
+      coreAction: scannerDecision.action,
+      policyAction: policy.policyAction,
+      policyMatchCount: 0,
+      finalAction: scannerDecision.action,
+      enforcementSource: "accord_core"
+    });
+    return scannerDecision;
+  }
 
   const policyAction = policy.executionAction === "redact" ? "redact" : policy.executionAction;
   const action = higherPriorityAction(scannerDecision.action, policyAction);
+  console.info("[Accord Policy] decision merge", {
+    coreAction: scannerDecision.action,
+    policyAction: policy.policyAction,
+    policyMatchCount: policy.matchedRuleIds.length,
+    finalAction: action,
+    enforcementSource: action === policyAction ? policy.rule?.source.type || "organization_policy" : "accord_core"
+  });
 
   return {
     action,

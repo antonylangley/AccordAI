@@ -3,8 +3,13 @@ import {
   BUILT_IN_POLICY_BUNDLES,
   DEFAULT_APPROVED_AI_PROVIDERS,
   POLICY_SCHEMA_VERSION,
-  builtInRulesForSelection
+  builtInRulesForSelection,
+  detectPolicyConcepts,
+  evaluatePolicyRule,
+  evaluatePolicySet,
+  retrievePolicyCandidates
 } from "@accord/governance-core";
+import type { PolicyEvaluationInput } from "@accord/governance-core";
 import { evaluatePolicyBundle } from "./evaluator";
 import type { PublishedPolicyBundle } from "./types";
 
@@ -133,6 +138,76 @@ describe("policy bundle evaluator", () => {
 
     expect(decision.executionAction).toBe("redact");
     expect(decision.rule?.category).toBe("CLIENT_VETERINARY_DATA");
+  });
+
+  test("evaluates the published veterinary rules with PERSON and EMAIL metadata", () => {
+    const bundle = testBundle();
+    const text =
+      "Summarize this veterinary case. The owner is Sarah Chen, her email is sarah.chen@example.com, and her dog Bella presented with vomiting and shaking.";
+    const input: PolicyEvaluationInput = {
+      text,
+      detectors: ["PERSON", "EMAIL"],
+      context: {
+        provider: "chatgpt",
+        app: "chatgpt",
+        contentType: "prompt" as const,
+        userGroups: [],
+        approvedProviders: bundle.approvedProviders
+      },
+      redactionAvailable: true
+    };
+    const rules = bundle.rules.filter((rule) => rule.source.bundleId === "accord.client-veterinary-data");
+    const concepts = detectPolicyConcepts(text);
+    const candidates = retrievePolicyCandidates(rules, input);
+    const breakdown = Object.fromEntries(
+      rules.map((rule) => {
+        const candidate = candidates.find((value) => value.rule.id === rule.id);
+        const evaluation = candidate ? evaluatePolicyRule(candidate, input, concepts) : null;
+        return [rule.id, { retrieved: Boolean(candidate), evaluation }];
+      })
+    );
+
+    expect(breakdown["accord.client.identifiers.redact"]).toMatchObject({
+      retrieved: true,
+      evaluation: { matched: true, action: "REDACT" }
+    });
+    expect(breakdown["accord.veterinary.case-identifiers.redact"]).toMatchObject({
+      retrieved: true,
+      evaluation: { matched: true, action: "REDACT" }
+    });
+    expect(breakdown["accord.veterinary.full-record.unapproved"].evaluation?.matched || false).toBe(false);
+  });
+
+  test("holds unpublished financials while allowing public financial reporting", () => {
+    const bundle = testBundle();
+    const confidentialText =
+      "Our unreleased Q4 operating forecast is $18.4 million and margins are expected to fall 7%. Analyze what we should change before the board meeting.";
+    const publicText = "Microsoft publicly released its quarterly earnings yesterday. Summarize the results.";
+    const makeInput = (text: string) => ({
+      text,
+      detectors: [],
+      context: {
+        provider: "chatgpt",
+        app: "chatgpt",
+        contentType: "prompt" as const,
+        userGroups: [],
+        approvedProviders: bundle.approvedProviders
+      },
+      redactionAvailable: false
+    });
+
+    const confidential = evaluatePolicySet(bundle.rules, makeInput(confidentialText));
+    const publicInformation = evaluatePolicySet(bundle.rules, makeInput(publicText));
+
+    expect(detectPolicyConcepts(confidentialText)).toEqual(
+      expect.arrayContaining(["CONFIDENTIAL_BUSINESS", "UNPUBLISHED_FINANCIALS"])
+    );
+    expect(confidential).toMatchObject({ triggered: true, action: "HOLD" });
+    expect(confidential.matchedRuleIds).toEqual(
+      expect.arrayContaining(["accord.confidential.unpublished-financials", "accord.external-ai.confidential.unapproved"])
+    );
+    expect(detectPolicyConcepts(publicText)).toContain("PUBLIC_INFORMATION");
+    expect(publicInformation).toMatchObject({ triggered: false, action: "ALLOW" });
   });
 });
 

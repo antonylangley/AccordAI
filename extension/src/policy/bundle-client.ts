@@ -1,7 +1,7 @@
 import { validatePublishedEnforcementBundle } from "@accord/governance-core";
 import type { PublishedPolicyBundle } from "./types";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:3000";
+const DEFAULT_API_BASE_URL = "https://www.accordgovernance.com";
 const API_BASE_URL_KEY = "accordApiBaseUrl";
 const COMPANY_SLUG_KEY = "accordCompanySlug";
 const CACHE_KEY_PREFIX = "accordPolicyBundle";
@@ -14,13 +14,30 @@ let memoryCache: {
 } | null = null;
 
 export async function getActivePolicyBundle() {
-  if (!globalThis.chrome?.storage?.local) return null;
+  if (!globalThis.chrome?.storage?.local) {
+    logBundleDiagnostic({
+      requestStarted: false,
+      responseReceived: false,
+      validationPassed: false,
+      cacheHit: false,
+      errorStage: "storage_unavailable"
+    });
+    return null;
+  }
 
   const settings = await getSettings();
   const companySlug = normalizeSlug(settings[COMPANY_SLUG_KEY] || "test-company");
   const now = Date.now();
 
   if (memoryCache && memoryCache.companySlug === companySlug && now - memoryCache.fetchedAt < FETCH_TTL_MS) {
+    logBundleDiagnostic({
+      requestStarted: false,
+      responseReceived: false,
+      validationPassed: memoryCache.bundle !== null,
+      cacheHit: true,
+      cacheVersion: memoryCache.bundle?.version,
+      ...bundleMetadata(memoryCache.bundle)
+    });
     return memoryCache.bundle;
   }
 
@@ -28,21 +45,64 @@ export async function getActivePolicyBundle() {
 
   try {
     const apiBaseUrl = sanitizeApiBaseUrl(settings[API_BASE_URL_KEY] || DEFAULT_API_BASE_URL);
+    const requestUrlHost = safeHost(apiBaseUrl);
+    logBundleDiagnostic({
+      requestStarted: true,
+      requestUrlHost,
+      responseReceived: false,
+      validationPassed: false,
+      cacheHit: false,
+      cacheVersion: cached?.version
+    });
     const response = await fetch(`${apiBaseUrl}/api/guard/policy-bundle?companySlug=${encodeURIComponent(companySlug)}`, {
       cache: "no-store"
     });
 
     if (!response.ok) {
+      logBundleDiagnostic({
+        requestStarted: true,
+        requestUrlHost,
+        httpStatus: response.status,
+        responseReceived: true,
+        validationPassed: false,
+        cacheHit: cached !== null,
+        cacheVersion: cached?.version,
+        errorStage: "http_response"
+      });
       memoryCache = { companySlug, fetchedAt: now, bundle: cached };
       return cached;
     }
 
     const body = (await response.json()) as { bundle?: PublishedPolicyBundle | null };
     const bundle = isPublishedBundle(body.bundle) ? body.bundle : null;
+    logBundleDiagnostic({
+      requestStarted: true,
+      requestUrlHost,
+      httpStatus: response.status,
+      responseReceived: true,
+      validationPassed: bundle !== null,
+      cacheHit: bundle === null && cached !== null,
+      cacheVersion: cached?.version,
+      errorStage: bundle === null ? "schema_validation" : undefined,
+      errorMessage: bundle === null ? "Published bundle failed schema v2 validation." : undefined,
+      ...bundleMetadata(body.bundle)
+    });
     if (bundle) await writeCachedBundle(companySlug, bundle);
     memoryCache = { companySlug, fetchedAt: now, bundle };
     return bundle || cached;
-  } catch {
+  } catch (error) {
+    const details = safeError(error);
+    logBundleDiagnostic({
+      requestStarted: true,
+      requestUrlHost: safeHost(settings[API_BASE_URL_KEY] || DEFAULT_API_BASE_URL),
+      responseReceived: false,
+      validationPassed: false,
+      cacheHit: cached !== null,
+      cacheVersion: cached?.version,
+      errorStage: "request",
+      errorName: details.name,
+      errorMessage: details.message
+    });
     memoryCache = { companySlug, fetchedAt: now, bundle: cached };
     return cached;
   }
@@ -104,4 +164,54 @@ function normalizeSlug(value: string) {
 
 function isPublishedBundle(value: unknown): value is PublishedPolicyBundle {
   return validatePublishedEnforcementBundle(value);
+}
+
+type BundleDiagnostic = {
+  requestStarted: boolean;
+  requestUrlHost?: string;
+  httpStatus?: number;
+  responseReceived: boolean;
+  schemaVersion?: number;
+  bundleVersion?: number;
+  bundleChecksum?: string;
+  totalRuleCount?: number;
+  enabledBuiltInBundleCount?: number;
+  approvedProviderCount?: number;
+  cacheHit: boolean;
+  cacheVersion?: number;
+  validationPassed: boolean;
+  errorStage?: string;
+  errorName?: string;
+  errorMessage?: string;
+};
+
+function bundleMetadata(value: unknown): Partial<BundleDiagnostic> {
+  if (!value || typeof value !== "object") return {};
+  const candidate = value as Record<string, unknown>;
+  return {
+    schemaVersion: typeof candidate.schemaVersion === "number" ? candidate.schemaVersion : undefined,
+    bundleVersion: typeof candidate.version === "number" ? candidate.version : undefined,
+    bundleChecksum: typeof candidate.checksum === "string" ? candidate.checksum : undefined,
+    totalRuleCount: Array.isArray(candidate.rules) ? candidate.rules.length : undefined,
+    enabledBuiltInBundleCount: Array.isArray(candidate.enabledBuiltInBundleIds) ? candidate.enabledBuiltInBundleIds.length : undefined,
+    approvedProviderCount: Array.isArray(candidate.approvedProviders) ? candidate.approvedProviders.length : undefined
+  };
+}
+
+function safeHost(value: string) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "invalid_url";
+  }
+}
+
+function safeError(error: unknown) {
+  return error instanceof Error
+    ? { name: error.name, message: error.message }
+    : { name: "UnknownError", message: String(error) };
+}
+
+function logBundleDiagnostic(diagnostic: BundleDiagnostic) {
+  console.info("[Accord Policy] bundle fetch", diagnostic);
 }

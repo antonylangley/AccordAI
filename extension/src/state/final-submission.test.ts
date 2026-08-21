@@ -42,6 +42,53 @@ describe("final submission controller", () => {
     expect(submitTrusted).toHaveBeenCalledTimes(1);
   });
 
+  test("blocks a policy-only hold without detector decorations", async () => {
+    const submitTrusted = vi.fn();
+    const onState = vi.fn();
+    const outcome = await runFinalSubmissionDecision({
+      readDraft: () => "Confidential business prompt.",
+      scan: async () => scanResult({
+        action: "block",
+        explanation: "An organization policy requires an approved provider.",
+        enforcementSource: "accord_builtin",
+        decorations: [],
+        policy: policyDecision("HOLD")
+      }),
+      setDraftText: vi.fn(),
+      verifyDraftText: () => "Confidential business prompt.",
+      submitTrusted,
+      onState
+    });
+
+    expect(outcome).toBe("blocked");
+    expect(submitTrusted).not.toHaveBeenCalled();
+    expect(onState).toHaveBeenCalledWith(expect.objectContaining({ phase: "blocked" }));
+  });
+
+  test("keeps a policy hold stronger than Core redaction", async () => {
+    const submitTrusted = vi.fn();
+    const outcome = await runFinalSubmissionDecision({
+      readDraft: () => "Full client record for John Smith.",
+      scan: async () => scanResult({
+        action: "block",
+        detectedEntityCount: 1,
+        entityCounts: { PERSON: 1 },
+        decorations: [{ type: "PERSON", start: 23, end: 33, placeholder: "[PERSON_1]" }],
+        explanation: "The full record requires an approved provider.",
+        enforcementSource: "accord_builtin",
+        policy: policyDecision("HOLD"),
+        sanitizedText: "Full client record for [PERSON_1]."
+      }),
+      setDraftText: vi.fn(),
+      verifyDraftText: () => "Full client record for John Smith.",
+      submitTrusted,
+      onState: vi.fn()
+    });
+
+    expect(outcome).toBe("blocked");
+    expect(submitTrusted).not.toHaveBeenCalled();
+  });
+
   test("trusted submission gate prevents recursive raw interception loops", () => {
     const gate = new TrustedSubmissionGate();
 
@@ -77,5 +124,17 @@ function scanResult(overrides: Partial<SafeScanResult>): SafeScanResult {
       }
     },
     ...overrides
+  };
+}
+
+function policyDecision(action: "HOLD" | "BLOCK"): NonNullable<SafeScanResult["policy"]> {
+  return {
+    triggered: true,
+    executionAction: "block",
+    policyAction: action,
+    explanation: "Policy intervention required.",
+    detectedCategories: [],
+    matchedRuleIds: ["rule_test"],
+    retrievedRuleIds: ["rule_test"]
   };
 }

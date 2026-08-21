@@ -1,16 +1,27 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { scanText } from "@accord/governance-core";
+import {
+  BUILT_IN_POLICY_BUNDLES,
+  DEFAULT_APPROVED_AI_PROVIDERS,
+  POLICY_SCHEMA_VERSION,
+  builtInRulesForSelection,
+  scanText
+} from "@accord/governance-core";
 import { rehydrateAssistantText, scanDraft } from "./scan-session";
+import type { PublishedPolicyBundle } from "../policy/types";
 
 const personDetector = vi.hoisted(() => ({ detectPersonCandidates: vi.fn() }));
+const policyBundleClient = vi.hoisted(() => ({ getActivePolicyBundle: vi.fn() }));
 
 vi.mock("../person-detection/person-detector", () => personDetector);
+vi.mock("../policy/bundle-client", () => policyBundleClient);
 
 const store: Record<string, unknown> = {};
 
 beforeEach(() => {
   personDetector.detectPersonCandidates.mockReset();
   personDetector.detectPersonCandidates.mockImplementation(async () => noPeople());
+  policyBundleClient.getActivePolicyBundle.mockReset();
+  policyBundleClient.getActivePolicyBundle.mockResolvedValue(null);
   for (const key of Object.keys(store)) delete store[key];
   globalThis.chrome = {
     storage: {
@@ -82,6 +93,56 @@ describe("Accord Guard scan session", () => {
     expect(result.flags[0]?.source).toBe("accord_core");
     expect(result.enforcementSource).toBe("accord_core");
     expect(result.sanitizedText).not.toContain("sk-1234567890abcdef");
+  });
+
+  test("preserves Core PERSON and EMAIL redaction when policy loading fails", async () => {
+    policyBundleClient.getActivePolicyBundle.mockRejectedValueOnce(new Error("schema mismatch"));
+    const result = await scan(
+      "Email Sarah Chen at sarah.chen@example.com.",
+      "conversation:policy-failure",
+      ["Sarah Chen"]
+    );
+
+    expect(result.action).toBe("redact");
+    expect(result.entityCounts).toMatchObject({ PERSON: 1, EMAIL: 1 });
+    expect(result.sanitizedText).toContain("[PERSON_1]");
+    expect(result.sanitizedText).toContain("[EMAIL_1]");
+  });
+
+  test("enforces a policy-only confidential business hold", async () => {
+    policyBundleClient.getActivePolicyBundle.mockResolvedValueOnce(testPolicyBundle());
+    const result = await scan(
+      "Our unreleased Q4 operating forecast is $18.4 million and margins are expected to fall 7%.",
+      "conversation:policy-only-hold"
+    );
+
+    expect(result.detectedEntityCount).toBe(0);
+    expect(result.action).toBe("block");
+    expect(result.policy?.policyAction).toBe("HOLD");
+    expect(result.enforcementSource).toBe("accord_builtin");
+  });
+
+  test("keeps a policy hold stronger than PERSON and EMAIL redaction", async () => {
+    policyBundleClient.getActivePolicyBundle.mockResolvedValueOnce(testPolicyBundle());
+    const text = "Review the full veterinary record for Sarah Chen at sarah.chen@example.com.";
+    const result = await scan(text, "conversation:policy-hold-core-redact", ["Sarah Chen"]);
+
+    expect(result.entityCounts).toMatchObject({ PERSON: 1, EMAIL: 1 });
+    expect(result.action).toBe("block");
+    expect(result.policy?.policyAction).toBe("HOLD");
+    expect(result.sanitizedText).toContain("[PERSON_1]");
+    expect(result.sanitizedText).toContain("[EMAIL_1]");
+  });
+
+  test("allows public financial information with the policy bundle active", async () => {
+    policyBundleClient.getActivePolicyBundle.mockResolvedValueOnce(testPolicyBundle());
+    const result = await scan(
+      "Microsoft publicly released its quarterly earnings yesterday. Summarize the results.",
+      "conversation:public-financial"
+    );
+
+    expect(result.action).toBe("allow");
+    expect(result.policy).toBeUndefined();
   });
 
   test.each([
@@ -428,5 +489,23 @@ function noPeople(nerStatus: "ready" | "error" | "timeout" = "ready") {
       nerStatus,
       timedOut: nerStatus === "timeout"
     }
+  };
+}
+
+function testPolicyBundle(): PublishedPolicyBundle {
+  const enabledBuiltInBundleIds = BUILT_IN_POLICY_BUNDLES.filter((bundle) => bundle.defaultEnabled).map((bundle) => bundle.id);
+  const rules = builtInRulesForSelection(enabledBuiltInBundleIds);
+  return {
+    schemaVersion: POLICY_SCHEMA_VERSION,
+    id: "bundle_test-policy_1",
+    companySlug: "test-company",
+    version: 1,
+    status: "published",
+    checksum: "test-policy-checksum",
+    ruleCount: rules.length,
+    publishedAt: "2026-08-21T00:00:00.000Z",
+    enabledBuiltInBundleIds,
+    approvedProviders: DEFAULT_APPROVED_AI_PROVIDERS,
+    rules
   };
 }

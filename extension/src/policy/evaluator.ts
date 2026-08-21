@@ -7,11 +7,18 @@ export function evaluatePolicyBundle(
   context: PolicyEvaluationContext
 ): AppliedPolicyDecision {
   const detectedCategories = detectedPolicyCategories(signals);
+  const detectors = detectorSignals(signals);
+  console.info("[Accord Policy] evaluator input", {
+    detectorCounts: safeDetectorCounts(signals.entityCounts),
+    providerId: context.provider,
+    isApprovedProvider: Boolean(bundle?.approvedProviders.includes(context.provider)),
+    policyRuleCount: bundle?.rules.length || 0
+  });
   if (!bundle || !bundle.rules.length) return allowDecision(detectedCategories);
 
   const decision = evaluatePolicySet(bundle.rules, {
     text: signals.text,
-    detectors: detectorSignals(signals),
+    detectors,
     context: {
       ...context,
       approvedProviders: context.approvedProviders || bundle.approvedProviders
@@ -20,10 +27,25 @@ export function evaluatePolicyBundle(
   });
 
   if (!decision.triggered || !decision.primaryRule || !decision.explanation) {
+    console.info("[Accord Policy] evaluator result", {
+      resolvedProviderId: context.provider,
+      isApprovedProvider: bundle.approvedProviders.includes(context.provider),
+      retrievedRuleCount: decision.retrievedRuleIds.length,
+      matchedRuleCount: 0,
+      policyAction: "ALLOW"
+    });
     return { ...allowDecision(detectedCategories), retrievedRuleIds: decision.retrievedRuleIds };
   }
 
   const executionAction = decision.action === "REDACT" ? "redact" : decision.action === "ALLOW" ? "allow" : "block";
+  console.info("[Accord Policy] evaluator result", {
+    resolvedProviderId: context.provider,
+    isApprovedProvider: bundle.approvedProviders.includes(context.provider),
+    retrievedRuleCount: decision.retrievedRuleIds.length,
+    matchedRuleCount: decision.matchedRuleIds.length,
+    policyAction: decision.action,
+    executionAction
+  });
   return {
     triggered: true,
     executionAction,
@@ -38,6 +60,12 @@ export function evaluatePolicyBundle(
     bundleChecksum: bundle.checksum,
     rule: decision.primaryRule
   };
+}
+
+function safeDetectorCounts(entityCounts: EntityCountSummary) {
+  return Object.fromEntries(
+    Object.entries(entityCounts).filter(([, count]) => typeof count === "number" && count > 0)
+  );
 }
 
 export function detectedPolicyCategories(signals: Pick<PolicySignalSet, "flags" | "entityCounts">) {

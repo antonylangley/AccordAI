@@ -40,6 +40,27 @@ describe("policy bundle client", () => {
 
     expect(result?.version).toBe(2);
     expect(store["accordPolicyBundle:test-company"]).toEqual(bundle);
+    expect(fetch).toHaveBeenCalledWith(
+      "https://www.accordgovernance.com/api/guard/policy-bundle?companySlug=test-company",
+      { cache: "no-store" }
+    );
+  });
+
+  test("rejects a legacy response and preserves a valid cached v2 bundle", async () => {
+    const cached = testBundle(3);
+    store["accordPolicyBundle:test-company"] = cached;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ bundle: { id: "legacy", version: 12, rules: [] } })
+      }))
+    );
+
+    const result = await getActivePolicyBundle();
+
+    expect(result).toEqual(cached);
   });
 
   test("uses cached bundle when the policy endpoint is offline", async () => {
