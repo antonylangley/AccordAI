@@ -1,12 +1,18 @@
 import { describe, expect, test } from "vitest";
+import {
+  BUILT_IN_POLICY_BUNDLES,
+  DEFAULT_APPROVED_AI_PROVIDERS,
+  POLICY_SCHEMA_VERSION,
+  builtInRulesForSelection
+} from "@accord/governance-core";
 import { evaluatePolicyBundle } from "./evaluator";
 import type { PublishedPolicyBundle } from "./types";
 
 describe("policy bundle evaluator", () => {
   test("leaves safe prompts untouched", () => {
-    const decision = evaluatePolicyBundle(testBundle(), signals({}), {
-      aiProvider: "chatgpt",
-      destinationType: "personal",
+    const decision = evaluatePolicyBundle(testBundle(), signals({}, "Explain canine pancreatitis."), {
+      provider: "chatgpt",
+      app: "chatgpt",
       contentType: "prompt"
     });
 
@@ -23,16 +29,16 @@ describe("policy bundle evaluator", () => {
         sanitizedTextAvailable: true
       }),
       {
-        aiProvider: "chatgpt",
-        destinationType: "personal",
+        provider: "chatgpt",
+        app: "chatgpt",
         contentType: "prompt"
       }
     );
 
     expect(decision.triggered).toBe(true);
     expect(decision.executionAction).toBe("redact");
-    expect(decision.policyAction).toBe("transform");
-    expect(decision.rule?.sourceSection).toBe("4.2 - Client Information");
+    expect(decision.policyAction).toBe("REDACT");
+    expect(decision.rule?.source.type).toBe("accord_builtin");
   });
 
   test("uses blocking fallback only when transform cannot safely sanitize", () => {
@@ -44,14 +50,14 @@ describe("policy bundle evaluator", () => {
         sanitizedTextAvailable: false
       }),
       {
-        aiProvider: "chatgpt",
-        destinationType: "personal",
+        provider: "chatgpt",
+        app: "chatgpt",
         contentType: "prompt"
       }
     );
 
     expect(decision.executionAction).toBe("block");
-    expect(decision.fallbackAction).toBe("block");
+    expect(decision.policyAction).toBe("HOLD");
   });
 
   test("approved enterprise AI without restricted data is allowed", () => {
@@ -59,10 +65,10 @@ describe("policy bundle evaluator", () => {
       testBundle(),
       signals({
         flags: [{ type: "regulated_financial", label: "Regulated financial context", severity: "high", stage: "preflight", evidence: "test" }]
-      }),
+      }, "Summarize a publicly released earnings report."),
       {
-        aiProvider: "chatgpt",
-        destinationType: "enterprise",
+        provider: "copilot-enterprise",
+        app: "copilot",
         contentType: "prompt"
       }
     );
@@ -78,9 +84,14 @@ describe("policy bundle evaluator", () => {
         {
           ...testBundle().rules[0],
           id: "rule_block",
-          ruleKey: "block_personal_data",
-          action: "block",
-          severity: "critical"
+          title: "Block personal data",
+          action: "BLOCK",
+          severity: "CRITICAL",
+          source: {
+            type: "organization_policy",
+            documentName: "AI Acceptable Use Policy",
+            section: "4.2"
+          }
         }
       ]
     });
@@ -92,53 +103,61 @@ describe("policy bundle evaluator", () => {
         sanitizedTextAvailable: true
       }),
       {
-        aiProvider: "chatgpt",
-        destinationType: "personal",
+        provider: "chatgpt",
+        app: "chatgpt",
         contentType: "prompt"
       }
     );
 
     expect(decision.executionAction).toBe("block");
-    expect(decision.rule?.ruleKey).toBe("block_personal_data");
+    expect(decision.rule?.id).toBe("rule_block");
+  });
+
+  test("applies the same built-in detector rules to supported attachment text", () => {
+    const decision = evaluatePolicyBundle(
+      testBundle(),
+      signals(
+        {
+          entityCounts: { PERSON: 1, EMAIL: 1 },
+          redactionCount: 2,
+          sanitizedTextAvailable: true
+        },
+        "Veterinary discharge notes for the client are attached."
+      ),
+      {
+        provider: "chatgpt",
+        app: "chatgpt",
+        contentType: "attachment"
+      }
+    );
+
+    expect(decision.executionAction).toBe("redact");
+    expect(decision.rule?.category).toBe("CLIENT_VETERINARY_DATA");
   });
 });
 
 function testBundle(overrides: Partial<PublishedPolicyBundle> = {}): PublishedPolicyBundle {
+  const enabledBuiltInBundleIds = BUILT_IN_POLICY_BUNDLES.filter((bundle) => bundle.defaultEnabled).map((bundle) => bundle.id);
+  const rules = builtInRulesForSelection(enabledBuiltInBundleIds);
   return {
+    schemaVersion: POLICY_SCHEMA_VERSION,
     id: "bundle_test_1",
     companySlug: "test-company",
     version: 1,
     status: "published",
     checksum: "checksum",
-    ruleCount: 1,
+    ruleCount: rules.length,
     publishedAt: "2026-07-28T00:00:00.000Z",
-    rules: [
-      {
-        id: "rule_external_ai_client_info_v1",
-        ruleKey: "external_ai_client_info",
-        version: 1,
-        name: "Do not submit client identifiers to personal AI",
-        sourcePolicyName: "External AI Usage Policy",
-        sourceSection: "4.2 - Client Information",
-        supportingExcerpt: "Employees must not submit client identifiers to personal AI.",
-        dataCategories: ["client_identifying_info", "personal_data", "address", "account"],
-        userScope: "all",
-        departmentScope: "all",
-        aiProvider: "chatgpt",
-        destinationType: "personal",
-        action: "transform",
-        fallbackAction: "block",
-        severity: "high",
-        employeeExplanation: "Client identifiers must be removed before submission.",
-        effectiveDate: "2026-07-28"
-      }
-    ],
+    enabledBuiltInBundleIds,
+    approvedProviders: DEFAULT_APPROVED_AI_PROVIDERS,
+    rules,
     ...overrides
   };
 }
 
-function signals(overrides: Partial<Parameters<typeof evaluatePolicyBundle>[1]>): Parameters<typeof evaluatePolicyBundle>[1] {
+function signals(overrides: Partial<Parameters<typeof evaluatePolicyBundle>[1]>, text = "Review this veterinary client record."): Parameters<typeof evaluatePolicyBundle>[1] {
   return {
+    text,
     flags: [],
     entityCounts: {},
     riskScore: 10,

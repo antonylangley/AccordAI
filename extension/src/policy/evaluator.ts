@@ -1,19 +1,5 @@
-import type { EntityCountSummary } from "@accord/governance-core";
-import type {
-  AppliedPolicyDecision,
-  PolicyBundleRule,
-  PolicyEvaluationContext,
-  PolicyRuleAction,
-  PolicySignalSet,
-  PublishedPolicyBundle
-} from "./types";
-
-const precedence: Record<AppliedPolicyDecision["executionAction"], number> = {
-  block: 5,
-  redact: 3,
-  warn: 2,
-  allow: 1
-};
+import { evaluatePolicySet, type EntityCountSummary, type PolicyDetectorSignal } from "@accord/governance-core";
+import type { AppliedPolicyDecision, PolicyEvaluationContext, PolicySignalSet, PublishedPolicyBundle } from "./types";
 
 export function evaluatePolicyBundle(
   bundle: PublishedPolicyBundle | null,
@@ -21,148 +7,76 @@ export function evaluatePolicyBundle(
   context: PolicyEvaluationContext
 ): AppliedPolicyDecision {
   const detectedCategories = detectedPolicyCategories(signals);
-  if (!bundle || !bundle.rules.length || !detectedCategories.length) {
-    return allowDecision(detectedCategories);
+  if (!bundle || !bundle.rules.length) return allowDecision(detectedCategories);
+
+  const decision = evaluatePolicySet(bundle.rules, {
+    text: signals.text,
+    detectors: detectorSignals(signals),
+    context: {
+      ...context,
+      approvedProviders: context.approvedProviders || bundle.approvedProviders
+    },
+    redactionAvailable: signals.redactionCount > 0 && signals.sanitizedTextAvailable
+  });
+
+  if (!decision.triggered || !decision.primaryRule || !decision.explanation) {
+    return { ...allowDecision(detectedCategories), retrievedRuleIds: decision.retrievedRuleIds };
   }
 
-  const candidates = bundle.rules
-    .filter((rule) => ruleMatches(rule, detectedCategories, context))
-    .map((rule) => decisionForRule(bundle, rule, signals, detectedCategories))
-    .sort((a, b) => precedence[b.executionAction] - precedence[a.executionAction] || severityWeight(b.rule?.severity) - severityWeight(a.rule?.severity));
-
-  return candidates[0] || allowDecision(detectedCategories);
-}
-
-export function detectedPolicyCategories(signals: Pick<PolicySignalSet, "flags" | "entityCounts">) {
-  const categories = new Set<string>();
-  const entityCounts = signals.entityCounts || {};
-
-  if (hasEntity(entityCounts, "PERSON") || hasEntity(entityCounts, "EMAIL") || hasEntity(entityCounts, "PHONE")) {
-    categories.add("personal_data");
-    categories.add("client_identifying_info");
-  }
-  if (hasEntity(entityCounts, "ADDRESS")) {
-    categories.add("personal_data");
-    categories.add("client_identifying_info");
-    categories.add("address");
-  }
-  if (hasEntity(entityCounts, "ACCOUNT")) {
-    categories.add("client_identifying_info");
-    categories.add("account");
-    categories.add("payment_information");
-  }
-  if (hasEntity(entityCounts, "SECRET")) {
-    categories.add("secret");
-  }
-
-  for (const flag of signals.flags) {
-    if (flag.type === "regulated_financial") categories.add("regulated_financial_context");
-    if (flag.type === "regulated_medical") {
-      categories.add("regulated_medical_context");
-      categories.add("veterinary_medical_record");
-    }
-    if (flag.type === "regulated_legal") categories.add("regulated_legal_context");
-    if (flag.type === "regulated_hr") categories.add("regulated_hr_context");
-    if (flag.type === "prompt_injection") categories.add("prompt_injection");
-    if (["email", "phone", "address", "account", "possible_name"].includes(flag.type)) {
-      categories.add("personal_data");
-      categories.add("client_identifying_info");
-    }
-  }
-
-  return Array.from(categories).sort();
-}
-
-function decisionForRule(
-  bundle: PublishedPolicyBundle,
-  rule: PolicyBundleRule,
-  signals: PolicySignalSet,
-  detectedCategories: string[]
-): AppliedPolicyDecision {
-  const executionAction = executionActionForRule(rule.action, rule.fallbackAction, signals);
-
+  const executionAction = decision.action === "REDACT" ? "redact" : decision.action === "ALLOW" ? "allow" : "block";
   return {
     triggered: true,
     executionAction,
-    policyAction: rule.action,
-    fallbackAction: rule.fallbackAction,
-    explanation: explanationForDecision(rule, executionAction, detectedCategories),
-    detectedCategories,
+    policyAction: decision.action,
+    explanation: `${decision.explanation.reason} Source: ${decision.explanation.sourceReference}.`,
+    structuredExplanation: decision.explanation,
+    detectedCategories: Array.from(new Set([...detectedCategories, ...decision.detectedConcepts.map((value) => value.toLowerCase())])).sort(),
+    matchedRuleIds: decision.matchedRuleIds,
+    retrievedRuleIds: decision.retrievedRuleIds,
     bundleId: bundle.id,
     bundleVersion: bundle.version,
     bundleChecksum: bundle.checksum,
-    rule
+    rule: decision.primaryRule
   };
 }
 
-function executionActionForRule(action: PolicyRuleAction, fallbackAction: PolicyRuleAction, signals: PolicySignalSet): AppliedPolicyDecision["executionAction"] {
-  if (action === "block" || action === "require_approval") return "block";
-  if (action === "warn") return "warn";
-  if (action === "transform") {
-    if (signals.redactionCount > 0 && signals.sanitizedTextAvailable) return "redact";
-    if (fallbackAction === "block" || fallbackAction === "require_approval") return "block";
-    if (fallbackAction === "warn") return "warn";
-    return "allow";
+export function detectedPolicyCategories(signals: Pick<PolicySignalSet, "flags" | "entityCounts">) {
+  return detectorSignals(signals).map((value) => value.toLowerCase()).sort();
+}
+
+export function detectorSignals(signals: Pick<PolicySignalSet, "flags" | "entityCounts">): PolicyDetectorSignal[] {
+  const detectors = new Set<PolicyDetectorSignal>();
+  const entityCounts = signals.entityCounts || {};
+  for (const entity of ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT", "SECRET"] as const) {
+    if (hasEntity(entityCounts, entity)) detectors.add(entity);
   }
-
-  return "allow";
-}
-
-function ruleMatches(rule: PolicyBundleRule, detectedCategories: string[], context: PolicyEvaluationContext) {
-  const ruleCategories = new Set(rule.dataCategories.map((category) => category.toLowerCase()));
-  const categoryMatch = detectedCategories.some((category) => ruleCategories.has(category.toLowerCase()));
-  if (!categoryMatch) return false;
-
-  return (
-    scopeMatches(rule.aiProvider, context.aiProvider) &&
-    destinationMatches(rule.destinationType, context.destinationType) &&
-    scopeMatches(rule.userScope, context.userScope || "all") &&
-    scopeMatches(rule.departmentScope, context.departmentScope || "all")
-  );
-}
-
-function destinationMatches(ruleDestination: string, actualDestination: string) {
-  return ruleDestination === "any" || ruleDestination === actualDestination;
-}
-
-function scopeMatches(ruleScope: string, actualScope: string) {
-  const normalizedRule = ruleScope.trim().toLowerCase();
-  const normalizedActual = actualScope.trim().toLowerCase();
-  return !normalizedRule || normalizedRule === "all" || normalizedRule === "any" || normalizedRule === normalizedActual;
-}
-
-function explanationForDecision(rule: PolicyBundleRule, executionAction: AppliedPolicyDecision["executionAction"], detectedCategories: string[]) {
-  const detected = detectedCategories.map((category) => category.replace(/_/g, " ")).join(", ");
-  const doing =
-    executionAction === "block"
-      ? "blocking this submission"
-      : executionAction === "redact"
-        ? "transforming it with local redaction"
-        : executionAction === "warn"
-          ? "warning before submission"
-          : "allowing the submission";
-
-  return `Accord detected ${detected}. ${rule.sourcePolicyName} ${rule.sourceSection}: ${rule.employeeExplanation} Accord is ${doing}.`;
+  for (const flag of signals.flags) {
+    if (flag.type === "email") detectors.add("EMAIL");
+    if (flag.type === "phone") detectors.add("PHONE");
+    if (flag.type === "address") detectors.add("ADDRESS");
+    if (flag.type === "account") detectors.add("ACCOUNT");
+    if (flag.type === "possible_name") detectors.add("PERSON");
+    if (flag.type === "secret") detectors.add("SECRET");
+    if (flag.type === "regulated_financial") detectors.add("REGULATED_FINANCIAL");
+    if (flag.type === "regulated_legal") detectors.add("REGULATED_LEGAL");
+    if (flag.type === "regulated_medical") detectors.add("REGULATED_MEDICAL");
+    if (flag.type === "regulated_hr") detectors.add("REGULATED_HR");
+  }
+  return Array.from(detectors).sort();
 }
 
 function allowDecision(detectedCategories: string[]): AppliedPolicyDecision {
   return {
     triggered: false,
     executionAction: "allow",
-    policyAction: "allow",
-    explanation: "No published company policy rule matched.",
-    detectedCategories
+    policyAction: "ALLOW",
+    explanation: "No published company or built-in policy rule matched.",
+    detectedCategories,
+    matchedRuleIds: [],
+    retrievedRuleIds: []
   };
 }
 
 function hasEntity(entityCounts: EntityCountSummary, type: keyof EntityCountSummary) {
   return (entityCounts[type] || 0) > 0;
-}
-
-function severityWeight(severity?: string) {
-  if (severity === "critical") return 4;
-  if (severity === "high") return 3;
-  if (severity === "medium") return 2;
-  if (severity === "low") return 1;
-  return 0;
 }

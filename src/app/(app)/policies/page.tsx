@@ -1,6 +1,12 @@
 import { revalidatePath } from "next/cache";
 import { ChevronDown, Plus, UploadCloud } from "lucide-react";
 import {
+  BUILT_IN_POLICY_BUNDLES,
+  DEFAULT_APPROVED_AI_PROVIDERS,
+  DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS,
+  type BuiltInPolicyBundleDefinition
+} from "@accord/governance-core";
+import {
   createPolicyRuleFromForm,
   deletePolicyRule,
   getPolicyAdminSnapshot,
@@ -46,6 +52,13 @@ export default async function PoliciesPage() {
           { label: "Previous", value: previousVersionRules.length, detail: "Review only" },
           { label: "Bundle rules", value: snapshot.latestBundle?.ruleCount || 0, detail: "Last shipped" }
         ]}
+      />
+
+      <BuiltInPolicyLibrary
+        companySlug={companySlug}
+        canMutate={snapshot.canMutate}
+        enabledBundleIds={snapshot.latestBundle?.enabledBuiltInBundleIds || DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS}
+        approvedProviders={snapshot.latestBundle?.approvedProviders || DEFAULT_APPROVED_AI_PROVIDERS}
       />
 
       {pendingPublishCount ? (
@@ -162,6 +175,18 @@ async function publishBundleAction(formData: FormData) {
   revalidatePath("/policies");
 }
 
+async function publishBuiltInSelectionAction(formData: FormData) {
+  "use server";
+  await publishPolicyBundle(companySlugFromForm(formData), {
+    enabledBuiltInBundleIds: formData.getAll("builtInBundleId").map(String),
+    approvedProviders: String(formData.get("approvedProviders") || "")
+      .split(/[\n,]/)
+      .map((provider) => provider.trim())
+      .filter(Boolean)
+  });
+  revalidatePath("/policies");
+}
+
 function companySlugFromForm(formData: FormData) {
   return (
     String(formData.get("companySlug") || "")
@@ -210,6 +235,117 @@ function HeaderStatus({ label, tone = "default" }: { label: string; tone?: "defa
       />
       {label}
     </span>
+  );
+}
+
+function BuiltInPolicyLibrary({
+  companySlug,
+  canMutate,
+  enabledBundleIds,
+  approvedProviders
+}: {
+  companySlug: string;
+  canMutate: boolean;
+  enabledBundleIds: string[];
+  approvedProviders: string[];
+}) {
+  const enabled = new Set(enabledBundleIds);
+  return (
+    <section className="rounded-lg border border-accord-border bg-accord-panel">
+      <div className="border-b border-accord-border px-4 py-3">
+        <h2 className="text-sm font-semibold text-accord-text">Accord built-ins</h2>
+        <p className="mt-0.5 text-xs leading-5 text-accord-muted">
+          Enable reviewed policy families and configure which AI destinations your organization approves. Publishing creates one versioned Guard bundle.
+        </p>
+      </div>
+
+      <form action={publishBuiltInSelectionAction}>
+        <input type="hidden" name="companySlug" value={companySlug} />
+        <div className="grid divide-y divide-accord-border/60 xl:grid-cols-2 xl:divide-x xl:divide-y-0">
+          <div className="divide-y divide-accord-border/60">
+            {BUILT_IN_POLICY_BUNDLES.map((bundle) => (
+              <BuiltInBundleRow key={bundle.id} bundle={bundle} defaultEnabled={enabled.has(bundle.id)} disabled={!canMutate} />
+            ))}
+          </div>
+          <div className="p-4">
+            <label className="grid gap-1.5 text-xs font-medium text-accord-text">
+              Approved AI providers
+              <textarea
+                className="min-h-24 resize-y rounded-md border border-accord-border bg-accord-panel px-2.5 py-2 font-mono text-[13px] leading-5 text-accord-text outline-none transition-colors focus:border-accord-primary disabled:opacity-60"
+                name="approvedProviders"
+                defaultValue={approvedProviders.join(", ")}
+                disabled={!canMutate}
+                aria-describedby="approved-provider-help"
+              />
+            </label>
+            <p id="approved-provider-help" className="mt-2 text-xs leading-5 text-accord-muted">
+              Provider IDs are organization-specific. Current ChatGPT Guard traffic uses <code>chatgpt</code>; future Copilot, Claude, and Gemini adapters can use the same scope.
+            </p>
+            {canMutate ? (
+              <button
+                type="submit"
+                className="mt-4 inline-flex h-8 items-center gap-1.5 rounded-md bg-accord-night px-3 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy dark:bg-accord-primary dark:hover:bg-accord-blue"
+              >
+                <UploadCloud className="h-3.5 w-3.5" aria-hidden="true" />
+                Publish built-in settings
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+function BuiltInBundleRow({
+  bundle,
+  defaultEnabled,
+  disabled
+}: {
+  bundle: BuiltInPolicyBundleDefinition;
+  defaultEnabled: boolean;
+  disabled: boolean;
+}) {
+  return (
+    <div className="px-4 py-3">
+      <div className="flex items-start gap-3">
+        <input
+          className="mt-1 h-4 w-4 accent-accord-primary"
+          type="checkbox"
+          name="builtInBundleId"
+          value={bundle.id}
+          defaultChecked={defaultEnabled}
+          disabled={disabled}
+          aria-label={`Enable ${bundle.name}`}
+        />
+        <details className="group min-w-0 flex-1">
+          <summary className="flex cursor-pointer list-none items-start justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <span>
+              <span className="block text-[13px] font-medium text-accord-text">{bundle.name}</span>
+              <span className="mt-0.5 block text-xs leading-5 text-accord-muted">{bundle.description}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] text-accord-faint">
+              {bundle.rules.length} rules
+              <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" aria-hidden="true" />
+            </span>
+          </summary>
+          <div className="mt-3 divide-y divide-accord-border/60 rounded-md border border-accord-border bg-accord-surface/40">
+            {bundle.rules.map((rule) => (
+              <div key={rule.id} className="px-3 py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-accord-text">{rule.title}</p>
+                  <span className="font-mono text-[10px] text-accord-faint">{rule.action} · {rule.severity}</span>
+                </div>
+                <p className="mt-1 text-xs leading-5 text-accord-muted">{rule.description}</p>
+                <p className="mt-1 font-mono text-[10px] text-accord-faint">
+                  {rule.scope.providerMode || "any provider"} · {rule.match.requireDetectors?.length || rule.match.anyDetectors?.length ? "Accord Core signals" : "local concept evidence"} · {rule.match.semanticExamples?.length ? "retrieval examples" : "no semantic retrieval"}
+                </p>
+              </div>
+            ))}
+          </div>
+        </details>
+      </div>
+    </div>
   );
 }
 
@@ -333,9 +469,9 @@ function PolicyAuthoringSetup() {
           <li>Use the form to save a draft, approve it, then publish the bundle.</li>
         </ol>
         <pre className="mt-3 overflow-x-auto rounded-md bg-accord-night p-3 font-mono text-xs leading-5 text-slate-100">
-{`grant usage on schema public to anon, authenticated, service_role;
-grant all on table public.accord_policy_rules to anon, authenticated, service_role;
-grant all on table public.accord_policy_bundles to anon, authenticated, service_role;
+{`grant usage on schema public to authenticated, service_role;
+grant select, insert, update, delete on table public.accord_policy_rules to authenticated, service_role;
+grant select, insert, update, delete on table public.accord_policy_bundles to authenticated, service_role;
 notify pgrst, 'reload schema';`}
         </pre>
       </div>

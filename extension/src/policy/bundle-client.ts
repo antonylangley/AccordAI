@@ -1,3 +1,4 @@
+import { validatePublishedEnforcementBundle } from "@accord/governance-core";
 import type { PublishedPolicyBundle } from "./types";
 
 const DEFAULT_API_BASE_URL = "http://127.0.0.1:3000";
@@ -102,13 +103,5 @@ function normalizeSlug(value: string) {
 }
 
 function isPublishedBundle(value: unknown): value is PublishedPolicyBundle {
-  if (!value || typeof value !== "object") return false;
-  const bundle = value as PublishedPolicyBundle;
-  return (
-    typeof bundle.id === "string" &&
-    typeof bundle.companySlug === "string" &&
-    typeof bundle.version === "number" &&
-    typeof bundle.checksum === "string" &&
-    Array.isArray(bundle.rules)
-  );
+  return validatePublishedEnforcementBundle(value);
 }

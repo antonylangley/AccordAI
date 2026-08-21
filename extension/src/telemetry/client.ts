@@ -26,7 +26,7 @@ export async function recordGuardTelemetry(payload: GuardTelemetryPayload) {
       },
       cache: "no-store",
       body: JSON.stringify({
-        ...payload,
+        ...sanitizeGuardTelemetryPayload(payload),
         extensionInstallId: installId,
         companySlug: settings[COMPANY_SLUG_KEY] || "test-company",
         companyName: settings[COMPANY_NAME_KEY] || "Test Company",
@@ -40,6 +40,43 @@ export async function recordGuardTelemetry(payload: GuardTelemetryPayload) {
     console.info("[Accord Guard] telemetry unavailable", error);
     return false;
   }
+}
+
+export function sanitizeGuardTelemetryPayload(payload: GuardTelemetryPayload): GuardTelemetryPayload {
+  return {
+    eventType: payload.eventType,
+    surface: payload.surface,
+    conversationKey: payload.conversationKey,
+    action: payload.action,
+    riskScore: payload.riskScore,
+    riskLevel: payload.riskLevel,
+    flags: payload.flags,
+    entityCounts: payload.entityCounts,
+    redactionCount: payload.redactionCount,
+    attachmentCount: payload.attachmentCount,
+    messageLengthBucket: payload.messageLengthBucket,
+    metadata: sanitizeMetadata(payload.metadata),
+    organizationId: payload.organizationId,
+    employeeUserId: payload.employeeUserId,
+    ruleId: payload.ruleId,
+    ruleKey: payload.ruleKey,
+    ruleVersion: payload.ruleVersion,
+    policyBundleVersion: payload.policyBundleVersion,
+    policyAction: payload.policyAction,
+    policySeverity: payload.policySeverity,
+    aiProvider: payload.aiProvider,
+    destinationType: payload.destinationType,
+    contentType: payload.contentType,
+    detectedCategories: payload.detectedCategories
+  };
+}
+
+function sanitizeMetadata(metadata: GuardTelemetryPayload["metadata"]) {
+  if (!metadata) return undefined;
+  const forbidden = new Set(["text", "prompt", "rawprompt", "sanitizedtext", "originaltext", "content"]);
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => !forbidden.has(key.replace(/[^a-z]/gi, "").toLocaleLowerCase()))
+  );
 }
 
 export function messageLengthBucket(length: number) {

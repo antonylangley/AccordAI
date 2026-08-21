@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { POLICY_SCHEMA_VERSION } from "@accord/governance-core";
 import { getActivePolicyBundle, resetPolicyBundleMemoryCacheForTests } from "./bundle-client";
 import type { PublishedPolicyBundle } from "./types";
 
@@ -58,6 +59,7 @@ describe("policy bundle client", () => {
 
 function testBundle(version: number): PublishedPolicyBundle {
   return {
+    schemaVersion: POLICY_SCHEMA_VERSION,
     id: `bundle_${version}`,
     companySlug: "test-company",
     version,
@@ -65,6 +67,8 @@ function testBundle(version: number): PublishedPolicyBundle {
     checksum: `checksum_${version}`,
     ruleCount: 0,
     publishedAt: "2026-07-28T00:00:00.000Z",
+    enabledBuiltInBundleIds: [],
+    approvedProviders: [],
     rules: []
   };
 }

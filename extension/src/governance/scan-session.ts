@@ -43,7 +43,7 @@ export async function scanDraft(payload: ScanDraftPayload): Promise<SafeScanResu
   const { scan, personDetection } = await runGovernanceScan(payload.text, "preflight", payload.sensitivity || "Internal", seedRedactionMap);
   const stabilizedScan = applyConversationStableRedactions(payload.text, scan, seedRedactionMap);
   const scannerDecision = decidePolicy(stabilizedScan);
-  const policy = await evaluateActivePolicy(stabilizedScan, {
+  const policy = await evaluateActivePolicy(payload.text, stabilizedScan, {
     contentType: "prompt",
     sanitizedTextAvailable: stabilizedScan.redactedText !== payload.text && stabilizedScan.redactions.length > 0
   });
@@ -261,6 +261,7 @@ async function governSingleAttachment(
   const combinedRisk = Math.max(filenameScan.scan.riskScore, contentScan.riskScore);
   const personDetection = mergePersonDetection(filenameScan.personDetection, contentScanResult.personDetection);
   const policy = await evaluateActivePolicy(
+    attachmentText,
     {
       ...contentScan,
       flags: combinedFlags,
@@ -632,7 +633,7 @@ function toSafeScanResult(
 }
 
 function enforcementSource(decision: ChatPolicyDecision, policy?: AppliedPolicyDecision): SafeScanResult["enforcementSource"] {
-  if (policy?.triggered && decision.reason === policy.explanation) return "organization_policy";
+  if (policy?.triggered && decision.reason === policy.explanation) return policy.rule?.source.type || "organization_policy";
   return "accord_core";
 }
 
@@ -644,6 +645,7 @@ function riskLevel(score: number): SafeScanResult["riskLevel"] {
 }
 
 async function evaluateActivePolicy(
+  text: string,
   scan: ChatScanResult,
   options: {
     contentType: "prompt" | "attachment";
@@ -656,6 +658,7 @@ async function evaluateActivePolicy(
   return evaluatePolicyBundle(
     bundle,
     {
+      text,
       flags: scan.flags,
       entityCounts: scan.entityCounts,
       riskScore: scan.riskScore,
@@ -663,11 +666,10 @@ async function evaluateActivePolicy(
       sanitizedTextAvailable: options.sanitizedTextAvailable
     },
     {
-      aiProvider: "chatgpt",
-      destinationType: "personal",
+      provider: "chatgpt",
+      app: "chatgpt",
       contentType: options.contentType,
-      userScope: "all",
-      departmentScope: "all"
+      userGroups: []
     }
   );
 }
@@ -681,7 +683,7 @@ function mergeScannerAndPolicyDecision(scannerDecision: ChatPolicyDecision, poli
   return {
     action,
     reason: action === policyAction ? policy.explanation : scannerDecision.reason,
-    requiresReview: scannerDecision.requiresReview || policy.executionAction === "block" || policy.executionAction === "warn",
+    requiresReview: scannerDecision.requiresReview || policy.executionAction === "block",
     providerCalled: false,
     redacted: scannerDecision.redacted || policy.executionAction === "redact"
   };

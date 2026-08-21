@@ -1,51 +1,21 @@
-import type { EntityCountSummary } from "@accord/governance-core";
+import type {
+  EntityCountSummary,
+  InternalPolicyRule,
+  PolicyAction,
+  PolicyDecisionExplanation,
+  PolicyEvaluationContext as SharedPolicyEvaluationContext,
+  PublishedEnforcementBundle
+} from "@accord/governance-core";
 import type { SafeRiskFlag } from "../messaging/types";
 
-export type PolicyRuleAction = "allow" | "transform" | "warn" | "require_approval" | "block";
-export type PolicyDestinationType = "any" | "approved" | "enterprise" | "personal" | "unapproved";
-export type PolicySeverity = "low" | "medium" | "high" | "critical";
+export type PublishedPolicyBundle = PublishedEnforcementBundle;
 
-export type PolicyBundleRule = {
-  id: string;
-  ruleKey: string;
-  version: number;
-  name: string;
-  sourcePolicyName: string;
-  sourceSection: string;
-  supportingExcerpt: string;
-  dataCategories: string[];
-  userScope: string;
-  departmentScope: string;
-  aiProvider: string;
-  destinationType: PolicyDestinationType;
-  action: PolicyRuleAction;
-  fallbackAction: PolicyRuleAction;
-  severity: PolicySeverity;
-  employeeExplanation: string;
-  effectiveDate: string;
-};
-
-export type PublishedPolicyBundle = {
-  id: string;
-  companySlug: string;
-  version: number;
-  status: "published" | "superseded";
-  checksum: string;
-  ruleCount: number;
-  publishedAt: string;
-  supersededAt?: string;
-  rules: PolicyBundleRule[];
-};
-
-export type PolicyEvaluationContext = {
-  aiProvider: string;
-  destinationType: PolicyDestinationType;
-  contentType: "prompt" | "attachment";
-  userScope?: string;
-  departmentScope?: string;
+export type PolicyEvaluationContext = Omit<SharedPolicyEvaluationContext, "approvedProviders"> & {
+  approvedProviders?: string[];
 };
 
 export type PolicySignalSet = {
+  text: string;
   flags: SafeRiskFlag[];
   entityCounts: EntityCountSummary;
   riskScore: number;
@@ -55,13 +25,15 @@ export type PolicySignalSet = {
 
 export type AppliedPolicyDecision = {
   triggered: boolean;
-  executionAction: "allow" | "warn" | "redact" | "block";
-  policyAction: PolicyRuleAction;
-  fallbackAction?: PolicyRuleAction;
+  executionAction: "allow" | "redact" | "block";
+  policyAction: PolicyAction;
   explanation: string;
+  structuredExplanation?: PolicyDecisionExplanation;
   detectedCategories: string[];
+  matchedRuleIds: string[];
+  retrievedRuleIds: string[];
   bundleId?: string;
   bundleVersion?: number;
   bundleChecksum?: string;
-  rule?: PolicyBundleRule;
+  rule?: InternalPolicyRule;
 };

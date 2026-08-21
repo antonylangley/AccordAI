@@ -594,9 +594,8 @@ function attachmentTelemetryPayload(
       actionList: actions.join(","),
       blockedReasonCategories: blockedReasons.join(",") || null,
       summary: result.summary,
-      enforcementSource: result.results.some((fileResult) => fileResult.policy?.triggered && fileResult.policy.executionAction === "block")
-        ? "organization_policy"
-        : "accord_core",
+      enforcementSource:
+        result.results.find((fileResult) => fileResult.policy?.triggered)?.policy?.rule?.source.type || "accord_core",
       findingSources: redactionCount > 0 || blockedReasons.length ? "accord_core" : "none"
     }
   };
@@ -610,13 +609,13 @@ function policyTelemetryFields(source: SafeScanResult | GovernAttachmentsResult[
     organizationId: "test-company",
     employeeUserId: "browser-extension-user",
     ruleId: policy.rule.id,
-    ruleKey: policy.rule.ruleKey,
+    ruleKey: policy.rule.id,
     ruleVersion: policy.rule.version,
     policyBundleVersion: policy.bundleVersion,
     policyAction: policy.policyAction,
-    policySeverity: policy.rule.severity,
+    policySeverity: policy.rule.severity.toLocaleLowerCase(),
     aiProvider: "chatgpt",
-    destinationType: policy.rule.destinationType,
+    destinationType: policy.rule.scope.providerMode || "any",
     contentType,
     detectedCategories: policy.detectedCategories
   };

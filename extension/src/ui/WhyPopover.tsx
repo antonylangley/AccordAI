@@ -30,11 +30,16 @@ export function WhyPopover({ state, markUrl, onClose }: WhyPopoverProps) {
 
       {state.scan?.policy?.triggered && state.scan.policy.rule ? (
         <div className="accord-guard-policy-box">
-          <p className="accord-guard-policy-kicker">Company policy</p>
-          <p className="accord-guard-policy-title">
-            {state.scan.policy.rule.sourcePolicyName} {state.scan.policy.rule.sourceSection}
+          <p className="accord-guard-policy-kicker">
+            {state.scan.policy.rule.source.type === "organization_policy" ? "Company policy" : "Accord built-in"}
           </p>
-          <p className="accord-guard-policy-copy">{policyActionCopy(state.scan.policy.executionAction)}</p>
+          <p className="accord-guard-policy-title">{state.scan.policy.rule.title}</p>
+          <p className="accord-guard-policy-copy">
+            {state.scan.policy.structuredExplanation?.reason || policyActionCopy(state.scan.policy.executionAction)}
+          </p>
+          {state.scan.policy.structuredExplanation?.sourceReference ? (
+            <p className="accord-guard-policy-link">Source: {state.scan.policy.structuredExplanation.sourceReference}</p>
+          ) : null}
           {decorations.length ? <p className="accord-guard-policy-link">View protected version locally below.</p> : null}
         </div>
       ) : null}

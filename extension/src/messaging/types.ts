@@ -37,7 +37,7 @@ export type SafeScanResult = {
   decorations: EntityDecoration[];
   flags: SafeRiskFlag[];
   explanation: string;
-  enforcementSource: "accord_core" | "organization_policy";
+  enforcementSource: "accord_core" | "accord_builtin" | "organization_policy";
   personDetection: PersonDetectionCoverage;
   policy?: AppliedPolicyDecision;
   sanitizedText?: string;

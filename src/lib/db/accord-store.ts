@@ -2,6 +2,20 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import {
+  BUILT_IN_POLICY_BUNDLES,
+  DEFAULT_APPROVED_AI_PROVIDERS,
+  DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS,
+  POLICY_SCHEMA_VERSION,
+  builtInRulesForSelection,
+  validateInternalPolicyRule,
+  type InternalPolicyRule,
+  type PolicyAction,
+  type PolicyCategory,
+  type PolicyConcept,
+  type PolicyDetectorSignal,
+  type PublishedEnforcementBundle
+} from "@accord/governance-core";
 import type { ChatGatewayResponse, ChatRiskFlag } from "@/lib/chat/types";
 import type { GovernanceEvent, ProviderName, RiskLevel, Stat } from "@/lib/mock-data";
 import { dashboardStats } from "@/lib/mock-data";
@@ -93,37 +107,8 @@ export type PolicyRuleDraftInput = {
   effectiveDate?: string;
 };
 
-export type PublishedPolicyBundle = {
-  id: string;
-  companySlug: string;
-  version: number;
-  status: "published" | "superseded";
-  checksum: string;
-  ruleCount: number;
-  publishedAt: string;
-  supersededAt?: string;
-  rules: PublishedPolicyBundleRule[];
-};
-
-export type PublishedPolicyBundleRule = {
-  id: string;
-  ruleKey: string;
-  version: number;
-  name: string;
-  sourcePolicyName: string;
-  sourceSection: string;
-  supportingExcerpt: string;
-  dataCategories: string[];
-  userScope: string;
-  departmentScope: string;
-  aiProvider: string;
-  destinationType: PolicyDestinationType;
-  action: PolicyRuleAction;
-  fallbackAction: PolicyRuleAction;
-  severity: RiskLevel;
-  employeeExplanation: string;
-  effectiveDate: string;
-};
+export type PublishedPolicyBundle = PublishedEnforcementBundle;
+export type PublishedPolicyBundleRule = InternalPolicyRule;
 
 export type PolicyAdminSnapshot = {
   enabled: boolean;
@@ -682,7 +667,13 @@ export async function deletePolicyRule(id: string) {
   if (result.error) throw result.error;
 }
 
-export async function publishPolicyBundle(companySlug = "test-company") {
+export async function publishPolicyBundle(
+  companySlug = "test-company",
+  options: {
+    enabledBuiltInBundleIds?: string[];
+    approvedProviders?: string[];
+  } = {}
+) {
   const supabase = getSupabaseServerClient();
   if (!supabase) throw new Error("Supabase is not configured.");
 
@@ -718,23 +709,35 @@ export async function publishPolicyBundle(companySlug = "test-company") {
   if (latestPublishedBundleResult.error) throw latestPublishedBundleResult.error;
 
   const latestPublishedBundle = latestPublishedBundleResult.data ? toPolicyBundle(latestPublishedBundleResult.data as Record<string, unknown>) : undefined;
-  const publishedRuleIds = new Set(latestPublishedBundle?.rules.map((rule) => rule.id) || []);
-  const publishedRuleVersions = new Set(latestPublishedBundle?.rules.map((rule) => `${rule.ruleKey}:${rule.version}`) || []);
-  const rules = latestPolicyRuleVersions(
+  const publishedRuleIds = new Set(
+    latestPublishedBundle?.rules
+      .filter((rule) => rule.source.type === "organization_policy")
+      .map((rule) => rule.source.documentId || rule.id) || []
+  );
+  const organizationRules = latestPolicyRuleVersions(
     ((rulesResult.data || []) as Array<Record<string, unknown>>)
       .map(toPolicyRule)
-      .filter((rule) => rule.active || publishedRuleIds.has(rule.id) || publishedRuleVersions.has(`${rule.ruleKey}:${rule.version}`))
+      .filter((rule) => rule.active || publishedRuleIds.has(rule.id))
   );
-  if (!rules.length) throw new Error("Approve at least one policy rule before publishing.");
+  const requestedBuiltIns = options.enabledBuiltInBundleIds ?? latestPublishedBundle?.enabledBuiltInBundleIds ?? DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS;
+  const knownBuiltIns = new Set(BUILT_IN_POLICY_BUNDLES.map((bundle) => bundle.id));
+  const enabledBuiltInBundleIds = Array.from(new Set(requestedBuiltIns.filter((id) => knownBuiltIns.has(id)))).sort();
+  const approvedProviders = normalizeProviderList(options.approvedProviders ?? latestPublishedBundle?.approvedProviders ?? DEFAULT_APPROVED_AI_PROVIDERS);
+  const rulesForBundle = [
+    ...builtInRulesForSelection(enabledBuiltInBundleIds),
+    ...organizationRules.map(policyRuleToBundleRule)
+  ];
+  if (!rulesForBundle.length) throw new Error("Enable a built-in bundle or approve at least one organization policy rule before publishing.");
 
   const version = Math.max(0, typeof latestBundle.data?.version === "number" ? latestBundle.data.version : 0) + 1;
   const publishedAt = new Date().toISOString();
-  const rulesForBundle = rules.map(policyRuleToBundleRule);
   const bundle = {
-    schemaVersion: 1,
+    schemaVersion: POLICY_SCHEMA_VERSION,
     companySlug,
     version,
     publishedAt,
+    enabledBuiltInBundleIds,
+    approvedProviders,
     rules: rulesForBundle
   };
   const checksum = checksumJson(bundle);
@@ -941,19 +944,24 @@ function fallbackPolicyAdminSnapshot(companySlug = "test-company"): PolicyAdminS
 
 function fallbackPublishedPolicyBundle(companySlug = "test-company"): PublishedPolicyBundle {
   const rule = toPolicyRule(developmentPolicyRule(companySlug));
-  const rules = [policyRuleToBundleRule(rule)];
+  const enabledBuiltInBundleIds = DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS;
+  const approvedProviders = DEFAULT_APPROVED_AI_PROVIDERS;
+  const rules = [...builtInRulesForSelection(enabledBuiltInBundleIds), policyRuleToBundleRule(rule)];
   const version = 1;
   const publishedAt = rule.approvedAt || new Date().toISOString();
   const bundleCore = {
-    schemaVersion: 1,
+    schemaVersion: POLICY_SCHEMA_VERSION,
     companySlug,
     version,
     publishedAt,
+    enabledBuiltInBundleIds,
+    approvedProviders,
     rules
   };
   const checksum = checksumJson(bundleCore);
 
   return {
+    schemaVersion: POLICY_SCHEMA_VERSION,
     id: `bundle_${companySlug}_${version}_${checksum.slice(0, 12)}`,
     companySlug,
     version,
@@ -961,6 +969,8 @@ function fallbackPublishedPolicyBundle(companySlug = "test-company"): PublishedP
     checksum,
     ruleCount: rules.length,
     publishedAt,
+    enabledBuiltInBundleIds,
+    approvedProviders,
     rules
   };
 }
@@ -969,10 +979,9 @@ function attachPublishedBundleState(rules: AccordPolicyRule[], latestBundle?: Pu
   if (!latestBundle) return rules;
 
   const publishedIds = new Set(latestBundle.rules.map((rule) => rule.id));
-  const publishedVersions = new Set(latestBundle.rules.map((rule) => `${rule.ruleKey}:${rule.version}`));
 
   return rules.map((rule) => {
-    const publishedInLatestBundle = publishedIds.has(rule.id) || publishedVersions.has(`${rule.ruleKey}:${rule.version}`);
+    const publishedInLatestBundle = publishedIds.has(rule.id);
 
     return {
       ...rule,
@@ -1067,63 +1076,205 @@ function toPolicyRule(row: Record<string, unknown>): AccordPolicyRule {
 
 function toPolicyBundle(row: Record<string, unknown>): PublishedPolicyBundle {
   const bundle = isRecord(row.bundle) ? row.bundle : {};
-  const rules = Array.isArray(bundle.rules) ? bundle.rules.filter(isRecord).map(toBundleRule) : [];
+  const parsedRules = Array.isArray(bundle.rules)
+    ? bundle.rules
+        .filter(isRecord)
+        .map((rule) => (validateInternalPolicyRule(rule) ? rule : legacyBundleRuleToInternal(rule)))
+        .filter((rule): rule is InternalPolicyRule => Boolean(rule))
+    : [];
+  const hasBuiltInSelection = Array.isArray(bundle.enabledBuiltInBundleIds);
+  const selectedBuiltInBundleIds = normalizeStringArray(bundle.enabledBuiltInBundleIds, 20).filter((id) =>
+    BUILT_IN_POLICY_BUNDLES.some((definition) => definition.id === id)
+  );
+  const enabledBuiltInBundleIds = hasBuiltInSelection ? selectedBuiltInBundleIds : DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS;
+  const hasApprovedProviderSelection = Array.isArray(bundle.approvedProviders);
+  const approvedProviders = hasApprovedProviderSelection ? normalizeProviderList(bundle.approvedProviders) : DEFAULT_APPROVED_AI_PROVIDERS;
+  const currentSchema = bundle.schemaVersion === POLICY_SCHEMA_VERSION;
+  const rules = currentSchema ? parsedRules : [...builtInRulesForSelection(enabledBuiltInBundleIds), ...parsedRules];
 
   return {
+    schemaVersion: POLICY_SCHEMA_VERSION,
     id: stringValue(row.id || bundle.id),
     companySlug: stringValue(row.company_slug || bundle.companySlug),
     version: numberValue(row.version || bundle.version, 0),
     status: row.status === "superseded" ? "superseded" : "published",
     checksum: stringValue(row.checksum || bundle.checksum),
-    ruleCount: numberValue(row.rule_count, rules.length),
+    ruleCount: rules.length,
     publishedAt: stringValue(row.published_at || bundle.publishedAt),
     supersededAt: typeof row.superseded_at === "string" ? row.superseded_at : undefined,
+    enabledBuiltInBundleIds,
+    approvedProviders,
     rules
   };
 }
 
-function toBundleRule(row: Record<string, unknown>): PublishedPolicyBundleRule {
+function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRule {
+  const detectorSignals = organizationRuleDetectorSignals(rule.dataCategories);
+  const concepts = organizationRuleConcepts(rule.dataCategories);
   return {
-    id: stringValue(row.id),
-    ruleKey: stringValue(row.ruleKey || row.rule_key),
-    version: numberValue(row.version, 1),
-    name: stringValue(row.name),
-    sourcePolicyName: stringValue(row.sourcePolicyName || row.source_policy_name),
-    sourceSection: stringValue(row.sourceSection || row.source_section),
-    supportingExcerpt: stringValue(row.supportingExcerpt || row.supporting_excerpt),
-    dataCategories: normalizeStringArray(row.dataCategories || row.data_categories, 40),
-    userScope: stringValue(row.userScope || row.user_scope) || "all",
-    departmentScope: stringValue(row.departmentScope || row.department_scope) || "all",
-    aiProvider: stringValue(row.aiProvider || row.ai_provider) || "any",
-    destinationType: normalizeDestinationType(stringValue(row.destinationType || row.destination_type)),
-    action: normalizePolicyAction(stringValue(row.action)),
-    fallbackAction: normalizePolicyAction(stringValue(row.fallbackAction || row.fallback_action)),
-    severity: normalizeRiskLevel(row.severity, 0),
-    employeeExplanation: stringValue(row.employeeExplanation || row.employee_explanation),
-    effectiveDate: stringValue(row.effectiveDate || row.effective_date)
+    schemaVersion: POLICY_SCHEMA_VERSION,
+    id: rule.id,
+    version: rule.version,
+    title: rule.name,
+    description: rule.employeeExplanation || rule.supportingExcerpt || rule.name,
+    category: organizationRuleCategory(rule.dataCategories),
+    severity: policySeverity(rule.severity),
+    action: policyAction(rule.action),
+    fallbackAction: policyAction(rule.fallbackAction),
+    source: {
+      type: "organization_policy",
+      bundleName: rule.sourcePolicyName,
+      documentId: rule.id,
+      documentName: rule.sourcePolicyName,
+      section: rule.sourceSection,
+      excerpt: rule.supportingExcerpt
+    },
+    scope: {
+      enabled: rule.active,
+      providerMode: destinationProviderMode(rule.destinationType),
+      providers: rule.aiProvider === "any" ? undefined : [rule.aiProvider],
+      apps: ["chatgpt", "copilot", "claude", "gemini"],
+      userGroups: rule.userScope === "all" && rule.departmentScope === "all" ? undefined : [rule.userScope, rule.departmentScope].filter((value) => value !== "all")
+    },
+    match: {
+      anyDetectors: detectorSignals.length ? detectorSignals : undefined,
+      anyConcepts: concepts.length ? concepts : undefined,
+      keywords: rule.dataCategories,
+      semanticExamples: rule.supportingExcerpt ? [rule.supportingExcerpt] : undefined
+    },
+    explanation: {
+      short: rule.employeeExplanation || "Accord applied an organization AI usage policy.",
+      user: rule.employeeExplanation || undefined,
+      admin: rule.supportingExcerpt || undefined
+    }
   };
 }
 
-function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRule {
+function legacyBundleRuleToInternal(row: Record<string, unknown>): InternalPolicyRule | null {
+  const id = stringValue(row.id || row.ruleKey || row.rule_key);
+  const title = stringValue(row.title || row.name);
+  if (!id || !title) return null;
+
+  const dataCategories = normalizeStringArray(row.dataCategories || row.data_categories, 40);
+  const detectorSignals = organizationRuleDetectorSignals(dataCategories);
+  const concepts = organizationRuleConcepts(dataCategories);
+  const sourcePolicyName = stringValue(row.sourcePolicyName || row.source_policy_name) || "Organization policy";
+  const sourceSection = stringValue(row.sourceSection || row.source_section);
+  const supportingExcerpt = stringValue(row.supportingExcerpt || row.supporting_excerpt);
+  const employeeExplanation =
+    stringValue(row.employeeExplanation || row.employee_explanation) || "Accord applied an organization AI usage policy.";
+  const destinationType = normalizeDestinationType(row.destinationType || row.destination_type);
+  const provider = stringValue(row.aiProvider || row.ai_provider) || "any";
+
   return {
-    id: rule.id,
-    ruleKey: rule.ruleKey,
-    version: rule.version,
-    name: rule.name,
-    sourcePolicyName: rule.sourcePolicyName,
-    sourceSection: rule.sourceSection,
-    supportingExcerpt: rule.supportingExcerpt,
-    dataCategories: rule.dataCategories,
-    userScope: rule.userScope,
-    departmentScope: rule.departmentScope,
-    aiProvider: rule.aiProvider,
-    destinationType: rule.destinationType,
-    action: rule.action,
-    fallbackAction: rule.fallbackAction,
-    severity: rule.severity,
-    employeeExplanation: rule.employeeExplanation,
-    effectiveDate: rule.effectiveDate
+    schemaVersion: POLICY_SCHEMA_VERSION,
+    id,
+    version: numberValue(row.version, 1),
+    title,
+    description: employeeExplanation || supportingExcerpt || title,
+    category: organizationRuleCategory(dataCategories),
+    severity: policySeverity(normalizeRiskLevel(row.severity, 0)),
+    action: policyAction(normalizePolicyAction(row.action)),
+    fallbackAction: policyAction(normalizePolicyAction(row.fallbackAction || row.fallback_action)),
+    source: {
+      type: "organization_policy",
+      bundleName: sourcePolicyName,
+      documentId: id,
+      documentName: sourcePolicyName,
+      section: sourceSection || undefined,
+      excerpt: supportingExcerpt || undefined
+    },
+    scope: {
+      enabled: row.active !== false,
+      providerMode: destinationProviderMode(destinationType),
+      providers: provider === "any" ? undefined : [provider],
+      apps: ["chatgpt", "copilot", "claude", "gemini"]
+    },
+    match: {
+      anyDetectors: detectorSignals.length ? detectorSignals : undefined,
+      anyConcepts: concepts.length ? concepts : undefined,
+      keywords: dataCategories,
+      semanticExamples: supportingExcerpt ? [supportingExcerpt] : undefined
+    },
+    explanation: {
+      short: employeeExplanation,
+      user: employeeExplanation,
+      admin: supportingExcerpt || undefined
+    }
   };
+}
+
+function normalizeProviderList(value: unknown) {
+  const values = Array.isArray(value) ? value : typeof value === "string" ? value.split(/[\n,]/) : [];
+  return Array.from(
+    new Set(
+      values
+        .map((item) => (typeof item === "string" ? item.trim().toLocaleLowerCase() : ""))
+        .filter(Boolean)
+    )
+  ).slice(0, 20);
+}
+
+function policyAction(action: PolicyRuleAction): PolicyAction {
+  if (action === "transform") return "REDACT";
+  if (action === "block") return "BLOCK";
+  if (action === "warn" || action === "require_approval") return "HOLD";
+  return "ALLOW";
+}
+
+function policySeverity(severity: RiskLevel): InternalPolicyRule["severity"] {
+  return severity.toUpperCase() as InternalPolicyRule["severity"];
+}
+
+function destinationProviderMode(destination: PolicyDestinationType): InternalPolicyRule["scope"]["providerMode"] {
+  if (destination === "approved" || destination === "enterprise") return "approved_only";
+  if (destination === "personal" || destination === "unapproved") return "unapproved_only";
+  return "any";
+}
+
+function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSignal[] {
+  const signals = new Set<PolicyDetectorSignal>();
+  for (const category of categories) {
+    if (/secret|credential/.test(category)) signals.add("SECRET");
+    if (/api[_-]?token|api[_-]?key/.test(category)) signals.add("API_TOKEN");
+    if (/password/.test(category)) signals.add("PASSWORD");
+    if (/private[_-]?key/.test(category)) signals.add("PRIVATE_KEY");
+    if (/database[_-]?url/.test(category)) signals.add("DATABASE_URL");
+    if (/bearer/.test(category)) signals.add("BEARER_TOKEN");
+    if (/email/.test(category)) signals.add("EMAIL");
+    if (/phone/.test(category)) signals.add("PHONE");
+    if (/address/.test(category)) signals.add("ADDRESS");
+    if (/account/.test(category)) signals.add("ACCOUNT");
+    if (/payment|card/.test(category)) signals.add("PAYMENT_CARD");
+    if (/ssn/.test(category)) signals.add("SSN");
+    if (/ip[_-]?address/.test(category)) signals.add("IP_ADDRESS");
+    if (/client_identifying|personal_data|identifier/.test(category)) {
+      for (const signal of ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT"] as PolicyDetectorSignal[]) signals.add(signal);
+    }
+  }
+  return Array.from(signals);
+}
+
+function organizationRuleConcepts(categories: string[]): PolicyConcept[] {
+  const concepts = new Set<PolicyConcept>();
+  for (const category of categories) {
+    if (/veterinary|medical_record|case_record/.test(category)) concepts.add("VETERINARY_RECORD");
+    if (/full[_-]?(?:veterinary|medical|case)[_-]?record/.test(category)) concepts.add("FULL_VETERINARY_RECORD");
+    if (/client/.test(category)) concepts.add("CLIENT_CONTEXT");
+    if (/employee|hr|compensation|performance|termination/.test(category)) concepts.add("EMPLOYEE_SENSITIVE_RECORD");
+    if (/financial|forecast|projection/.test(category)) concepts.add("UNPUBLISHED_FINANCIALS");
+    if (/strategy|expansion/.test(category)) concepts.add("INTERNAL_STRATEGY");
+    if (/pricing/.test(category)) concepts.add("INTERNAL_PRICING");
+    if (/contract|vendor/.test(category)) concepts.add("CONTRACT_VENDOR_TERMS");
+  }
+  return Array.from(concepts);
+}
+
+function organizationRuleCategory(categories: string[]): PolicyCategory {
+  if (categories.some((category) => /secret|credential|password|token|private_key|database_url/.test(category))) return "SECURITY_CREDENTIALS";
+  if (categories.some((category) => /employee|hr|compensation|performance|termination/.test(category))) return "EMPLOYEE_HR";
+  if (categories.some((category) => /client|veterinary|medical_record|case_record/.test(category))) return "CLIENT_VETERINARY_DATA";
+  return "CONFIDENTIAL_BUSINESS";
 }
 
 function latestPolicyRuleVersions(rules: AccordPolicyRule[]) {
@@ -1738,7 +1889,9 @@ function normalizeNumberRecord(value: unknown) {
 function normalizeMetadata(value: unknown, fallback: Record<string, unknown>) {
   if (!isRecord(value)) return fallback;
 
+  const forbiddenContentKeys = new Set(["text", "prompt", "rawprompt", "sanitizedtext", "originaltext", "content"]);
   const entries = Object.entries(value)
+    .filter(([key]) => !forbiddenContentKeys.has(key.replace(/[^a-z]/gi, "").toLocaleLowerCase()))
     .filter(([, item]) => ["string", "number", "boolean"].includes(typeof item) || item == null)
     .map(([key, item]) => [key.slice(0, 80), typeof item === "string" ? item.slice(0, 240) : item]);
 
