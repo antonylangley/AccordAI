@@ -10,6 +10,7 @@ import type { AISurface } from "../adapters/types";
 import type { AttachmentExtractionKind } from "../attachments/policy";
 import type { PersonDetectionCoverage } from "../person-detection/person-detector";
 import type { AppliedPolicyDecision } from "../policy/types";
+import type { GuardAuthProvider, GuardAuthSnapshot } from "../auth/types";
 
 export type SafeRiskFlag = {
   type: ChatFlagType;
@@ -188,8 +189,12 @@ export type AccordGuardMessage =
   | { type: "accord.governAttachments"; payload: GovernAttachmentsPayload }
   | { type: "accord.rehydrateResponse"; payload: RehydrateResponsePayload }
   | { type: "accord.moveVault"; payload: MoveVaultPayload }
-  | { type: "accord.recordTelemetry"; payload: GuardTelemetryPayload };
+  | { type: "accord.recordTelemetry"; payload: GuardTelemetryPayload }
+  | { type: "accord.auth.getState"; payload?: { force?: boolean } }
+  | { type: "accord.auth.connect"; payload: { provider: GuardAuthProvider } }
+  | { type: "accord.auth.signOut" }
+  | { type: "accord.policy.sync" };
 
 export type AccordGuardResponse =
-  | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult }
+  | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult | GuardAuthSnapshot }
   | { ok: false; error: string };

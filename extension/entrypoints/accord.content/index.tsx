@@ -593,7 +593,6 @@ function attachmentTelemetryPayload(
       batchAction: result.batchAction,
       actionList: actions.join(","),
       blockedReasonCategories: blockedReasons.join(",") || null,
-      summary: result.summary,
       enforcementSource:
         result.results.find((fileResult) => fileResult.policy?.triggered)?.policy?.rule?.source.type || "accord_core",
       findingSources: redactionCount > 0 || blockedReasons.length ? "accord_core" : "none"
@@ -606,8 +605,6 @@ function policyTelemetryFields(source: SafeScanResult | GovernAttachmentsResult[
   if (!policy?.triggered || !policy.rule) return {};
 
   return {
-    organizationId: "test-company",
-    employeeUserId: "browser-extension-user",
     ruleId: policy.rule.id,
     ruleKey: policy.rule.id,
     ruleVersion: policy.rule.version,

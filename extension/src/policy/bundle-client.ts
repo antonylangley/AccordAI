@@ -1,19 +1,18 @@
 import { validatePublishedEnforcementBundle } from "@accord/governance-core";
+import { getApiBaseUrl } from "../auth/config";
+import { getGuardAccessToken, getGuardAuthSnapshot } from "../auth/session";
 import type { PublishedPolicyBundle } from "./types";
 
-const DEFAULT_API_BASE_URL = "https://www.accordgovernance.com";
-const API_BASE_URL_KEY = "accordApiBaseUrl";
-const COMPANY_SLUG_KEY = "accordCompanySlug";
 const CACHE_KEY_PREFIX = "accordPolicyBundle";
 const FETCH_TTL_MS = 60_000;
 
 let memoryCache: {
-  companySlug: string;
+  organizationId: string;
   fetchedAt: number;
   bundle: PublishedPolicyBundle | null;
 } | null = null;
 
-export async function getActivePolicyBundle() {
+export async function getActivePolicyBundle({ force = false }: { force?: boolean } = {}) {
   if (!globalThis.chrome?.storage?.local) {
     logBundleDiagnostic({
       requestStarted: false,
@@ -25,11 +24,22 @@ export async function getActivePolicyBundle() {
     return null;
   }
 
-  const settings = await getSettings();
-  const companySlug = normalizeSlug(settings[COMPANY_SLUG_KEY] || "test-company");
+  const account = await getGuardAuthSnapshot();
+  if (account.status !== "authenticated" || !account.organization || !account.membership) {
+    logBundleDiagnostic({
+      requestStarted: false,
+      responseReceived: false,
+      validationPassed: false,
+      cacheHit: false,
+      errorStage: "not_authenticated"
+    });
+    return null;
+  }
+
+  const organizationId = account.organization.id;
   const now = Date.now();
 
-  if (memoryCache && memoryCache.companySlug === companySlug && now - memoryCache.fetchedAt < FETCH_TTL_MS) {
+  if (!force && memoryCache && memoryCache.organizationId === organizationId && now - memoryCache.fetchedAt < FETCH_TTL_MS) {
     logBundleDiagnostic({
       requestStarted: false,
       responseReceived: false,
@@ -41,10 +51,12 @@ export async function getActivePolicyBundle() {
     return memoryCache.bundle;
   }
 
-  const cached = await readCachedBundle(companySlug);
+  const cached = await readCachedBundle(organizationId);
 
   try {
-    const apiBaseUrl = sanitizeApiBaseUrl(settings[API_BASE_URL_KEY] || DEFAULT_API_BASE_URL);
+    const accessToken = await getGuardAccessToken();
+    if (!accessToken) return cached;
+    const apiBaseUrl = await getApiBaseUrl();
     const requestUrlHost = safeHost(apiBaseUrl);
     logBundleDiagnostic({
       requestStarted: true,
@@ -54,8 +66,9 @@ export async function getActivePolicyBundle() {
       cacheHit: false,
       cacheVersion: cached?.version
     });
-    const response = await fetch(`${apiBaseUrl}/api/guard/policy-bundle?companySlug=${encodeURIComponent(companySlug)}`, {
-      cache: "no-store"
+    const response = await fetch(`${apiBaseUrl}/api/guard/policy-bundle`, {
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${accessToken}` }
     });
 
     if (!response.ok) {
@@ -69,7 +82,7 @@ export async function getActivePolicyBundle() {
         cacheVersion: cached?.version,
         errorStage: "http_response"
       });
-      memoryCache = { companySlug, fetchedAt: now, bundle: cached };
+      memoryCache = { organizationId, fetchedAt: now, bundle: cached };
       return cached;
     }
 
@@ -87,14 +100,14 @@ export async function getActivePolicyBundle() {
       errorMessage: bundle === null ? "Published bundle failed schema v2 validation." : undefined,
       ...bundleMetadata(body.bundle)
     });
-    if (bundle) await writeCachedBundle(companySlug, bundle);
-    memoryCache = { companySlug, fetchedAt: now, bundle };
+    if (bundle) await writeCachedBundle(organizationId, bundle);
+    memoryCache = { organizationId, fetchedAt: now, bundle };
     return bundle || cached;
   } catch (error) {
     const details = safeError(error);
     logBundleDiagnostic({
       requestStarted: true,
-      requestUrlHost: safeHost(settings[API_BASE_URL_KEY] || DEFAULT_API_BASE_URL),
+      requestUrlHost: safeHost(await getApiBaseUrl()),
       responseReceived: false,
       validationPassed: false,
       cacheHit: cached !== null,
@@ -103,7 +116,7 @@ export async function getActivePolicyBundle() {
       errorName: details.name,
       errorMessage: details.message
     });
-    memoryCache = { companySlug, fetchedAt: now, bundle: cached };
+    memoryCache = { organizationId, fetchedAt: now, bundle: cached };
     return cached;
   }
 }
@@ -112,54 +125,29 @@ export function resetPolicyBundleMemoryCacheForTests() {
   memoryCache = null;
 }
 
-async function readCachedBundle(companySlug: string) {
+async function readCachedBundle(organizationId: string) {
   const storage = globalThis.chrome?.storage?.local;
   if (!storage) return null;
 
   return new Promise<PublishedPolicyBundle | null>((resolve) => {
-    storage.get(cacheKey(companySlug), (items) => {
-      const value = items[cacheKey(companySlug)];
+    storage.get(cacheKey(organizationId), (items) => {
+      const value = items[cacheKey(organizationId)];
       resolve(isPublishedBundle(value) ? value : null);
     });
   });
 }
 
-async function writeCachedBundle(companySlug: string, bundle: PublishedPolicyBundle) {
+async function writeCachedBundle(organizationId: string, bundle: PublishedPolicyBundle) {
   const storage = globalThis.chrome?.storage?.local;
   if (!storage) return;
 
   await new Promise<void>((resolve) => {
-    storage.set({ [cacheKey(companySlug)]: bundle }, () => resolve());
+    storage.set({ [cacheKey(organizationId)]: bundle }, () => resolve());
   });
 }
 
-function getSettings(): Promise<Record<string, string | undefined>> {
-  return new Promise((resolve) => {
-    const storage = globalThis.chrome?.storage?.local;
-    if (!storage) {
-      resolve({});
-      return;
-    }
-
-    storage.get([API_BASE_URL_KEY, COMPANY_SLUG_KEY], (items) => {
-      resolve(items as Record<string, string | undefined>);
-    });
-  });
-}
-
-function cacheKey(companySlug: string) {
-  return `${CACHE_KEY_PREFIX}:${companySlug}`;
-}
-
-function sanitizeApiBaseUrl(value: string) {
-  return value.replace(/\/+$/, "") || DEFAULT_API_BASE_URL;
-}
-
-function normalizeSlug(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "test-company";
+function cacheKey(organizationId: string) {
+  return `${CACHE_KEY_PREFIX}:${organizationId}`;
 }
 
 function isPublishedBundle(value: unknown): value is PublishedPolicyBundle {

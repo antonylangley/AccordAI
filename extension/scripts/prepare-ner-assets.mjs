@@ -20,10 +20,8 @@ const modelSourceRoot = resolve(
   `ml/accord-ner/models/${productionModelId}/browser/${productionModelId}`
 );
 
-const modelDestination = resolve(
-  extensionRoot,
-  `public/models/${productionModelId}`
-);
+const modelsDestinationRoot = resolve(extensionRoot, "public/models");
+const modelDestination = resolve(modelsDestinationRoot, productionModelId);
 
 const wasmDestination = resolve(extensionRoot, "public/ort");
 const sourceModelPath = join(modelSourceRoot, "onnx/model_quantized.onnx");
@@ -32,7 +30,9 @@ const browserModelPath = join(modelDestination, "onnx/model_quantized.onnx");
 await assertDirectory(modelSourceRoot, "browser-qualified production model");
 await assertFileHash(sourceModelPath, expectedModelSha256);
 
-await rm(modelDestination, { recursive: true, force: true });
+// Public assets are copied verbatim into the extension package. Recreate the
+// packaging root so historical model directories cannot leak into production.
+await rm(modelsDestinationRoot, { recursive: true, force: true });
 await mkdir(join(modelDestination, "onnx"), { recursive: true });
 
 for (const file of requiredModelFiles) {

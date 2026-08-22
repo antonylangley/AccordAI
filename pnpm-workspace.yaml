@@ -4,8 +4,8 @@ packages:
 
 allowBuilds:
   esbuild: true
-  onnxruntime-node: set this to true or false
-  protobufjs: set this to true or false
-  sharp: set this to true or false
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true
   spawn-sync: true
   unrs-resolver: true

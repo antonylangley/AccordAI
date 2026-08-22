@@ -14,6 +14,7 @@
   "dependencies": {
     "@accord/governance-core": "workspace:*",
     "@huggingface/transformers": "^4.2.0",
+    "@supabase/supabase-js": "^2.110.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

@@ -207,6 +207,14 @@ export type ExtensionTelemetryPayload = {
   detectedCategories?: string[];
 };
 
+export type VerifiedExtensionIdentity = {
+  authUserId: string;
+  organizationId: string;
+  companySlug: string;
+  companyName: string;
+  userLabel: string;
+};
+
 export type ExtensionTelemetryMetrics = {
   governedEvents: number;
   messagesSent: number;
@@ -391,7 +399,7 @@ export async function persistChatGatewayRun(input: unknown, response: ChatGatewa
   }
 }
 
-export async function recordExtensionTelemetryEvent(input: unknown) {
+export async function recordExtensionTelemetryEvent(input: unknown, identity: VerifiedExtensionIdentity) {
   const supabase = getSupabaseServerClient();
   if (!supabase) {
     return {
@@ -401,19 +409,15 @@ export async function recordExtensionTelemetryEvent(input: unknown) {
   }
 
   const payload = normalizeExtensionTelemetryPayload(input);
-  const testCompanyReady = await seedTestCompany(supabase, payload.companySlug, payload.companyName);
-  if (!testCompanyReady) {
-    throw new Error("Accord extension telemetry tables are not ready. Run the latest Supabase migration.");
-  }
-
   const userId = randomId("ext_user");
   const now = new Date().toISOString();
   const userResult = await supabase.from("accord_extension_users").upsert(
     {
       id: userId,
-      company_slug: payload.companySlug,
+      company_slug: identity.companySlug,
+      auth_user_id: identity.authUserId,
       extension_install_id: payload.extensionInstallId,
-      user_label: payload.userLabel,
+      user_label: identity.userLabel,
       surface: payload.surface,
       created_at: now,
       last_seen_at: now
@@ -425,18 +429,19 @@ export async function recordExtensionTelemetryEvent(input: unknown) {
   const userUpdate = await supabase
     .from("accord_extension_users")
     .update({
-      user_label: payload.userLabel,
+      auth_user_id: identity.authUserId,
+      user_label: identity.userLabel,
       surface: payload.surface,
       last_seen_at: now
     })
-    .eq("company_slug", payload.companySlug)
+    .eq("company_slug", identity.companySlug)
     .eq("extension_install_id", payload.extensionInstallId);
   if (userUpdate.error) throw userUpdate.error;
 
   const userLookup = await supabase
     .from("accord_extension_users")
     .select("id")
-    .eq("company_slug", payload.companySlug)
+    .eq("company_slug", identity.companySlug)
     .eq("extension_install_id", payload.extensionInstallId)
     .maybeSingle();
   if (userLookup.error) throw userLookup.error;
@@ -444,8 +449,10 @@ export async function recordExtensionTelemetryEvent(input: unknown) {
   const eventId = randomId("guard_evt");
   const eventResult = await supabase.from("accord_extension_events").insert({
     id: eventId,
-    company_slug: payload.companySlug,
+    company_slug: identity.companySlug,
     extension_user_id: typeof userLookup.data?.id === "string" ? userLookup.data.id : userId,
+    auth_user_id: identity.authUserId,
+    organization_uuid: identity.organizationId,
     event_type: payload.eventType,
     surface: payload.surface,
     conversation_key_hash: hashConversationKey(payload.conversationKey),
@@ -457,8 +464,8 @@ export async function recordExtensionTelemetryEvent(input: unknown) {
     redaction_count: payload.redactionCount,
     attachment_count: payload.attachmentCount,
     message_length_bucket: payload.messageLengthBucket,
-    organization_id: payload.organizationId,
-    employee_user_id: payload.employeeUserId,
+    organization_id: identity.organizationId,
+    employee_user_id: identity.authUserId,
     rule_id: payload.ruleId || null,
     rule_key: payload.ruleKey || null,
     rule_version: payload.ruleVersion || null,
@@ -1795,9 +1802,9 @@ function normalizeExtensionTelemetryPayload(input: unknown): Required<ExtensionT
   return {
     eventType,
     surface: typeof body.surface === "string" && body.surface.trim() ? body.surface.slice(0, 80) : "chatgpt",
-    companySlug: typeof body.companySlug === "string" && body.companySlug.trim() ? slugify(body.companySlug).slice(0, 80) : "test-company",
-    companyName: typeof body.companyName === "string" && body.companyName.trim() ? body.companyName.slice(0, 120) : "Test Company",
-    userLabel: typeof body.userLabel === "string" && body.userLabel.trim() ? body.userLabel.slice(0, 120) : "Test user",
+    companySlug: "",
+    companyName: "",
+    userLabel: "",
     extensionInstallId:
       typeof body.extensionInstallId === "string" && body.extensionInstallId.trim()
         ? body.extensionInstallId.slice(0, 160)
@@ -1811,12 +1818,10 @@ function normalizeExtensionTelemetryPayload(input: unknown): Required<ExtensionT
     redactionCount: clampNumber(body.redactionCount, 0, 10000),
     attachmentCount: clampNumber(body.attachmentCount, 0, 1000),
     messageLengthBucket: typeof body.messageLengthBucket === "string" && body.messageLengthBucket.trim() ? body.messageLengthBucket.slice(0, 40) : "unknown",
-    metadata: normalizeMetadata(body.metadata, {
-      userLabel: typeof body.userLabel === "string" ? body.userLabel.slice(0, 120) : "Test user"
-    }),
+    metadata: normalizeExtensionMetadata(body.metadata),
     occurredAt: typeof body.occurredAt === "string" && !Number.isNaN(Date.parse(body.occurredAt)) ? body.occurredAt : new Date().toISOString(),
-    organizationId: typeof body.organizationId === "string" && body.organizationId.trim() ? body.organizationId.slice(0, 120) : typeof body.companySlug === "string" ? slugify(body.companySlug).slice(0, 80) : "test-company",
-    employeeUserId: typeof body.employeeUserId === "string" && body.employeeUserId.trim() ? body.employeeUserId.slice(0, 160) : "unknown-employee",
+    organizationId: "",
+    employeeUserId: "",
     ruleId: typeof body.ruleId === "string" ? body.ruleId.slice(0, 160) : "",
     ruleKey: typeof body.ruleKey === "string" ? body.ruleKey.slice(0, 160) : "",
     ruleVersion: clampNumber(body.ruleVersion, 0, 100000),
@@ -1899,6 +1904,38 @@ function normalizeMetadata(value: unknown, fallback: Record<string, unknown>) {
     ...fallback,
     ...Object.fromEntries(entries)
   };
+}
+
+const EXTENSION_METADATA_KEYS = new Set([
+  "reasonCategory",
+  "outcome",
+  "scanId",
+  "redacted",
+  "enforcementSource",
+  "findingSources",
+  "responseId",
+  "unresolvedPlaceholderCount",
+  "batchAction",
+  "actionList",
+  "blockedReasonCategories"
+]);
+
+function normalizeExtensionMetadata(value: unknown) {
+  if (!isRecord(value)) return {};
+
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(([key]) => EXTENSION_METADATA_KEYS.has(key))
+      .flatMap(([key, item]) => {
+        if (["string", "number", "boolean"].includes(typeof item) || item == null) {
+          return [[key, typeof item === "string" ? item.slice(0, 160) : item]];
+        }
+        if (Array.isArray(item)) {
+          return [[key, normalizeStringArray(item, 30)]];
+        }
+        return [];
+      })
+  );
 }
 
 function categoryFromFlags(flags: ChatRiskFlag[]) {

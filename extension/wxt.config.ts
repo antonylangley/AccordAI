@@ -11,10 +11,11 @@ export default defineConfig({
       "48": "icons/accord-icon-48.png",
       "128": "icons/accord-icon-128.png"
     },
-    permissions: ["storage"],
+    permissions: ["storage", "identity"],
     host_permissions: [
       "https://chatgpt.com/*",
       "https://www.accordgovernance.com/*",
+      "https://*.supabase.co/*",
       "http://127.0.0.1:3000/*",
       "http://localhost:3000/*"
     ],
@@ -23,6 +24,7 @@ export default defineConfig({
     },
     action: {
       default_title: "Accord Guard",
+      default_popup: "popup.html",
       default_icon: {
         "16": "icons/accord-icon-16.png",
         "32": "icons/accord-icon-32.png",

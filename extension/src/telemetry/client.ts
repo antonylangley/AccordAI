@@ -1,43 +1,40 @@
 import type { GuardTelemetryPayload } from "../messaging/types";
+import { getApiBaseUrl } from "../auth/config";
+import { getGuardAccessToken } from "../auth/session";
 
-const DEFAULT_API_BASE_URL = "http://127.0.0.1:3000";
 const INSTALL_ID_KEY = "accordGuardInstallId";
-const API_BASE_URL_KEY = "accordApiBaseUrl";
-const COMPANY_SLUG_KEY = "accordCompanySlug";
-const COMPANY_NAME_KEY = "accordCompanyName";
-const USER_LABEL_KEY = "accordUserLabel";
 
 type StoredSettings = {
   [INSTALL_ID_KEY]?: string;
-  [API_BASE_URL_KEY]?: string;
-  [COMPANY_SLUG_KEY]?: string;
-  [COMPANY_NAME_KEY]?: string;
-  [USER_LABEL_KEY]?: string;
 };
 
 export async function recordGuardTelemetry(payload: GuardTelemetryPayload) {
   try {
-    const [installId, settings] = await Promise.all([getInstallId(), getSettings()]);
-    const apiBaseUrl = sanitizeApiBaseUrl(settings[API_BASE_URL_KEY] || DEFAULT_API_BASE_URL);
+    const accessToken = await getGuardAccessToken();
+    if (!accessToken) return false;
+    const [installId, apiBaseUrl] = await Promise.all([getInstallId(), getApiBaseUrl()]);
+    const sanitized = sanitizeGuardTelemetryPayload(payload);
+    const conversationKey = sanitized.conversationKey
+      ? await hashConversationKeyLocally(sanitized.conversationKey)
+      : undefined;
     const response = await fetch(`${apiBaseUrl}/api/guard/telemetry`, {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json"
       },
       cache: "no-store",
       body: JSON.stringify({
-        ...sanitizeGuardTelemetryPayload(payload),
+        ...sanitized,
+        conversationKey,
         extensionInstallId: installId,
-        companySlug: settings[COMPANY_SLUG_KEY] || "test-company",
-        companyName: settings[COMPANY_NAME_KEY] || "Test Company",
-        userLabel: settings[USER_LABEL_KEY] || "Test User",
         occurredAt: new Date().toISOString()
       })
     });
 
     return response.ok;
   } catch (error) {
-    console.info("[Accord Guard] telemetry unavailable", error);
+    console.info("[Accord Guard] telemetry unavailable", safeError(error));
     return false;
   }
 }
@@ -56,8 +53,6 @@ export function sanitizeGuardTelemetryPayload(payload: GuardTelemetryPayload): G
     attachmentCount: payload.attachmentCount,
     messageLengthBucket: payload.messageLengthBucket,
     metadata: sanitizeMetadata(payload.metadata),
-    organizationId: payload.organizationId,
-    employeeUserId: payload.employeeUserId,
     ruleId: payload.ruleId,
     ruleKey: payload.ruleKey,
     ruleVersion: payload.ruleVersion,
@@ -73,9 +68,21 @@ export function sanitizeGuardTelemetryPayload(payload: GuardTelemetryPayload): G
 
 function sanitizeMetadata(metadata: GuardTelemetryPayload["metadata"]) {
   if (!metadata) return undefined;
-  const forbidden = new Set(["text", "prompt", "rawprompt", "sanitizedtext", "originaltext", "content"]);
+  const allowed = new Set([
+    "reasonCategory",
+    "outcome",
+    "scanId",
+    "redacted",
+    "enforcementSource",
+    "findingSources",
+    "responseId",
+    "unresolvedPlaceholderCount",
+    "batchAction",
+    "actionList",
+    "blockedReasonCategories"
+  ]);
   return Object.fromEntries(
-    Object.entries(metadata).filter(([key]) => !forbidden.has(key.replace(/[^a-z]/gi, "").toLocaleLowerCase()))
+    Object.entries(metadata).filter(([key]) => allowed.has(key))
   );
 }
 
@@ -105,7 +112,7 @@ function getSettings(): Promise<StoredSettings> {
       return;
     }
 
-    storage.get([INSTALL_ID_KEY, API_BASE_URL_KEY, COMPANY_SLUG_KEY, COMPANY_NAME_KEY, USER_LABEL_KEY], (items) => {
+    storage.get(INSTALL_ID_KEY, (items) => {
       resolve(items as StoredSettings);
     });
   });
@@ -123,6 +130,13 @@ function setSettings(value: StoredSettings) {
   });
 }
 
-function sanitizeApiBaseUrl(value: string) {
-  return value.replace(/\/+$/, "") || DEFAULT_API_BASE_URL;
+async function hashConversationKeyLocally(value: string) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function safeError(error: unknown) {
+  return error instanceof Error
+    ? { name: error.name, message: error.message }
+    : { name: "UnknownError", message: "Telemetry request failed." };
 }

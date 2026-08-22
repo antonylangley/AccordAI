@@ -697,6 +697,7 @@ function buildRegulatedFlags(text: string, stage: ChatScanStage) {
   return regulatedDetectors.reduce<ChatRiskFlag[]>((matches, detector) => {
     detector.pattern.lastIndex = 0;
     if (!detector.pattern.test(text)) return matches;
+    if (detector.type === "regulated_hr" && isGeneralHrExplanation(text)) return matches;
 
     return [
       ...matches,
@@ -709,6 +710,16 @@ function buildRegulatedFlags(text: string, stage: ChatScanStage) {
       }
     ];
   }, []);
+}
+
+function isGeneralHrExplanation(text: string) {
+  const hasExplanatoryIntent = /\b(?:explain|describe|define|overview of|what (?:is|are))\b/i.test(text);
+  const hasGeneralQualifier = /\b(?:common|general|public|publicly released|best practices?|practices?)\b/i.test(text);
+  const hasSpecificSensitiveContext =
+    /\b(?:this|our|my|confidential|internal|restricted|proprietary|non-public|unreleased|employee record|candidate record|termination memo|salary data|disciplinary record)\b/i.test(
+      text
+    );
+  return hasExplanatoryIntent && hasGeneralQualifier && !hasSpecificSensitiveContext;
 }
 
 function calculateRiskScore(flags: ChatRiskFlag[], sensitivity: string) {

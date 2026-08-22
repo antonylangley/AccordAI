@@ -3,8 +3,9 @@ import "server-only";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServerAuthClient } from "@/lib/auth/supabase-server";
 import { getSupabaseServerClient } from "@/lib/db/accord-store";
+import { canEditOrganization, type AccordRole } from "@/lib/auth/permissions";
 
-export type OrganizationRole = "owner" | "admin" | "member" | "viewer";
+export type OrganizationRole = AccordRole;
 export type OrganizationMemberStatus = "active" | "invited" | "suspended";
 
 export type AccordOrganizationContext = {
@@ -408,7 +409,7 @@ export async function resendOrganizationInvite({ memberId }: { memberId: string 
 }
 
 export function canManageOrganization(role: AccordOrganizationContext["role"]) {
-  return role === "owner" || role === "admin";
+  return role !== "demo" && canEditOrganization(role);
 }
 
 async function getFirstMembership(user: User): Promise<AccordOrganizationContext | null> {

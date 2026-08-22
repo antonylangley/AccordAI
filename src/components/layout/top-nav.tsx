@@ -37,9 +37,9 @@ export function TopNav() {
           <Bell className="h-4 w-4" aria-hidden="true" />
         </button>
         <Link
-          href="/login"
+          href="/account"
           className="flex h-7 w-7 items-center justify-center rounded-full bg-accord-night text-[11px] font-semibold text-white"
-          aria-label="Sign in or manage account"
+          aria-label="Manage account"
         >
           A
         </Link>
