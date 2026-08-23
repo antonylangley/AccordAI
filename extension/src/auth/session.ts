@@ -1,6 +1,7 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { getApiBaseUrl } from "./config";
 import { getGuardAuthClient } from "./client";
+import { buildGuardLoginUrl } from "./oauth-url";
 import {
   clearGuardAuthStorage,
   GUARD_PUBLIC_ACCOUNT_KEY,
@@ -89,7 +90,13 @@ async function runOAuth(provider: GuardAuthProvider) {
       options: { redirectTo, skipBrowserRedirect: true }
     });
     if (error || !data.url) throw error || new Error("Accord could not start OAuth.");
-    const callbackUrl = await launchAuthFlow(data.url);
+    const callbackUrl = await launchAuthFlow(
+      buildGuardLoginUrl({
+        apiBaseUrl: await getApiBaseUrl(),
+        provider,
+        oauthUrl: data.url
+      })
+    );
     const code = new URL(callbackUrl).searchParams.get("code");
     if (!code) throw new Error("The OAuth provider did not return an authorization code.");
     const exchange = await client.auth.exchangeCodeForSession(code);

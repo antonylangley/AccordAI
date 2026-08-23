@@ -113,8 +113,7 @@ export function GuardPopup() {
         <section className="state-card">
           <div className="eyebrow error">SYNC UNAVAILABLE</div><h1>{view.title}</h1><p>{view.detail}</p>
           <div className="local-safe"><span className="live-dot" /> Local protection remains active</div>
-          <button className="primary-button" onClick={() => void refresh(true)}>Try again</button>
-          <button className="text-button" onClick={() => void connect("google")}>Reconnect account</button>
+          <button className="primary-button" onClick={() => void connect("google")}>Log in again</button>
         </section>
       ) : null}
     </main>

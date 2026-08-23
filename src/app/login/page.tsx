@@ -2,15 +2,23 @@ import Link from "next/link";
 import { Github, ShieldCheck } from "lucide-react";
 import { AccordLogo } from "@/components/ui/accord-logo";
 import { getAccordOrganizationContext } from "@/lib/auth/organization";
+import { trustedExtensionOAuthUrl } from "@/lib/auth/extension-oauth";
+import { getSupabaseAuthConfig, type AuthProvider } from "@/lib/auth/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams?: { error?: string };
+  searchParams?: { error?: string; extensionOAuthUrl?: string; extensionProvider?: string };
 }) {
   const context = await getAccordOrganizationContext();
+  const extensionProvider = normalizeProvider(searchParams?.extensionProvider);
+  const extensionOAuthUrl = trustedExtensionOAuthUrl({
+    candidate: searchParams?.extensionOAuthUrl,
+    provider: extensionProvider,
+    supabaseUrl: getSupabaseAuthConfig()?.supabaseUrl
+  });
 
   return (
     <main className="app-geist flex min-h-screen flex-col bg-accord-panel px-6 py-6 text-accord-text">
@@ -52,24 +60,37 @@ export default async function LoginPage({
               ) : null}
 
               <div className="grid gap-2">
-                <a
-                  href="/auth/login?provider=google"
-                  className="inline-flex h-9 items-center justify-center rounded-md bg-accord-night px-4 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy"
-                >
-                  Continue with Google
-                </a>
-                <a
-                  href="/auth/login?provider=github"
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-accord-border bg-accord-panel px-4 text-[13px] font-medium text-accord-text transition-colors hover:border-accord-faint"
-                >
-                  <Github className="h-3.5 w-3.5" aria-hidden="true" />
-                  Continue with GitHub
-                </a>
+                {extensionOAuthUrl ? (
+                  <a
+                    href={extensionOAuthUrl}
+                    className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-accord-night px-4 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy"
+                  >
+                    {extensionProvider === "github" ? <Github className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+                    Continue with {extensionProvider === "github" ? "GitHub" : "Google"}
+                  </a>
+                ) : (
+                  <>
+                    <a
+                      href="/auth/login?provider=google"
+                      className="inline-flex h-9 items-center justify-center rounded-md bg-accord-night px-4 text-[13px] font-medium text-white transition-colors hover:bg-accord-navy"
+                    >
+                      Continue with Google
+                    </a>
+                    <a
+                      href="/auth/login?provider=github"
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-accord-border bg-accord-panel px-4 text-[13px] font-medium text-accord-text transition-colors hover:border-accord-faint"
+                    >
+                      <Github className="h-3.5 w-3.5" aria-hidden="true" />
+                      Continue with GitHub
+                    </a>
+                  </>
+                )}
               </div>
 
               <p className="mt-4 text-xs leading-5 text-accord-muted">
-                First login creates a starter organization. Invite-only onboarding replaces this once the account model
-                is locked.
+                {extensionOAuthUrl
+                  ? "After sign-in, this window closes and returns you to the page where you opened Accord Guard."
+                  : "First login creates a starter organization. Invite-only onboarding replaces this once the account model is locked."}
               </p>
             </div>
           </div>
@@ -83,6 +104,10 @@ export default async function LoginPage({
       </section>
     </main>
   );
+}
+
+function normalizeProvider(value: string | undefined): AuthProvider {
+  return value === "github" ? "github" : "google";
 }
 
 function friendlyAuthError(error: string) {
