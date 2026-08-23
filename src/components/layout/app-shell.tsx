@@ -8,7 +8,13 @@ import { TopNav } from "./top-nav";
 import { ACCORD_THEME_EVENT, readStoredTheme, type AccordTheme } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export type AppShellAccount = {
+  displayName: string;
+  email: string;
+  avatarUrl?: string;
+};
+
+export function AppShell({ children, account }: { children: React.ReactNode; account: AppShellAccount | null }) {
   const pathname = usePathname();
   const chatMode = pathname === "/chat";
   const [theme, setTheme] = useState<AccordTheme>("light");
@@ -43,7 +49,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-full min-h-0">
         <Sidebar />
         <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
-          <TopNav />
+          <TopNav account={account} />
           <main className="app-content-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-none">
             <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 lg:px-8">{children}</div>
           </main>

@@ -58,7 +58,6 @@ export function GuardPopup() {
           <div className="brand-name">Accord Guard</div>
           <div className="privacy-line">Sensitive content is analyzed locally.</div>
         </div>
-        <span className={`status-dot status-${view.kind}`} aria-label={view.title} />
       </header>
 
       {view.kind === "loading" || view.kind === "connecting" ? (
@@ -84,7 +83,6 @@ export function GuardPopup() {
 
       {state.status === "authenticated" && view.kind === "connected" ? (
         <section className="connected-stack">
-          <div className="protected-banner"><span /> <strong>{view.title}</strong><small>{view.detail}</small></div>
           <div className="identity-card">
             <Avatar name={state.user.displayName} src={state.user.avatarUrl} />
             <div className="identity-copy"><strong>{state.user.displayName}</strong><span>{state.user.email}</span></div>
@@ -92,7 +90,7 @@ export function GuardPopup() {
           <dl className="details-card">
             <div><dt>Organization</dt><dd>{state.organization?.name}</dd></div>
             <div><dt>Role</dt><dd className="role-badge">{formatRole(state.membership?.role)}</dd></div>
-            <div><dt>Guard</dt><dd><span className="live-dot" />Active</dd></div>
+            <div><dt>Guard</dt><dd>Active</dd></div>
             <div><dt>Policy</dt><dd>{policyLabel(state)}</dd></div>
           </dl>
           <button className="primary-button" onClick={() => openPage(dashboardUrl)}>Open Accord Dashboard</button>

@@ -2,14 +2,14 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { createSupabaseServerAuthClient } from "@/lib/auth/supabase-server";
 import { getAccordOrganizationContext } from "@/lib/auth/organization";
+import { getAccordAuthProfile } from "@/lib/auth/user-profile";
 
 export default async function AccountPage() {
   const client = createSupabaseServerAuthClient();
   const { data } = client ? await client.auth.getUser() : { data: { user: null } };
   if (!data.user) redirect("/login?returnTo=/account");
   const organization = await getAccordOrganizationContext();
-  const metadata = data.user.user_metadata || {};
-  const name = String(metadata.full_name || metadata.name || data.user.email || "Accord user");
+  const profile = getAccordAuthProfile(data.user);
   const provider = String(data.user.app_metadata?.provider || "OAuth");
 
   return (
@@ -17,13 +17,13 @@ export default async function AccountPage() {
       <PageHeader eyebrow="Account" title="Profile" description="Your Accord identity and current organization access." />
       <section className="overflow-hidden rounded-lg border border-accord-border bg-white">
         <div className="flex items-center gap-4 border-b border-accord-border p-5">
-          {typeof metadata.avatar_url === "string" ? (
+          {profile.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={metadata.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover" referrerPolicy="no-referrer" />
+            <img src={profile.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" referrerPolicy="no-referrer" />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accord-night text-sm font-semibold text-white">{initials(name)}</div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accord-night text-sm font-semibold text-white">{initials(profile.displayName)}</div>
           )}
-          <div><h2 className="text-base font-semibold text-accord-text">{name}</h2><p className="text-sm text-accord-muted">{data.user.email}</p></div>
+          <div><h2 className="text-base font-semibold text-accord-text">{profile.displayName}</h2><p className="text-sm text-accord-muted">{profile.email}</p></div>
         </div>
         <dl className="divide-y divide-accord-border text-sm">
           <Row label="Authentication provider" value={provider[0].toUpperCase() + provider.slice(1)} />
