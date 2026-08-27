@@ -57,6 +57,19 @@ export type PolicyRuleSource = {
   section?: string;
   page?: number;
   excerpt?: string;
+  sourceText?: string;
+  requirementSummary?: string;
+  controlType?: string;
+  enforceability?: "fully_enforceable" | "partially_enforceable" | "not_enforceable";
+  conditionDescription?: string;
+  reasoning?: string;
+  confidence?: number;
+  destinationAuthorizations?: Array<{
+    provider: string;
+    destinationType: string;
+    dataCategories: string[];
+    condition: string;
+  }>;
 };
 
 export type PolicyRuleScope = {

@@ -16,11 +16,30 @@ import {
   type AccordPolicyRule,
   type PolicyRuleStatus
 } from "@/lib/db/accord-store";
+import { canApprovePolicyRuleControl } from "@/lib/policy-import/enforceability";
 import { cn } from "@/lib/utils";
 import { PolicyImportPanel } from "./policy-import-panel";
 import { getAccordOrganizationContext } from "@/lib/auth/organization";
 
 export const dynamic = "force-dynamic";
+
+const actionOptions = ["allow", "transform", "warn", "require_approval", "block"];
+const destinationOptions = ["any", "approved", "enterprise", "personal", "unapproved"];
+const providerOptions = ["any", "chatgpt", "openai", "anthropic", "gemini", "internal"];
+const controlTypeOptions = [
+  "data_submission",
+  "destination_restriction",
+  "data_redaction",
+  "security_secret",
+  "tool_usage",
+  "human_review",
+  "output_usage",
+  "procedural",
+  "monitoring",
+  "other"
+];
+const enforceabilityOptions = ["fully_enforceable", "partially_enforceable", "not_enforceable"];
+const recommendedActionOptions = ["none", "warn", "redact", "require_approval", "block"];
 
 export default async function PoliciesPage() {
   const organization = await getAccordOrganizationContext({ autoCreate: true });
@@ -484,6 +503,7 @@ function PolicyFields({ rule }: { rule?: AccordPolicyRule }) {
 
   return (
     <>
+      <input type="hidden" name="sourceText" value={rule?.sourceText || rule?.supportingExcerpt || ""} />
       <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
         <Field label="Rule name" name="name" defaultValue={rule?.name || ""} placeholder="e.g. Block HR data in personal AI" />
         <Field
@@ -492,28 +512,32 @@ function PolicyFields({ rule }: { rule?: AccordPolicyRule }) {
           defaultValue={rule?.ruleKey || ""}
           placeholder={isEditing ? "existing_rule_key" : "Auto-generated from rule name"}
         />
+        <Field label="Requirement summary" name="requirementSummary" defaultValue={rule?.requirementSummary || ""} />
         <Field label="Source policy" name="sourcePolicyName" defaultValue={rule?.sourcePolicyName || "External AI Usage Policy"} />
         <Field label="Source section / citation" name="sourceSection" defaultValue={rule?.sourceSection || "4.2 - Client Information"} />
+        <SelectField label="Control type" name="controlType" defaultValue={rule?.controlType || "data_redaction"} options={controlTypeOptions} />
+        <SelectField label="Enforceability" name="enforceability" defaultValue={rule?.enforceability || "fully_enforceable"} options={enforceabilityOptions} />
+        <SelectField label="Recommended action" name="recommendedAction" defaultValue={rule?.recommendedAction || "redact"} options={recommendedActionOptions} />
         <Field label="User scope" name="userScope" defaultValue={rule?.userScope || "all"} />
         <Field label="Department scope" name="departmentScope" defaultValue={rule?.departmentScope || "all"} />
         <SelectField
           label="AI provider"
           name="aiProvider"
           defaultValue={rule?.aiProvider || "chatgpt"}
-          options={["any", "chatgpt", "openai", "anthropic", "gemini", "internal"]}
+          options={providerOptions}
         />
         <SelectField
           label="Destination/account type"
           name="destinationType"
           defaultValue={rule?.destinationType || "personal"}
-          options={["any", "approved", "enterprise", "personal", "unapproved"]}
+          options={destinationOptions}
         />
-        <SelectField label="Action" name="action" defaultValue={rule?.action || "transform"} options={["allow", "transform", "warn", "require_approval", "block"]} />
+        <SelectField label="Action" name="action" defaultValue={rule?.action || "transform"} options={actionOptions} />
         <SelectField
           label="Fallback action"
           name="fallbackAction"
           defaultValue={rule?.fallbackAction || "block"}
-          options={["allow", "transform", "warn", "require_approval", "block"]}
+          options={actionOptions}
         />
         <SelectField label="Severity" name="severity" defaultValue={rule?.severity || "high"} options={["low", "medium", "high", "critical"]} />
         <Field label="Effective date" name="effectiveDate" type="date" defaultValue={rule?.effectiveDate || new Date().toISOString().slice(0, 10)} />
@@ -530,6 +554,12 @@ function PolicyFields({ rule }: { rule?: AccordPolicyRule }) {
           rows={4}
         />
         <TextArea
+          label="Destination types"
+          name="destinationTypes"
+          defaultValue={rule?.destinationTypes.join(", ") || "personal, unapproved"}
+          rows={4}
+        />
+        <TextArea
           label="Supporting excerpt"
           name="supportingExcerpt"
           defaultValue={
@@ -541,12 +571,29 @@ function PolicyFields({ rule }: { rule?: AccordPolicyRule }) {
       </div>
 
       <TextArea
+        label="Condition"
+        name="conditionDescription"
+        defaultValue={
+          rule?.conditionDescription ||
+          "Applies when Accord detects the listed data categories in content sent to the selected AI destination."
+        }
+        rows={2}
+      />
+
+      <TextArea
         label="Employee-facing explanation"
         name="employeeExplanation"
         defaultValue={
           rule?.employeeExplanation ||
           "Client identifying information cannot be sent to personal AI. Accord will remove identifiers when it can do so safely, otherwise the submission is blocked or routed for approval."
         }
+        rows={2}
+      />
+
+      <TextArea
+        label="Reasoning"
+        name="reasoning"
+        defaultValue={rule?.reasoning || "Accord can observe the data categories and destination scope at the AI interaction layer."}
         rows={2}
       />
     </>
@@ -584,7 +631,7 @@ function SelectField({ label, name, defaultValue, options }: { label: string; na
       <select className={inputClass} name={name} defaultValue={defaultValue}>
         {options.map((option) => (
           <option key={option} value={option}>
-            {option.replace(/_/g, " ")}
+            {formatLabel(option)}
           </option>
         ))}
       </select>
@@ -667,6 +714,8 @@ function RuleBucket({
 }
 
 function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyRule; editable: boolean; actionsEnabled: boolean }) {
+  const canApprove = canApprovePolicyRuleControl(rule);
+
   return (
     <details className="group">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 outline-none transition-colors hover:bg-accord-surface/60 [&::-webkit-details-marker]:hidden">
@@ -685,6 +734,11 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(240px,0.38fr)] xl:items-start">
           <div className="space-y-4">
             <div>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Requirement summary</p>
+              <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.requirementSummary}</p>
+            </div>
+
+            <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Employee explanation</p>
               <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.employeeExplanation}</p>
             </div>
@@ -696,6 +750,20 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
               </p>
             </div>
 
+            {rule.conditionDescription ? (
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Condition</p>
+                <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.conditionDescription}</p>
+              </div>
+            ) : null}
+
+            {rule.reasoning ? (
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Reasoning</p>
+                <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.reasoning}</p>
+              </div>
+            ) : null}
+
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Data categories</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -706,16 +774,34 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
                 ))}
               </div>
             </div>
+
+            {rule.destinationAuthorizations.length ? (
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Destination authorization</p>
+                <div className="mt-1.5 space-y-1 rounded-md border border-accord-border bg-accord-panel p-3">
+                  {rule.destinationAuthorizations.map((authorization, index) => (
+                    <p key={`${authorization.provider}-${index}`} className="text-[13px] leading-6 text-accord-muted">
+                      {authorization.provider} · {authorization.destinationType} · {authorization.dataCategories.join(", ")} · {authorization.condition}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <aside className="rounded-md border border-accord-border bg-accord-panel p-3">
             <div className="divide-y divide-accord-border/60">
               <RuleMeta label="Source" value={`${rule.sourcePolicyName} ${rule.sourceSection}`} />
+              <RuleMeta label="Control" value={formatLabel(rule.controlType)} />
+              <RuleMeta label="Enforceability" value={enforceabilityLabel(rule.enforceability)} />
               <RuleMeta label="Provider" value={rule.aiProvider} />
               <RuleMeta label="Destination" value={rule.destinationType} />
+              <RuleMeta label="Destination types" value={rule.destinationTypes.join(", ")} />
+              <RuleMeta label="Recommended" value={rule.recommendedAction ? formatLabel(rule.recommendedAction) : "None"} />
               <RuleMeta label="Action" value={rule.action} />
               <RuleMeta label="Fallback" value={rule.fallbackAction} />
               <RuleMeta label="Severity" value={rule.severity} />
+              <RuleMeta label="Confidence" value={formatConfidence(rule.confidence)} />
               <RuleMeta label="Effective" value={rule.effectiveDate} />
             </div>
 
@@ -724,7 +810,13 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
               <div className="mt-3 flex flex-wrap gap-1.5 border-t border-accord-border/60 pt-3">
                 {rule.status === "draft" ? (
                   <>
-                    <RuleActionButton action={approveRuleAction} ruleId={rule.id} label="Approve" />
+                    {canApprove ? (
+                      <RuleActionButton action={approveRuleAction} ruleId={rule.id} label="Approve" />
+                    ) : (
+                      <span className="inline-flex h-7 items-center rounded-md border border-accord-border bg-accord-surface px-2.5 text-xs font-medium text-accord-muted">
+                        Convert before approval
+                      </span>
+                    )}
                     <RuleActionButton action={rejectRuleAction} ruleId={rule.id} label="Reject" />
                   </>
                 ) : null}
@@ -767,6 +859,7 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
 function RuleStatusRow({ rule }: { rule: AccordPolicyRule }) {
   return (
     <div className="hidden flex-wrap items-center justify-end gap-1.5 sm:flex">
+      <EnforceabilityPill enforceability={rule.enforceability} />
       <StatusPill status={rule.status} />
       <span className="rounded border border-accord-border px-1.5 py-0.5 font-mono text-[11px] text-accord-muted">v{rule.version}</span>
       {rule.status === "approved" ? (
@@ -786,6 +879,21 @@ function RuleStatusRow({ rule }: { rule: AccordPolicyRule }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+function EnforceabilityPill({ enforceability }: { enforceability: AccordPolicyRule["enforceability"] }) {
+  return (
+    <span
+      className={cn(
+        "rounded border px-1.5 py-0.5 text-[11px] font-medium",
+        enforceability === "fully_enforceable" && "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400",
+        enforceability === "partially_enforceable" && "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400",
+        enforceability === "not_enforceable" && "border-accord-border bg-accord-surface text-accord-muted"
+      )}
+    >
+      {enforceabilityLabel(enforceability)}
+    </span>
   );
 }
 
@@ -841,6 +949,24 @@ function StatusPill({ status }: { status: PolicyRuleStatus }) {
       {status}
     </span>
   );
+}
+
+function enforceabilityLabel(enforceability: AccordPolicyRule["enforceability"]) {
+  if (enforceability === "fully_enforceable") return "Fully enforceable";
+  if (enforceability === "partially_enforceable") return "Partially enforceable";
+  return "Policy guidance only";
+}
+
+function formatConfidence(value: number) {
+  const normalized = value <= 1 ? value * 100 : value;
+  return `${Math.round(normalized)}%`;
+}
+
+function formatLabel(value: string) {
+  if (value === "none") return "None";
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 type PolicyBundle = { id: string; version: number; status: string; checksum: string; ruleCount: number; publishedAt: string };

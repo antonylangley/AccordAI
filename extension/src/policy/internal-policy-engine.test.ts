@@ -49,6 +49,29 @@ describe("retrieval and enforcement separation", () => {
     expect(evaluatePolicySet([retrievalOnly], input).triggered).toBe(false);
   });
 
+  test("policy guidance-only rules never enforce even when deterministic evidence matches", () => {
+    const guidanceOnly: InternalPolicyRule = {
+      ...rule("accord.security.credentials.redact"),
+      id: "test.guidance-only",
+      action: "BLOCK",
+      source: {
+        type: "organization_policy",
+        documentId: "document-1",
+        documentName: "AI Acceptable Use Policy",
+        section: "5.1",
+        enforceability: "not_enforceable"
+      }
+    };
+
+    const decision = evaluatePolicySet([guidanceOnly], {
+      ...policyInput("Use this value to authenticate."),
+      detectors: ["SECRET"]
+    });
+
+    expect(decision.triggered).toBe(false);
+    expect(decision.action).toBe("ALLOW");
+  });
+
   test("detector-backed security rule redacts locally", () => {
     const decision = evaluatePolicySet(builtInRulesForSelection(DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS), {
       ...policyInput("Use this value to authenticate."),

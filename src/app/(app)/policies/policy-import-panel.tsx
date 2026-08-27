@@ -3,6 +3,7 @@
 import { useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, Loader2, UploadCloud } from "lucide-react";
+import { isPolicyGuidanceOnly, recommendedActionToRuleAction, ruleActionToRecommendedAction } from "@/lib/policy-import/enforceability";
 import type { ImportedPolicyRule, PolicyImportResult } from "@/lib/policy-import/types";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,20 @@ const actionOptions = ["allow", "transform", "warn", "require_approval", "block"
 const severityOptions = ["low", "medium", "high", "critical"];
 const destinationOptions = ["any", "approved", "enterprise", "personal", "unapproved"];
 const providerOptions = ["any", "chatgpt", "openai", "anthropic", "gemini", "internal"];
+const controlTypeOptions = [
+  "data_submission",
+  "destination_restriction",
+  "data_redaction",
+  "security_secret",
+  "tool_usage",
+  "human_review",
+  "output_usage",
+  "procedural",
+  "monitoring",
+  "other"
+];
+const enforceabilityOptions = ["fully_enforceable", "partially_enforceable", "not_enforceable"];
+const recommendedActionOptions = ["none", "warn", "redact", "require_approval", "block"];
 
 export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
   const router = useRouter();
@@ -91,7 +106,11 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
   }
 
   function updateRule(id: string, patch: Partial<ImportedPolicyRule>) {
-    setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)));
+    const normalizedPatch =
+      patch.enforceability === "not_enforceable"
+        ? ({ ...patch, recommendedAction: null, action: "allow", fallbackAction: "allow" } satisfies Partial<ImportedPolicyRule>)
+        : patch;
+    setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, ...normalizedPatch } : rule)));
   }
 
   function toggleRule(id: string) {
@@ -110,7 +129,7 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
         <div>
           <h3 className="text-sm font-semibold text-accord-text">Import an AI policy document</h3>
           <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-accord-muted">
-            PDF, DOCX, DOC, TXT, or Markdown. Accord extracts obligations as editable draft rules — raw text is never saved.
+            PDF, DOCX, DOC, TXT, or Markdown. Accord extracts obligations as editable draft rules; the full raw document is never saved.
           </p>
         </div>
 
@@ -199,30 +218,87 @@ function ImportedRuleEditor({
   onToggle: () => void;
   onChange: (patch: Partial<ImportedPolicyRule>) => void;
 }) {
+  const guidanceOnly = isPolicyGuidanceOnly(rule.enforceability);
+  const recommendedActionValue = rule.recommendedAction ?? "none";
+
   return (
     <article className={cn("rounded-md border bg-accord-panel p-3", selected ? "border-accord-primary/40" : "border-accord-border")}>
-      <div className="grid gap-4 xl:grid-cols-[auto_minmax(220px,0.75fr)_minmax(0,1.25fr)] xl:items-start">
-        <label className="flex items-center gap-2 text-[13px] font-medium text-accord-text xl:pt-7">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <label className="flex items-center gap-2 text-[13px] font-medium text-accord-text">
           <input className="h-4 w-4 accent-accord-primary" type="checkbox" checked={selected} onChange={onToggle} />
           Use
         </label>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <EnforceabilityPill enforceability={rule.enforceability} />
+          <span className="rounded border border-accord-border px-1.5 py-0.5 font-mono text-[11px] text-accord-muted">
+            {formatConfidence(rule.confidence)}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-4 xl:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.2fr)] xl:items-start">
 
         <div className="grid gap-3">
           <Input label="Rule name" value={rule.name} onChange={(value) => onChange({ name: value })} />
           <Input label="Rule key" value={rule.ruleKey} onChange={(value) => onChange({ ruleKey: value })} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <Select label="Action" value={rule.action} options={actionOptions} onChange={(value) => onChange({ action: value as ImportedPolicyRule["action"] })} />
-            <Select label="Severity" value={rule.severity} options={severityOptions} onChange={(value) => onChange({ severity: value as ImportedPolicyRule["severity"] })} />
+            <Select label="Control type" value={rule.controlType} options={controlTypeOptions} onChange={(value) => onChange({ controlType: value as ImportedPolicyRule["controlType"] })} />
+            <Select label="Enforceability" value={rule.enforceability} options={enforceabilityOptions} onChange={(value) => onChange({ enforceability: value as ImportedPolicyRule["enforceability"] })} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
+            <Select
+              label="Recommended action"
+              value={recommendedActionValue}
+              options={recommendedActionOptions}
+              disabled={guidanceOnly}
+              onChange={(value) => {
+                const recommendedAction = value === "none" ? null : (value as ImportedPolicyRule["recommendedAction"]);
+                onChange({
+                  recommendedAction,
+                  action: recommendedActionToRuleAction(recommendedAction)
+                });
+              }}
+            />
+            <Select
+              label="Action"
+              value={rule.action}
+              options={actionOptions}
+              disabled={guidanceOnly}
+              onChange={(value) =>
+                onChange({
+                  action: value as ImportedPolicyRule["action"],
+                  recommendedAction: ruleActionToRecommendedAction(value as ImportedPolicyRule["action"])
+                })
+              }
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Select label="Severity" value={rule.severity} options={severityOptions} onChange={(value) => onChange({ severity: value as ImportedPolicyRule["severity"] })} />
             <Select label="Provider" value={rule.aiProvider} options={providerOptions} onChange={(value) => onChange({ aiProvider: value })} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Destination" value={rule.destinationType} options={destinationOptions} onChange={(value) => onChange({ destinationType: value as ImportedPolicyRule["destinationType"] })} />
+            <Input
+              label="Destination types"
+              value={rule.destinationTypes.join(", ")}
+              onChange={(value) =>
+                onChange({
+                  destinationTypes: value
+                    .split(",")
+                    .map((item) => item.trim())
+                    .filter(Boolean) as ImportedPolicyRule["destinationTypes"]
+                })
+              }
+            />
           </div>
         </div>
 
         <div className="grid gap-3">
+          <TextArea label="Requirement summary" rows={2} value={rule.requirementSummary} onChange={(value) => onChange({ requirementSummary: value })} />
           <TextArea label="Supporting excerpt" rows={4} value={rule.supportingExcerpt} onChange={(value) => onChange({ supportingExcerpt: value })} />
+          <TextArea label="Condition" rows={2} value={rule.conditionDescription} onChange={(value) => onChange({ conditionDescription: value })} />
           <TextArea label="Employee explanation" rows={3} value={rule.employeeExplanation} onChange={(value) => onChange({ employeeExplanation: value })} />
+          <TextArea label="Reasoning" rows={3} value={rule.reasoning} onChange={(value) => onChange({ reasoning: value })} />
           <Input
             label="Data categories"
             value={rule.dataCategories.join(", ")}
@@ -235,8 +311,20 @@ function ImportedRuleEditor({
               })
             }
           />
+          {rule.destinationAuthorizations.length ? (
+            <div className="rounded-md border border-accord-border bg-accord-surface/40 px-3 py-2">
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Destination authorization</p>
+              <div className="mt-1.5 space-y-1">
+                {rule.destinationAuthorizations.map((authorization, index) => (
+                  <p key={`${authorization.provider}-${index}`} className="text-[12px] leading-5 text-accord-muted">
+                    {authorization.provider} · {authorization.destinationType} · {authorization.dataCategories.join(", ")} · {authorization.condition}
+                  </p>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <p className="font-mono text-[11px] text-accord-muted">
-            {rule.sourcePolicyName} · {rule.sourceSection} · {rule.confidence}% confidence
+            {rule.sourcePolicyName} · {rule.sourceSection}
           </p>
         </div>
       </div>
@@ -261,29 +349,65 @@ function Select({
   label,
   value,
   options,
-  onChange
+  onChange,
+  disabled
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (value: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="grid gap-1.5 text-xs font-medium text-accord-text">
       {label}
       <select
-        className="h-8 rounded-md border border-accord-border bg-accord-panel px-2.5 text-[13px] text-accord-text outline-none transition-colors focus:border-accord-primary"
+        className="h-8 rounded-md border border-accord-border bg-accord-panel px-2.5 text-[13px] text-accord-text outline-none transition-colors focus:border-accord-primary disabled:cursor-not-allowed disabled:opacity-60"
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       >
         {options.map((option) => (
           <option key={option} value={option}>
-            {option.replace(/_/g, " ")}
+            {formatLabel(option)}
           </option>
         ))}
       </select>
     </label>
   );
+}
+
+function EnforceabilityPill({ enforceability }: { enforceability: ImportedPolicyRule["enforceability"] }) {
+  return (
+    <span
+      className={cn(
+        "rounded border px-1.5 py-0.5 text-[11px] font-medium",
+        enforceability === "fully_enforceable" && "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/10 dark:text-emerald-400",
+        enforceability === "partially_enforceable" && "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-400",
+        enforceability === "not_enforceable" && "border-accord-border bg-accord-surface text-accord-muted"
+      )}
+    >
+      {enforceabilityLabel(enforceability)}
+    </span>
+  );
+}
+
+function enforceabilityLabel(enforceability: ImportedPolicyRule["enforceability"]) {
+  if (enforceability === "fully_enforceable") return "Fully enforceable";
+  if (enforceability === "partially_enforceable") return "Partially enforceable";
+  return "Policy guidance only";
+}
+
+function formatConfidence(value: number) {
+  const normalized = value <= 1 ? value * 100 : value;
+  return `${Math.round(normalized)}% confidence`;
+}
+
+function formatLabel(value: string) {
+  if (value === "none") return "None";
+  return value
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function TextArea({

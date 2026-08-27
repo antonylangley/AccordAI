@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "lint": "next lint",
+    "test": "vitest run",
     "eval:redaction": "node scripts/evaluate-redaction.cjs",
     "eval:person": "node scripts/evaluate-person-detection.cjs",
     "guard:dev": "npm --prefix extension run dev",
@@ -35,6 +36,7 @@
     "eslint-config-next": "^14.2.5",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.4",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.3",
+    "vitest": "^2.1.9"
   }
 }

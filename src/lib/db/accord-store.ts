@@ -19,6 +19,14 @@ import {
 import type { ChatGatewayResponse, ChatRiskFlag } from "@/lib/chat/types";
 import type { GovernanceEvent, ProviderName, RiskLevel, Stat } from "@/lib/mock-data";
 import { dashboardStats } from "@/lib/mock-data";
+import { canApprovePolicyRuleControl, canPublishPolicyRuleControl, ruleActionToRecommendedAction } from "@/lib/policy-import/enforceability";
+import type {
+  ImportedPolicyControlType,
+  ImportedPolicyDestinationAuthorization,
+  ImportedPolicyDestinationType,
+  ImportedPolicyEnforceability,
+  ImportedPolicyRecommendedAction
+} from "@/lib/policy-import/types";
 
 type StoredGovernanceEventRow = {
   id: string;
@@ -66,18 +74,28 @@ export type AccordPolicyRule = {
   ruleKey: string;
   version: number;
   name: string;
+  sourceText: string;
   sourcePolicyName: string;
   sourceSection: string;
   supportingExcerpt: string;
+  requirementSummary: string;
+  controlType: ImportedPolicyControlType;
+  enforceability: ImportedPolicyEnforceability;
   dataCategories: string[];
+  destinationTypes: ImportedPolicyDestinationType[];
   userScope: string;
   departmentScope: string;
   aiProvider: string;
   destinationType: PolicyDestinationType;
+  recommendedAction: ImportedPolicyRecommendedAction | null;
   action: PolicyRuleAction;
   fallbackAction: PolicyRuleAction;
   severity: RiskLevel;
+  conditionDescription: string;
   employeeExplanation: string;
+  reasoning: string;
+  destinationAuthorizations: ImportedPolicyDestinationAuthorization[];
+  confidence: number;
   effectiveDate: string;
   status: PolicyRuleStatus;
   active: boolean;
@@ -92,18 +110,28 @@ export type AccordPolicyRule = {
 export type PolicyRuleDraftInput = {
   name?: string;
   ruleKey?: string;
+  sourceText?: string;
   sourcePolicyName?: string;
   sourceSection?: string;
   supportingExcerpt?: string;
+  requirementSummary?: string;
+  controlType?: ImportedPolicyControlType;
+  enforceability?: ImportedPolicyEnforceability;
   dataCategories?: string[] | string;
+  destinationTypes?: ImportedPolicyDestinationType[] | string;
   userScope?: string;
   departmentScope?: string;
   aiProvider?: string;
   destinationType?: PolicyDestinationType;
+  recommendedAction?: ImportedPolicyRecommendedAction | null;
   action?: PolicyRuleAction;
   fallbackAction?: PolicyRuleAction;
   severity?: RiskLevel;
+  conditionDescription?: string;
   employeeExplanation?: string;
+  reasoning?: string;
+  destinationAuthorizations?: ImportedPolicyDestinationAuthorization[];
+  confidence?: number;
   effectiveDate?: string;
 };
 
@@ -630,10 +658,15 @@ export async function setPolicyRuleStatus(id: string, status: PolicyRuleStatus) 
   const supabase = getSupabaseServerClient();
   if (!supabase) throw new Error("Supabase is not configured.");
 
-  const current = await supabase.from("accord_policy_rules").select("company_slug,rule_key").eq("id", id).maybeSingle();
+  const current = await supabase.from("accord_policy_rules").select("*").eq("id", id).maybeSingle();
   if (current.error) throw current.error;
 
   if (status === "approved" && current.data) {
+    const currentRule = toPolicyRule(current.data as Record<string, unknown>);
+    if (!canApprovePolicyRuleControl(currentRule)) {
+      throw new Error("Policy guidance-only requirements must be converted into an enforceable control before approval.");
+    }
+
     const deactivateResult = await supabase
       .from("accord_policy_rules")
       .update({
@@ -725,7 +758,7 @@ export async function publishPolicyBundle(
     ((rulesResult.data || []) as Array<Record<string, unknown>>)
       .map(toPolicyRule)
       .filter((rule) => rule.active || publishedRuleIds.has(rule.id))
-  );
+  ).filter(canPublishPolicyRuleControl);
   const requestedBuiltIns = options.enabledBuiltInBundleIds ?? latestPublishedBundle?.enabledBuiltInBundleIds ?? DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS;
   const knownBuiltIns = new Set(BUILT_IN_POLICY_BUNDLES.map((bundle) => bundle.id));
   const enabledBuiltInBundleIds = Array.from(new Set(requestedBuiltIns.filter((id) => knownBuiltIns.has(id)))).sort();
@@ -897,10 +930,15 @@ function developmentPolicyRule(companySlug = "test-company") {
     rule_key: "external_ai_client_info",
     version: 1,
     name: "Do not submit client identifiers to personal AI",
+    source_text:
+      "Employees must not submit client names, addresses, account numbers, veterinary medical records, payment information, or other identifying information to personal or unapproved AI services. When identifying information can be removed without preventing the task, it must be removed before submission. If adequate de-identification is not possible, the submission must be blocked or routed for approval.",
     source_policy_name: "External AI Usage Policy",
     source_section: "4.2 - Client Information",
     supporting_excerpt:
       "Employees must not submit client names, addresses, account numbers, veterinary medical records, payment information, or other identifying information to personal or unapproved AI services. When identifying information can be removed without preventing the task, it must be removed before submission. If adequate de-identification is not possible, the submission must be blocked or routed for approval.",
+    requirement_summary: "Client identifiers may not be sent to personal or unapproved AI unless they can be safely de-identified.",
+    control_type: "data_redaction",
+    enforceability: "fully_enforceable",
     data_categories: [
       "client_identifying_info",
       "personal_data",
@@ -909,15 +947,21 @@ function developmentPolicyRule(companySlug = "test-company") {
       "veterinary_medical_record",
       "payment_information"
     ],
+    destination_types: ["personal", "unapproved"],
     user_scope: "all",
     department_scope: "all",
     ai_provider: "chatgpt",
     destination_type: "personal",
+    recommended_action: "redact",
     action: "transform",
     fallback_action: "block",
     severity: "high",
+    condition_description: "Applies when Accord detects client identifying information in content sent to personal or unapproved AI destinations.",
     employee_explanation:
       "Client identifying information cannot be sent to personal AI. Accord will remove identifiers when it can do so safely, otherwise the submission is blocked or routed for approval.",
+    reasoning: "Client identifiers are observable at the AI interaction layer through deterministic detectors, and the destination scope is limited to personal or unapproved AI services.",
+    confidence: 0.92,
+    destination_authorizations: [],
     effective_date: new Date().toISOString().slice(0, 10),
     status: "approved",
     active: true,
@@ -1003,18 +1047,26 @@ function policyRuleDraftFromForm(formData: FormData, companySlug: string) {
     {
       ruleKey: readFormString(formData, "ruleKey"),
       name: readFormString(formData, "name"),
+      sourceText: readFormString(formData, "sourceText"),
       sourcePolicyName: readFormString(formData, "sourcePolicyName"),
       sourceSection: readFormString(formData, "sourceSection"),
       supportingExcerpt: readFormString(formData, "supportingExcerpt"),
+      requirementSummary: readFormString(formData, "requirementSummary"),
+      controlType: normalizeImportedControlType(readFormString(formData, "controlType")),
+      enforceability: normalizeImportedEnforceability(readFormString(formData, "enforceability")),
       dataCategories: readFormList(formData, "dataCategories"),
+      destinationTypes: readFormDestinationTypes(formData, "destinationTypes"),
       userScope: readFormString(formData, "userScope"),
       departmentScope: readFormString(formData, "departmentScope"),
       aiProvider: readFormString(formData, "aiProvider"),
       destinationType: normalizeDestinationType(readFormString(formData, "destinationType")),
+      recommendedAction: normalizeRecommendedAction(readFormString(formData, "recommendedAction")),
       action: normalizePolicyAction(readFormString(formData, "action")),
       fallbackAction: normalizePolicyAction(readFormString(formData, "fallbackAction")),
       severity: normalizeRiskLevel(readFormString(formData, "severity"), 0),
+      conditionDescription: readFormString(formData, "conditionDescription"),
       employeeExplanation: readFormString(formData, "employeeExplanation"),
+      reasoning: readFormString(formData, "reasoning"),
       effectiveDate: readFormString(formData, "effectiveDate")
     },
     companySlug
@@ -1023,23 +1075,42 @@ function policyRuleDraftFromForm(formData: FormData, companySlug: string) {
 
 function policyRuleDraftFromInput(input: PolicyRuleDraftInput, companySlug: string) {
   const ruleKey = slugify(input.ruleKey || input.name || "policy-rule").replace(/-/g, "_");
+  const supportingExcerpt = clampString(input.supportingExcerpt, 3000);
+  const enforceability = normalizeImportedEnforceability(input.enforceability);
+  const action = enforceability === "not_enforceable" ? "allow" : normalizePolicyAction(input.action);
+  const destinationType = normalizeDestinationType(input.destinationType);
+  const destinationTypes = normalizePolicyDestinationTypes(input.destinationTypes, destinationType);
+  const recommendedAction =
+    enforceability === "not_enforceable"
+      ? null
+      : normalizeRecommendedAction(input.recommendedAction ?? ruleActionToRecommendedAction(action));
 
   return {
     company_slug: companySlug,
     rule_key: ruleKey,
     name: clampString(input.name, 300) || "Untitled policy rule",
+    source_text: clampString(input.sourceText, 3000) || supportingExcerpt,
     source_policy_name: clampString(input.sourcePolicyName, 300) || "External AI Usage Policy",
     source_section: clampString(input.sourceSection, 300) || "Imported policy section",
-    supporting_excerpt: clampString(input.supportingExcerpt, 3000),
+    supporting_excerpt: supportingExcerpt,
+    requirement_summary: clampString(input.requirementSummary, 600) || clampString(input.name, 300) || "Imported policy requirement",
+    control_type: normalizeImportedControlType(input.controlType),
+    enforceability,
     data_categories: normalizePolicyDataCategories(input.dataCategories),
+    destination_types: destinationTypes,
     user_scope: clampString(input.userScope, 160) || "all",
     department_scope: clampString(input.departmentScope, 160) || "all",
     ai_provider: clampString(input.aiProvider, 80) || "chatgpt",
-    destination_type: normalizeDestinationType(input.destinationType),
-    action: normalizePolicyAction(input.action),
-    fallback_action: normalizePolicyAction(input.fallbackAction),
+    destination_type: destinationType,
+    recommended_action: recommendedAction,
+    action,
+    fallback_action: enforceability === "not_enforceable" ? "allow" : normalizePolicyAction(input.fallbackAction),
     severity: normalizeRiskLevel(input.severity, 0),
+    condition_description: clampString(input.conditionDescription, 1000),
     employee_explanation: clampString(input.employeeExplanation, 1500) || "Accord applied a company AI usage policy.",
+    reasoning: clampString(input.reasoning, 1500),
+    destination_authorizations: normalizeDestinationAuthorizations(input.destinationAuthorizations),
+    confidence: normalizeConfidence(input.confidence, 0.7),
     effective_date: clampString(input.effectiveDate, 20) || new Date().toISOString().slice(0, 10)
   };
 }
@@ -1059,18 +1130,28 @@ function toPolicyRule(row: Record<string, unknown>): AccordPolicyRule {
     ruleKey: stringValue(row.rule_key),
     version: numberValue(row.version, 1),
     name: stringValue(row.name),
+    sourceText: stringValue(row.source_text || row.supporting_excerpt),
     sourcePolicyName: stringValue(row.source_policy_name),
     sourceSection: stringValue(row.source_section),
     supportingExcerpt: stringValue(row.supporting_excerpt),
+    requirementSummary: stringValue(row.requirement_summary || row.name),
+    controlType: normalizeImportedControlType(row.control_type),
+    enforceability: normalizeImportedEnforceability(row.enforceability),
     dataCategories: normalizeStringArray(row.data_categories, 40),
+    destinationTypes: normalizePolicyDestinationTypes(row.destination_types, normalizeDestinationType(stringValue(row.destination_type))),
     userScope: stringValue(row.user_scope) || "all",
     departmentScope: stringValue(row.department_scope) || "all",
     aiProvider: stringValue(row.ai_provider) || "any",
     destinationType: normalizeDestinationType(stringValue(row.destination_type)),
+    recommendedAction: normalizeRecommendedAction(row.recommended_action ?? ruleActionToRecommendedAction(normalizePolicyAction(stringValue(row.action)))),
     action: normalizePolicyAction(stringValue(row.action)),
     fallbackAction: normalizePolicyAction(stringValue(row.fallback_action)),
     severity: normalizeRiskLevel(row.severity, 0),
+    conditionDescription: stringValue(row.condition_description),
     employeeExplanation: stringValue(row.employee_explanation),
+    reasoning: stringValue(row.reasoning),
+    destinationAuthorizations: normalizeDestinationAuthorizations(row.destination_authorizations),
+    confidence: normalizeConfidence(row.confidence, 0.7),
     effectiveDate: stringValue(row.effective_date),
     status: normalizePolicyRuleStatus(row.status),
     active: row.active === true,
@@ -1123,7 +1204,7 @@ function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRu
     id: rule.id,
     version: rule.version,
     title: rule.name,
-    description: rule.employeeExplanation || rule.supportingExcerpt || rule.name,
+    description: [rule.employeeExplanation || rule.supportingExcerpt || rule.name, rule.conditionDescription].filter(Boolean).join(" "),
     category: organizationRuleCategory(rule.dataCategories),
     severity: policySeverity(rule.severity),
     action: policyAction(rule.action),
@@ -1134,7 +1215,15 @@ function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRu
       documentId: rule.id,
       documentName: rule.sourcePolicyName,
       section: rule.sourceSection,
-      excerpt: rule.supportingExcerpt
+      excerpt: rule.supportingExcerpt,
+      sourceText: rule.sourceText,
+      requirementSummary: rule.requirementSummary,
+      controlType: rule.controlType,
+      enforceability: rule.enforceability,
+      conditionDescription: rule.conditionDescription,
+      reasoning: rule.reasoning,
+      confidence: rule.confidence,
+      destinationAuthorizations: rule.destinationAuthorizations
     },
     scope: {
       enabled: rule.active,
@@ -1152,7 +1241,7 @@ function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRu
     explanation: {
       short: rule.employeeExplanation || "Accord applied an organization AI usage policy.",
       user: rule.employeeExplanation || undefined,
-      admin: rule.supportingExcerpt || undefined
+      admin: [rule.supportingExcerpt, rule.reasoning].filter(Boolean).join(" ")
     }
   };
 }
@@ -1255,6 +1344,13 @@ function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSi
     if (/payment|card/.test(category)) signals.add("PAYMENT_CARD");
     if (/ssn/.test(category)) signals.add("SSN");
     if (/ip[_-]?address/.test(category)) signals.add("IP_ADDRESS");
+    if (/\bphi\b|protected[_-]?health|hipaa|patient[_-]?health|clinical|medical[_-]?record/.test(category)) signals.add("REGULATED_MEDICAL");
+    if (/\bpii\b|personally[_-]?identifiable|personal[_-]?information|personal[_-]?data/.test(category)) {
+      for (const signal of ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT", "SSN"] as PolicyDetectorSignal[]) signals.add(signal);
+    }
+    if (/financial[_-]?information|bank|loan|tax|payroll/.test(category)) signals.add("REGULATED_FINANCIAL");
+    if (/legal[_-]?documents?|privileged|litigation/.test(category)) signals.add("REGULATED_LEGAL");
+    if (/employment[_-]?records?|candidate[_-]?records?|hr[_-]?records?/.test(category)) signals.add("REGULATED_HR");
     if (/client_identifying|personal_data|identifier/.test(category)) {
       for (const signal of ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT"] as PolicyDetectorSignal[]) signals.add(signal);
     }
@@ -1265,22 +1361,24 @@ function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSi
 function organizationRuleConcepts(categories: string[]): PolicyConcept[] {
   const concepts = new Set<PolicyConcept>();
   for (const category of categories) {
-    if (/veterinary|medical_record|case_record/.test(category)) concepts.add("VETERINARY_RECORD");
+    if (/\bphi\b|veterinary|medical_record|protected[_-]?health|clinical|case_record/.test(category)) concepts.add("VETERINARY_RECORD");
     if (/full[_-]?(?:veterinary|medical|case)[_-]?record/.test(category)) concepts.add("FULL_VETERINARY_RECORD");
-    if (/client/.test(category)) concepts.add("CLIENT_CONTEXT");
-    if (/employee|hr|compensation|performance|termination/.test(category)) concepts.add("EMPLOYEE_SENSITIVE_RECORD");
-    if (/financial|forecast|projection/.test(category)) concepts.add("UNPUBLISHED_FINANCIALS");
+    if (/client|customer|patient/.test(category)) concepts.add("CLIENT_CONTEXT");
+    if (/employee|employment|candidate|hr|compensation|performance|termination/.test(category)) concepts.add("EMPLOYEE_SENSITIVE_RECORD");
+    if (/financial|bank|loan|tax|payroll|forecast|projection/.test(category)) concepts.add("UNPUBLISHED_FINANCIALS");
     if (/strategy|expansion/.test(category)) concepts.add("INTERNAL_STRATEGY");
     if (/pricing/.test(category)) concepts.add("INTERNAL_PRICING");
-    if (/contract|vendor/.test(category)) concepts.add("CONTRACT_VENDOR_TERMS");
+    if (/contract|vendor|legal_document|privileged|litigation/.test(category)) concepts.add("CONTRACT_VENDOR_TERMS");
+    if (/confidential_company_data|confidential|proprietary|non_public/.test(category)) concepts.add("CONFIDENTIAL_BUSINESS");
+    if (/source_code|codebase|repository|technical_documentation/.test(category)) concepts.add("PROPRIETARY_TECHNICAL_DOCUMENTATION");
   }
   return Array.from(concepts);
 }
 
 function organizationRuleCategory(categories: string[]): PolicyCategory {
   if (categories.some((category) => /secret|credential|password|token|private_key|database_url/.test(category))) return "SECURITY_CREDENTIALS";
-  if (categories.some((category) => /employee|hr|compensation|performance|termination/.test(category))) return "EMPLOYEE_HR";
-  if (categories.some((category) => /client|veterinary|medical_record|case_record/.test(category))) return "CLIENT_VETERINARY_DATA";
+  if (categories.some((category) => /employee|employment|candidate|hr|compensation|performance|termination/.test(category))) return "EMPLOYEE_HR";
+  if (categories.some((category) => /\bphi\b|client|customer|patient|veterinary|medical_record|protected_health|case_record/.test(category))) return "CLIENT_VETERINARY_DATA";
   return "CONFIDENTIAL_BUSINESS";
 }
 
@@ -2201,6 +2299,21 @@ function readFormList(formData: FormData, key: string) {
     .slice(0, 40);
 }
 
+function readFormDestinationTypes(formData: FormData, key: string): ImportedPolicyDestinationType[] {
+  const value = readFormString(formData, key);
+  if (!value) return [];
+
+  const allowed: ImportedPolicyDestinationType[] = ["any", "approved", "enterprise", "personal", "unapproved"];
+  return Array.from(
+    new Set(
+      value
+        .split(/[\n,]/)
+        .map((item) => item.trim())
+        .filter((item): item is ImportedPolicyDestinationType => allowed.includes(item as ImportedPolicyDestinationType))
+    )
+  ).slice(0, 10);
+}
+
 function normalizePolicyAction(value: unknown): PolicyRuleAction {
   const allowed: PolicyRuleAction[] = ["allow", "transform", "warn", "require_approval", "block"];
   return allowed.includes(value as PolicyRuleAction) ? (value as PolicyRuleAction) : "warn";
@@ -2209,6 +2322,69 @@ function normalizePolicyAction(value: unknown): PolicyRuleAction {
 function normalizeDestinationType(value: unknown): PolicyDestinationType {
   const allowed: PolicyDestinationType[] = ["any", "approved", "enterprise", "personal", "unapproved"];
   return allowed.includes(value as PolicyDestinationType) ? (value as PolicyDestinationType) : "personal";
+}
+
+function normalizePolicyDestinationTypes(value: unknown, fallback: PolicyDestinationType): ImportedPolicyDestinationType[] {
+  const allowed: ImportedPolicyDestinationType[] = ["any", "approved", "enterprise", "personal", "unapproved"];
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(/[\n,]/)
+      : [];
+  const normalized = values
+    .map((item) => (typeof item === "string" ? item.trim() : ""))
+    .filter((item): item is ImportedPolicyDestinationType => allowed.includes(item as ImportedPolicyDestinationType));
+  return Array.from(new Set(normalized.length ? normalized : [fallback as ImportedPolicyDestinationType]));
+}
+
+function normalizeImportedControlType(value: unknown): ImportedPolicyControlType {
+  const allowed: ImportedPolicyControlType[] = [
+    "data_submission",
+    "destination_restriction",
+    "data_redaction",
+    "security_secret",
+    "tool_usage",
+    "human_review",
+    "output_usage",
+    "procedural",
+    "monitoring",
+    "other"
+  ];
+  return allowed.includes(value as ImportedPolicyControlType) ? (value as ImportedPolicyControlType) : "data_submission";
+}
+
+function normalizeImportedEnforceability(value: unknown): ImportedPolicyEnforceability {
+  const allowed: ImportedPolicyEnforceability[] = ["fully_enforceable", "partially_enforceable", "not_enforceable"];
+  return allowed.includes(value as ImportedPolicyEnforceability) ? (value as ImportedPolicyEnforceability) : "fully_enforceable";
+}
+
+function normalizeRecommendedAction(value: unknown): ImportedPolicyRecommendedAction | null {
+  if (value == null || value === "" || value === "none") return null;
+  const allowed: ImportedPolicyRecommendedAction[] = ["block", "warn", "redact", "require_approval"];
+  return allowed.includes(value as ImportedPolicyRecommendedAction) ? (value as ImportedPolicyRecommendedAction) : null;
+}
+
+function normalizeDestinationAuthorizations(value: unknown): ImportedPolicyDestinationAuthorization[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(isRecord)
+    .map((item) => ({
+      provider: clampString(item.provider, 80) || "any",
+      destinationType: normalizeDestinationType(item.destinationType) as ImportedPolicyDestinationType,
+      dataCategories: normalizePolicyDataCategories(
+        Array.isArray(item.dataCategories) || typeof item.dataCategories === "string" ? item.dataCategories : []
+      ),
+      condition: clampString(item.condition, 500)
+    }))
+    .filter((item) => item.dataCategories.length || item.condition)
+    .slice(0, 20);
+}
+
+function normalizeConfidence(value: unknown, fallback: number) {
+  const number = typeof value === "number" ? value : typeof value === "string" ? Number.parseFloat(value) : fallback;
+  const unitValue = number > 1 && number <= 100 ? number / 100 : number;
+  return Math.min(1, Math.max(0, Number((Number.isFinite(unitValue) ? unitValue : fallback).toFixed(2))));
 }
 
 function normalizePolicyRuleStatus(value: unknown): PolicyRuleStatus {

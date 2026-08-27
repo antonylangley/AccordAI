@@ -116,6 +116,7 @@ export function evaluatePolicyRule(
   const reasons: string[] = [];
 
   if (!rule.scope.enabled) return rejected(rule, "rule_disabled");
+  if (rule.source.enforceability === "not_enforceable") return rejected(rule, "source_not_enforceable");
   if (rule.scope.providers?.length && !rule.scope.providers.map(normalizeScopeValue).includes(normalizedProvider)) {
     return rejected(rule, "provider_not_in_scope");
   }
