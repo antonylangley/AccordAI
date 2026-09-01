@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { beforeEach, expect, test, vi } from "vitest";
 
 const transformers = vi.hoisted(() => {
@@ -30,7 +32,8 @@ const transformers = vi.hoisted(() => {
     nativeFetch: vi.fn(async () => ({
       ok: true,
       status: 200,
-      headers: { get: () => "application/json" }
+      headers: { get: () => "application/wasm" },
+      arrayBuffer: async () => new Uint8Array([0, 97, 115, 109]).buffer
     })),
     env: {
       allowLocalModels: false,
@@ -44,7 +47,8 @@ const transformers = vi.hoisted(() => {
       backends: {
         onnx: {
           wasm: {
-            wasmPaths: "" as string | { wasm: string },
+            wasmPaths: "" as string | { mjs: string; wasm: string },
+            wasmBinary: undefined as Uint8Array | undefined,
             proxy: true,
             numThreads: 4
           }
@@ -85,11 +89,17 @@ test("configures Transformers.js to fetch packaged extension assets without file
   });
   expect(transformers.env.backends.onnx.wasm).toMatchObject({
     wasmPaths: {
+      mjs: "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.mjs",
       wasm: "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.wasm"
     },
+    wasmBinary: new Uint8Array([0, 97, 115, 109]),
     proxy: false,
     numThreads: 1
   });
+  expect(transformers.nativeFetch).toHaveBeenCalledWith(
+    "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.wasm",
+    { credentials: "same-origin" }
+  );
   expect(typeof transformers.env.fetch).toBe("function");
 
   const result = await detectPersonCandidates("Notify Jean-Pierre");
@@ -114,4 +124,11 @@ test("configures Transformers.js to fetch packaged extension assets without file
       name: "accord-ner-v0.3.1"
     }
   });
+});
+
+test("packages ONNX Runtime WASM backend assets used by the MV3 service worker", () => {
+  const publicRoot = join(process.cwd(), "public", "ort");
+
+  expect(existsSync(join(publicRoot, "ort-wasm-simd-threaded.asyncify.mjs"))).toBe(true);
+  expect(existsSync(join(publicRoot, "ort-wasm-simd-threaded.asyncify.wasm"))).toBe(true);
 });

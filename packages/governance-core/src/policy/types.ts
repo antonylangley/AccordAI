@@ -54,16 +54,20 @@ export type PolicyRuleSource = {
   bundleName?: string;
   documentId?: string;
   documentName?: string;
+  ruleId?: string;
   section?: string;
   page?: number;
   excerpt?: string;
   sourceText?: string;
   requirementSummary?: string;
   controlType?: string;
+  requirementDirection?: "prompt_input" | "ai_provider_usage" | "ai_output_usage" | "human_process" | "organization_policy" | "unknown";
   enforceability?: "fully_enforceable" | "partially_enforceable" | "not_enforceable";
   conditionDescription?: string;
   reasoning?: string;
   confidence?: number;
+  recommendedAction?: string | null;
+  recommendedSeverity?: string;
   destinationAuthorizations?: Array<{
     provider: string;
     destinationType: string;
@@ -158,7 +162,7 @@ export type PolicyEvaluationInput = {
 };
 
 export type PolicyCandidateReason = {
-  type: "detector" | "concept" | "keyword" | "semantic_example";
+  type: "detector" | "concept" | "keyword" | "semantic_example" | "scope";
   value: string;
   score: number;
 };

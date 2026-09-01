@@ -1,61 +1,104 @@
 import { validatePublishedEnforcementBundle } from "@accord/governance-core";
 import { getApiBaseUrl } from "../auth/config";
 import { getGuardAccessToken, getGuardAuthSnapshot } from "../auth/session";
+import type { GuardAuthSnapshot, GuardPolicySync, GuardPolicySyncError } from "../auth/types";
+import { getLocalFallbackPolicyBundle, LOCAL_FALLBACK_POLICY_BUNDLE_ID } from "./local-fallback";
 import type { PublishedPolicyBundle } from "./types";
 
 const CACHE_KEY_PREFIX = "accordPolicyBundle";
+const SYNC_METADATA_KEY_PREFIX = "accordPolicyBundleSync";
 const FETCH_TTL_MS = 60_000;
+
+export type ActivePolicyBundleState = "organization_synced" | "organization_cached" | "local_fallback";
+export type ActivePolicyBundleSourceType = "organization" | "organization_cache" | "local_fallback";
+
+export type ActivePolicyBundleStatus = {
+  state: ActivePolicyBundleState;
+  sourceType: ActivePolicyBundleSourceType;
+  bundle: PublishedPolicyBundle;
+  organizationId?: string;
+  organizationName?: string;
+  bundleId: string;
+  version: number;
+  ruleCount: number;
+  lastPublishedAt?: string;
+  lastSuccessfulSyncAt?: string;
+  fallbackActive: boolean;
+  organizationSpecificRulesAvailable: boolean;
+  syncError?: GuardPolicySyncError;
+};
+
+type CachedBundleMetadata = {
+  bundleId: string;
+  version: number;
+  ruleCount: number;
+  lastPublishedAt?: string;
+  lastSuccessfulSyncAt: string;
+  checksum?: string;
+};
 
 let memoryCache: {
   organizationId: string;
   fetchedAt: number;
-  bundle: PublishedPolicyBundle | null;
+  status: ActivePolicyBundleStatus;
 } | null = null;
 
 export async function getActivePolicyBundle({ force = false }: { force?: boolean } = {}) {
-  if (!globalThis.chrome?.storage?.local) {
-    logBundleDiagnostic({
-      requestStarted: false,
-      responseReceived: false,
-      validationPassed: false,
-      cacheHit: false,
-      errorStage: "storage_unavailable"
+  return (await getActivePolicyBundleStatus({ force })).bundle;
+}
+
+export async function getActivePolicyBundleStatus({ force = false }: { force?: boolean } = {}) {
+  const requestedAt = new Date();
+  const storage = globalThis.chrome?.storage?.local;
+
+  if (!storage) {
+    const status = localFallbackStatus({
+      syncError: syncError("storage_unavailable", requestedAt, { recoverable: true })
     });
-    return null;
+    logBundleDiagnostic(diagnosticForStatus(status, { requestStarted: false, responseReceived: false }));
+    return status;
   }
 
-  const account = await getGuardAuthSnapshot();
+  const account = await getGuardAuthSnapshot({ force });
   if (account.status !== "authenticated" || !account.organization || !account.membership) {
-    logBundleDiagnostic({
-      requestStarted: false,
-      responseReceived: false,
-      validationPassed: false,
-      cacheHit: false,
-      errorStage: "not_authenticated"
+    const status = localFallbackStatus({
+      organizationName: account.status === "authenticated" ? account.organization?.name : undefined,
+      syncError: syncError(authErrorCategory(account), requestedAt, { recoverable: true })
     });
-    return null;
+    logBundleDiagnostic(diagnosticForStatus(status, { requestStarted: false, responseReceived: false }));
+    return status;
   }
 
   const organizationId = account.organization.id;
-  const now = Date.now();
+  const nowMs = requestedAt.getTime();
 
-  if (!force && memoryCache && memoryCache.organizationId === organizationId && now - memoryCache.fetchedAt < FETCH_TTL_MS) {
-    logBundleDiagnostic({
-      requestStarted: false,
-      responseReceived: false,
-      validationPassed: memoryCache.bundle !== null,
-      cacheHit: true,
-      cacheVersion: memoryCache.bundle?.version,
-      ...bundleMetadata(memoryCache.bundle)
-    });
-    return memoryCache.bundle;
+  if (!force && memoryCache && memoryCache.organizationId === organizationId && nowMs - memoryCache.fetchedAt < FETCH_TTL_MS) {
+    logBundleDiagnostic(
+      diagnosticForStatus(memoryCache.status, {
+        requestStarted: false,
+        responseReceived: false,
+        validationPassed: memoryCache.status.state !== "local_fallback",
+        cacheHit: memoryCache.status.state === "organization_cached"
+      })
+    );
+    return memoryCache.status;
   }
 
   const cached = await readCachedBundle(organizationId);
 
   try {
     const accessToken = await getGuardAccessToken();
-    if (!accessToken) return cached;
+    if (!accessToken) {
+      const status = cachedOrFallback({
+        cached,
+        account,
+        syncError: syncError("access_token_unavailable", requestedAt, { recoverable: true })
+      });
+      memoryCache = { organizationId, fetchedAt: nowMs, status };
+      logBundleDiagnostic(diagnosticForStatus(status, { requestStarted: false, responseReceived: false }));
+      return status;
+    }
+
     const apiBaseUrl = await getApiBaseUrl();
     const requestUrlHost = safeHost(apiBaseUrl);
     logBundleDiagnostic({
@@ -64,61 +107,111 @@ export async function getActivePolicyBundle({ force = false }: { force?: boolean
       responseReceived: false,
       validationPassed: false,
       cacheHit: false,
-      cacheVersion: cached?.version
+      cacheVersion: cached.bundle?.version,
+      policyState: "syncing",
+      sourceType: "organization",
+      fallbackActive: false
     });
+
     const response = await fetch(`${apiBaseUrl}/api/guard/policy-bundle`, {
       cache: "no-store",
       headers: { Authorization: `Bearer ${accessToken}` }
     });
 
     if (!response.ok) {
-      logBundleDiagnostic({
-        requestStarted: true,
-        requestUrlHost,
-        httpStatus: response.status,
-        responseReceived: true,
-        validationPassed: false,
-        cacheHit: cached !== null,
-        cacheVersion: cached?.version,
-        errorStage: "http_response"
+      const status = cachedOrFallback({
+        cached,
+        account,
+        syncError: syncError("http_response", requestedAt, { httpStatus: response.status, recoverable: true })
       });
-      memoryCache = { organizationId, fetchedAt: now, bundle: cached };
-      return cached;
+      memoryCache = { organizationId, fetchedAt: nowMs, status };
+      logBundleDiagnostic(
+        diagnosticForStatus(status, {
+          requestStarted: true,
+          requestUrlHost,
+          httpStatus: response.status,
+          responseReceived: true,
+          validationPassed: false
+        })
+      );
+      return status;
     }
 
     const body = (await response.json()) as { bundle?: PublishedPolicyBundle | null };
     const bundle = isPublishedBundle(body.bundle) ? body.bundle : null;
-    logBundleDiagnostic({
-      requestStarted: true,
-      requestUrlHost,
-      httpStatus: response.status,
-      responseReceived: true,
-      validationPassed: bundle !== null,
-      cacheHit: bundle === null && cached !== null,
-      cacheVersion: cached?.version,
-      errorStage: bundle === null ? "schema_validation" : undefined,
-      errorMessage: bundle === null ? "Published bundle failed schema v2 validation." : undefined,
-      ...bundleMetadata(body.bundle)
-    });
-    if (bundle) await writeCachedBundle(organizationId, bundle);
-    memoryCache = { organizationId, fetchedAt: now, bundle };
-    return bundle || cached;
+
+    if (!bundle) {
+      const status = cachedOrFallback({
+        cached,
+        account,
+        syncError: syncError("schema_validation", requestedAt, { recoverable: true })
+      });
+      memoryCache = { organizationId, fetchedAt: nowMs, status };
+      logBundleDiagnostic(
+        diagnosticForStatus(status, {
+          requestStarted: true,
+          requestUrlHost,
+          httpStatus: response.status,
+          responseReceived: true,
+          validationPassed: false,
+          errorMessage: "Published bundle failed schema v2 validation.",
+          ...bundleMetadata(body.bundle)
+        })
+      );
+      return status;
+    }
+
+    const lastSuccessfulSyncAt = requestedAt.toISOString();
+    await writeCachedBundle(organizationId, bundle, lastSuccessfulSyncAt);
+    const status = organizationSyncedStatus({ account, bundle, lastSuccessfulSyncAt });
+    memoryCache = { organizationId, fetchedAt: nowMs, status };
+    logBundleDiagnostic(
+      diagnosticForStatus(status, {
+        requestStarted: true,
+        requestUrlHost,
+        httpStatus: response.status,
+        responseReceived: true,
+        validationPassed: true,
+        ...bundleMetadata(bundle)
+      })
+    );
+    return status;
   } catch (error) {
-    const details = safeError(error);
-    logBundleDiagnostic({
-      requestStarted: true,
-      requestUrlHost: safeHost(await getApiBaseUrl()),
-      responseReceived: false,
-      validationPassed: false,
-      cacheHit: cached !== null,
-      cacheVersion: cached?.version,
-      errorStage: "request",
-      errorName: details.name,
-      errorMessage: details.message
+    const status = cachedOrFallback({
+      cached,
+      account,
+      syncError: syncError("request", requestedAt, { recoverable: true })
     });
-    memoryCache = { organizationId, fetchedAt: now, bundle: cached };
-    return cached;
+    memoryCache = { organizationId, fetchedAt: nowMs, status };
+    const details = safeError(error);
+    logBundleDiagnostic(
+      diagnosticForStatus(status, {
+        requestStarted: true,
+        requestUrlHost: safeHost(await getApiBaseUrl()),
+        responseReceived: false,
+        validationPassed: false,
+        errorName: details.name,
+        errorMessage: details.message
+      })
+    );
+    return status;
   }
+}
+
+export function policyStatusToGuardSync(status: ActivePolicyBundleStatus): GuardPolicySync {
+  return {
+    state: status.state,
+    sourceType: status.sourceType,
+    bundleId: status.bundleId,
+    version: status.version,
+    activeRuleCount: status.ruleCount,
+    lastPublishedAt: status.lastPublishedAt,
+    lastSyncedAt: status.lastSuccessfulSyncAt,
+    lastSuccessfulSyncAt: status.lastSuccessfulSyncAt,
+    fallbackActive: status.fallbackActive,
+    organizationSpecificRulesAvailable: status.organizationSpecificRulesAvailable,
+    syncError: status.syncError
+  };
 }
 
 export function resetPolicyBundleMemoryCacheForTests() {
@@ -127,22 +220,35 @@ export function resetPolicyBundleMemoryCacheForTests() {
 
 async function readCachedBundle(organizationId: string) {
   const storage = globalThis.chrome?.storage?.local;
-  if (!storage) return null;
+  if (!storage) return { bundle: null, metadata: null };
 
-  return new Promise<PublishedPolicyBundle | null>((resolve) => {
-    storage.get(cacheKey(organizationId), (items) => {
-      const value = items[cacheKey(organizationId)];
-      resolve(isPublishedBundle(value) ? value : null);
+  return new Promise<{ bundle: PublishedPolicyBundle | null; metadata: CachedBundleMetadata | null }>((resolve) => {
+    storage.get([cacheKey(organizationId), syncMetadataKey(organizationId)], (items) => {
+      const bundleValue = items[cacheKey(organizationId)];
+      const metadataValue = items[syncMetadataKey(organizationId)];
+      resolve({
+        bundle: isPublishedBundle(bundleValue) ? bundleValue : null,
+        metadata: isCachedBundleMetadata(metadataValue) ? metadataValue : null
+      });
     });
   });
 }
 
-async function writeCachedBundle(organizationId: string, bundle: PublishedPolicyBundle) {
+async function writeCachedBundle(organizationId: string, bundle: PublishedPolicyBundle, lastSuccessfulSyncAt: string) {
   const storage = globalThis.chrome?.storage?.local;
   if (!storage) return;
 
+  const metadata: CachedBundleMetadata = {
+    bundleId: bundle.id,
+    version: bundle.version,
+    ruleCount: bundle.rules.length,
+    lastPublishedAt: bundle.publishedAt,
+    lastSuccessfulSyncAt,
+    checksum: bundle.checksum
+  };
+
   await new Promise<void>((resolve) => {
-    storage.set({ [cacheKey(organizationId)]: bundle }, () => resolve());
+    storage.set({ [cacheKey(organizationId)]: bundle, [syncMetadataKey(organizationId)]: metadata }, () => resolve());
   });
 }
 
@@ -150,8 +256,144 @@ function cacheKey(organizationId: string) {
   return `${CACHE_KEY_PREFIX}:${organizationId}`;
 }
 
+function syncMetadataKey(organizationId: string) {
+  return `${SYNC_METADATA_KEY_PREFIX}:${organizationId}`;
+}
+
 function isPublishedBundle(value: unknown): value is PublishedPolicyBundle {
   return validatePublishedEnforcementBundle(value);
+}
+
+function isCachedBundleMetadata(value: unknown): value is CachedBundleMetadata {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return Boolean(
+    typeof candidate.bundleId === "string" &&
+      typeof candidate.version === "number" &&
+      typeof candidate.ruleCount === "number" &&
+      typeof candidate.lastSuccessfulSyncAt === "string" &&
+      (candidate.lastPublishedAt === undefined || typeof candidate.lastPublishedAt === "string") &&
+      (candidate.checksum === undefined || typeof candidate.checksum === "string")
+  );
+}
+
+function cachedOrFallback({
+  cached,
+  account,
+  syncError
+}: {
+  cached: { bundle: PublishedPolicyBundle | null; metadata: CachedBundleMetadata | null };
+  account: Extract<GuardAuthSnapshot, { status: "authenticated" }>;
+  syncError: GuardPolicySyncError;
+}) {
+  if (cached.bundle) {
+    return organizationCachedStatus({
+      account,
+      bundle: cached.bundle,
+      lastSuccessfulSyncAt: cached.metadata?.lastSuccessfulSyncAt,
+      syncError
+    });
+  }
+
+  return localFallbackStatus({
+    organizationName: account.organization?.name,
+    syncError
+  });
+}
+
+function organizationSyncedStatus({
+  account,
+  bundle,
+  lastSuccessfulSyncAt
+}: {
+  account: Extract<GuardAuthSnapshot, { status: "authenticated" }>;
+  bundle: PublishedPolicyBundle;
+  lastSuccessfulSyncAt: string;
+}): ActivePolicyBundleStatus {
+  return {
+    state: "organization_synced",
+    sourceType: "organization",
+    organizationId: account.organization?.id,
+    organizationName: account.organization?.name,
+    bundle,
+    bundleId: bundle.id,
+    version: bundle.version,
+    ruleCount: bundle.rules.length,
+    lastPublishedAt: bundle.publishedAt,
+    lastSuccessfulSyncAt,
+    fallbackActive: false,
+    organizationSpecificRulesAvailable: true
+  };
+}
+
+function organizationCachedStatus({
+  account,
+  bundle,
+  lastSuccessfulSyncAt,
+  syncError
+}: {
+  account: Extract<GuardAuthSnapshot, { status: "authenticated" }>;
+  bundle: PublishedPolicyBundle;
+  lastSuccessfulSyncAt?: string;
+  syncError: GuardPolicySyncError;
+}): ActivePolicyBundleStatus {
+  return {
+    state: "organization_cached",
+    sourceType: "organization_cache",
+    organizationId: account.organization?.id,
+    organizationName: account.organization?.name,
+    bundle,
+    bundleId: bundle.id,
+    version: bundle.version,
+    ruleCount: bundle.rules.length,
+    lastPublishedAt: bundle.publishedAt,
+    lastSuccessfulSyncAt,
+    fallbackActive: false,
+    organizationSpecificRulesAvailable: true,
+    syncError
+  };
+}
+
+function localFallbackStatus({
+  organizationName,
+  syncError
+}: {
+  organizationName?: string;
+  syncError?: GuardPolicySyncError;
+}): ActivePolicyBundleStatus {
+  const bundle = getLocalFallbackPolicyBundle();
+  return {
+    state: "local_fallback",
+    sourceType: "local_fallback",
+    organizationName,
+    bundle,
+    bundleId: LOCAL_FALLBACK_POLICY_BUNDLE_ID,
+    version: bundle.version,
+    ruleCount: bundle.rules.length,
+    lastPublishedAt: bundle.publishedAt,
+    fallbackActive: true,
+    organizationSpecificRulesAvailable: false,
+    syncError
+  };
+}
+
+function authErrorCategory(account: GuardAuthSnapshot): GuardPolicySyncError["category"] {
+  if (account.status === "authenticated") return "no_organization";
+  if (account.status === "error") return "account_sync_unavailable";
+  return "not_authenticated";
+}
+
+function syncError(
+  category: GuardPolicySyncError["category"],
+  occurredAt: Date,
+  options: { httpStatus?: number; recoverable: boolean }
+): GuardPolicySyncError {
+  return {
+    category,
+    httpStatus: options.httpStatus,
+    occurredAt: occurredAt.toISOString(),
+    recoverable: options.recoverable
+  };
 }
 
 type BundleDiagnostic = {
@@ -171,7 +413,28 @@ type BundleDiagnostic = {
   errorStage?: string;
   errorName?: string;
   errorMessage?: string;
+  policyState?: string;
+  sourceType?: string;
+  fallbackActive?: boolean;
 };
+
+function diagnosticForStatus(
+  status: ActivePolicyBundleStatus,
+  input: Partial<BundleDiagnostic> & Pick<BundleDiagnostic, "requestStarted" | "responseReceived">
+): BundleDiagnostic {
+  return {
+    ...input,
+    validationPassed: input.validationPassed ?? status.state === "organization_synced",
+    cacheHit: input.cacheHit ?? status.state === "organization_cached",
+    cacheVersion: input.cacheVersion ?? (status.state === "organization_cached" ? status.version : undefined),
+    errorStage: input.errorStage ?? status.syncError?.category,
+    httpStatus: input.httpStatus ?? status.syncError?.httpStatus,
+    policyState: status.state,
+    sourceType: status.sourceType,
+    fallbackActive: status.fallbackActive,
+    ...bundleMetadata(status.bundle)
+  };
+}
 
 function bundleMetadata(value: unknown): Partial<BundleDiagnostic> {
   if (!value || typeof value !== "object") return {};

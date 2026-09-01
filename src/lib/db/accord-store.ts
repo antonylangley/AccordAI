@@ -25,7 +25,9 @@ import type {
   ImportedPolicyDestinationAuthorization,
   ImportedPolicyDestinationType,
   ImportedPolicyEnforceability,
-  ImportedPolicyRecommendedAction
+  ImportedPolicyIdentity,
+  ImportedPolicyRecommendedAction,
+  ImportedPolicyRequirementDirection
 } from "@/lib/policy-import/types";
 
 type StoredGovernanceEventRow = {
@@ -70,6 +72,8 @@ export type PolicyDestinationType = "any" | "approved" | "enterprise" | "persona
 
 export type AccordPolicyRule = {
   id: string;
+  policyDocumentId?: string;
+  requirementId?: string;
   companySlug: string;
   ruleKey: string;
   version: number;
@@ -77,9 +81,11 @@ export type AccordPolicyRule = {
   sourceText: string;
   sourcePolicyName: string;
   sourceSection: string;
+  sourcePage?: number;
   supportingExcerpt: string;
   requirementSummary: string;
   controlType: ImportedPolicyControlType;
+  requirementDirection: ImportedPolicyRequirementDirection;
   enforceability: ImportedPolicyEnforceability;
   dataCategories: string[];
   destinationTypes: ImportedPolicyDestinationType[];
@@ -90,12 +96,14 @@ export type AccordPolicyRule = {
   recommendedAction: ImportedPolicyRecommendedAction | null;
   action: PolicyRuleAction;
   fallbackAction: PolicyRuleAction;
+  recommendedSeverity: RiskLevel;
   severity: RiskLevel;
   conditionDescription: string;
   employeeExplanation: string;
   reasoning: string;
   destinationAuthorizations: ImportedPolicyDestinationAuthorization[];
   confidence: number;
+  metadata: Record<string, unknown>;
   effectiveDate: string;
   status: PolicyRuleStatus;
   active: boolean;
@@ -107,15 +115,39 @@ export type AccordPolicyRule = {
   publishedInBundleVersion?: number;
 };
 
+export type AccordPolicyDocument = {
+  id: string;
+  companySlug: string;
+  title: string;
+  description: string;
+  organizationName?: string;
+  owner?: string;
+  effectiveDate?: string;
+  version?: string;
+  scope?: string;
+  sourceFileName: string;
+  sourceFileType: ImportedPolicyIdentity["sourceFileType"];
+  extractionConfidence: number;
+  metadata: ImportedPolicyIdentity;
+  sections: ImportedPolicyIdentity["sections"];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type PolicyRuleDraftInput = {
+  policyDocumentId?: string;
+  policyId?: string;
+  requirementId?: string;
   name?: string;
   ruleKey?: string;
   sourceText?: string;
   sourcePolicyName?: string;
   sourceSection?: string;
+  sourcePage?: number;
   supportingExcerpt?: string;
   requirementSummary?: string;
   controlType?: ImportedPolicyControlType;
+  requirementDirection?: ImportedPolicyRequirementDirection;
   enforceability?: ImportedPolicyEnforceability;
   dataCategories?: string[] | string;
   destinationTypes?: ImportedPolicyDestinationType[] | string;
@@ -126,12 +158,14 @@ export type PolicyRuleDraftInput = {
   recommendedAction?: ImportedPolicyRecommendedAction | null;
   action?: PolicyRuleAction;
   fallbackAction?: PolicyRuleAction;
+  recommendedSeverity?: RiskLevel;
   severity?: RiskLevel;
   conditionDescription?: string;
   employeeExplanation?: string;
   reasoning?: string;
   destinationAuthorizations?: ImportedPolicyDestinationAuthorization[];
   confidence?: number;
+  metadata?: Record<string, unknown>;
   effectiveDate?: string;
 };
 
@@ -142,6 +176,7 @@ export type PolicyAdminSnapshot = {
   enabled: boolean;
   canMutate: boolean;
   notice?: string;
+  policyDocuments: AccordPolicyDocument[];
   rules: AccordPolicyRule[];
   latestBundle?: PublishedPolicyBundle;
   bundles: PublishedPolicyBundle[];
@@ -519,6 +554,7 @@ export async function getPolicyAdminSnapshot(companySlug = "test-company"): Prom
   const empty: PolicyAdminSnapshot = {
     enabled: false,
     canMutate: false,
+    policyDocuments: [],
     rules: [],
     bundles: [],
     counts: {
@@ -536,7 +572,7 @@ export async function getPolicyAdminSnapshot(companySlug = "test-company"): Prom
     const ready = await ensurePolicyStore(supabase, companySlug);
     if (!ready) return fallbackPolicyAdminSnapshot(companySlug);
 
-    const [rulesResult, bundlesResult] = await Promise.all([
+    const [rulesResult, bundlesResult, documentsResult] = await Promise.all([
       supabase
         .from("accord_policy_rules")
         .select("*")
@@ -548,15 +584,25 @@ export async function getPolicyAdminSnapshot(companySlug = "test-company"): Prom
         .select("*")
         .eq("company_slug", companySlug)
         .order("version", { ascending: false })
-        .limit(10)
+        .limit(10),
+      supabase
+        .from("accord_policy_documents")
+        .select("*")
+        .eq("company_slug", companySlug)
+        .order("updated_at", { ascending: false })
+        .limit(25)
     ]);
 
     if (rulesResult.error) throw rulesResult.error;
     if (bundlesResult.error) throw bundlesResult.error;
+    if (documentsResult.error && !isMissingSupabaseRelation(documentsResult.error)) throw documentsResult.error;
 
     const bundles = ((bundlesResult.data || []) as Array<Record<string, unknown>>).map(toPolicyBundle);
     const latestBundle = bundles.find((bundle) => bundle.status === "published");
     const rules = attachPublishedBundleState(((rulesResult.data || []) as Array<Record<string, unknown>>).map(toPolicyRule), latestBundle);
+    const policyDocuments = documentsResult.error
+      ? []
+      : ((documentsResult.data || []) as Array<Record<string, unknown>>).map(toPolicyDocument);
     const counts = rules.reduce<PolicyAdminSnapshot["counts"]>(
       (memo, rule) => {
         memo[rule.status] += 1;
@@ -568,6 +614,7 @@ export async function getPolicyAdminSnapshot(companySlug = "test-company"): Prom
     return {
       enabled: true,
       canMutate: true,
+      policyDocuments,
       rules,
       bundles,
       counts,
@@ -599,7 +646,7 @@ export async function createPolicyRuleFromForm(formData: FormData, companySlug =
   if (result.error) throw result.error;
 }
 
-export async function createPolicyRulesFromInputs(inputs: PolicyRuleDraftInput[], companySlug = "test-company") {
+export async function createPolicyRulesFromInputs(inputs: PolicyRuleDraftInput[], companySlug = "test-company", policy?: ImportedPolicyIdentity) {
   const supabase = getSupabaseServerClient();
   if (!supabase) throw new Error("Supabase is not configured.");
 
@@ -607,9 +654,18 @@ export async function createPolicyRulesFromInputs(inputs: PolicyRuleDraftInput[]
   if (!ready) throw new Error("Policy tables are not ready.");
 
   const created: Array<{ id: string; name: string; ruleKey: string; version: number }> = [];
+  const policyDocumentId = policy ? await upsertPolicyDocument(supabase, companySlug, policy) : undefined;
 
   for (const input of inputs.slice(0, 12)) {
-    const draft = policyRuleDraftFromInput(input, companySlug);
+    const draft = policyRuleDraftFromInput(
+      {
+        ...input,
+        policyDocumentId: input.policyDocumentId || input.policyId || policyDocumentId,
+        sourcePolicyName: input.sourcePolicyName || policy?.title.value,
+        effectiveDate: input.effectiveDate || policy?.effectiveDate?.value
+      },
+      companySlug
+    );
     const version = await getNextPolicyRuleVersion(supabase, companySlug, draft.rule_key);
     const id = randomId("rule");
     const result = await supabase.from("accord_policy_rules").insert({
@@ -634,6 +690,34 @@ export async function createPolicyRulesFromInputs(inputs: PolicyRuleDraftInput[]
   return created;
 }
 
+async function upsertPolicyDocument(supabase: SupabaseClient, companySlug: string, policy: ImportedPolicyIdentity) {
+  const now = new Date().toISOString();
+  const id = clampString(policy.id, 160) || randomId("policy");
+  const result = await supabase.from("accord_policy_documents").upsert(
+    {
+      id,
+      company_slug: companySlug,
+      title: clampString(policy.title.value, 300) || "Imported AI policy",
+      description: clampString(policy.description.value, 1500),
+      organization_name: clampString(policy.organizationName?.value, 300) || null,
+      owner: clampString(policy.owner?.value, 300) || null,
+      effective_date: clampString(policy.effectiveDate?.value, 40) || null,
+      version_label: clampString(policy.version?.value, 80) || null,
+      scope: clampString(policy.scope?.value, 1200) || null,
+      source_file_name: clampString(policy.sourceFileName, 300),
+      source_file_type: policy.sourceFileType,
+      extraction_confidence: normalizeConfidence(policy.metadataExtractionConfidence, 0.6),
+      metadata: policy,
+      sections: policy.sections,
+      updated_at: now
+    },
+    { onConflict: "id" }
+  );
+
+  if (result.error) throw result.error;
+  return id;
+}
+
 export async function updateDraftPolicyRuleFromForm(id: string, formData: FormData) {
   const supabase = getSupabaseServerClient();
   if (!supabase) throw new Error("Supabase is not configured.");
@@ -643,7 +727,15 @@ export async function updateDraftPolicyRuleFromForm(id: string, formData: FormDa
   if (current.data?.status !== "draft") throw new Error("Only draft rules can be edited.");
 
   const draft = policyRuleDraftFromForm(formData, "test-company");
-  const { company_slug: _companySlug, ...patch } = draft;
+  const {
+    company_slug: _companySlug,
+    policy_document_id: _policyDocumentId,
+    requirement_id: _requirementId,
+    source_page: _sourcePage,
+    recommended_severity: _recommendedSeverity,
+    metadata: _metadata,
+    ...patch
+  } = draft;
   const result = await supabase
     .from("accord_policy_rules")
     .update({
@@ -752,7 +844,7 @@ export async function publishPolicyBundle(
   const publishedRuleIds = new Set(
     latestPublishedBundle?.rules
       .filter((rule) => rule.source.type === "organization_policy")
-      .map((rule) => rule.source.documentId || rule.id) || []
+      .map((rule) => rule.source.ruleId || rule.id) || []
   );
   const organizationRules = latestPolicyRuleVersions(
     ((rulesResult.data || []) as Array<Record<string, unknown>>)
@@ -981,6 +1073,7 @@ function fallbackPolicyAdminSnapshot(companySlug = "test-company"): PolicyAdminS
   return {
     enabled: true,
     canMutate: false,
+    policyDocuments: [],
     rules: [rule],
     latestBundle: bundle,
     bundles: [bundle],
@@ -1053,6 +1146,7 @@ function policyRuleDraftFromForm(formData: FormData, companySlug: string) {
       supportingExcerpt: readFormString(formData, "supportingExcerpt"),
       requirementSummary: readFormString(formData, "requirementSummary"),
       controlType: normalizeImportedControlType(readFormString(formData, "controlType")),
+      requirementDirection: normalizeImportedRequirementDirection(readFormString(formData, "requirementDirection")),
       enforceability: normalizeImportedEnforceability(readFormString(formData, "enforceability")),
       dataCategories: readFormList(formData, "dataCategories"),
       destinationTypes: readFormDestinationTypes(formData, "destinationTypes"),
@@ -1076,25 +1170,34 @@ function policyRuleDraftFromForm(formData: FormData, companySlug: string) {
 function policyRuleDraftFromInput(input: PolicyRuleDraftInput, companySlug: string) {
   const ruleKey = slugify(input.ruleKey || input.name || "policy-rule").replace(/-/g, "_");
   const supportingExcerpt = clampString(input.supportingExcerpt, 3000);
+  const controlType = normalizeImportedControlType(input.controlType);
   const enforceability = normalizeImportedEnforceability(input.enforceability);
   const action = enforceability === "not_enforceable" ? "allow" : normalizePolicyAction(input.action);
   const destinationType = normalizeDestinationType(input.destinationType);
   const destinationTypes = normalizePolicyDestinationTypes(input.destinationTypes, destinationType);
+  const inputMetadata = normalizeMetadata(input.metadata, {});
+  const requirementDirection = normalizeImportedRequirementDirection(
+    input.requirementDirection ?? inputMetadata.requirementDirection ?? requirementDirectionForControl(enforceability, controlType, destinationType)
+  );
   const recommendedAction =
     enforceability === "not_enforceable"
       ? null
       : normalizeRecommendedAction(input.recommendedAction ?? ruleActionToRecommendedAction(action));
+  const recommendedSeverity = normalizeRiskLevel(input.recommendedSeverity || input.severity, 0);
 
   return {
+    policy_document_id: clampString(input.policyDocumentId || input.policyId, 160) || null,
+    requirement_id: clampString(input.requirementId, 160) || null,
     company_slug: companySlug,
     rule_key: ruleKey,
     name: clampString(input.name, 300) || "Untitled policy rule",
     source_text: clampString(input.sourceText, 3000) || supportingExcerpt,
     source_policy_name: clampString(input.sourcePolicyName, 300) || "External AI Usage Policy",
     source_section: clampString(input.sourceSection, 300) || "Imported policy section",
+    source_page: typeof input.sourcePage === "number" && Number.isFinite(input.sourcePage) ? Math.max(1, Math.round(input.sourcePage)) : null,
     supporting_excerpt: supportingExcerpt,
     requirement_summary: clampString(input.requirementSummary, 600) || clampString(input.name, 300) || "Imported policy requirement",
-    control_type: normalizeImportedControlType(input.controlType),
+    control_type: controlType,
     enforceability,
     data_categories: normalizePolicyDataCategories(input.dataCategories),
     destination_types: destinationTypes,
@@ -1105,12 +1208,17 @@ function policyRuleDraftFromInput(input: PolicyRuleDraftInput, companySlug: stri
     recommended_action: recommendedAction,
     action,
     fallback_action: enforceability === "not_enforceable" ? "allow" : normalizePolicyAction(input.fallbackAction),
+    recommended_severity: recommendedSeverity,
     severity: normalizeRiskLevel(input.severity, 0),
     condition_description: clampString(input.conditionDescription, 1000),
     employee_explanation: clampString(input.employeeExplanation, 1500) || "Accord applied a company AI usage policy.",
     reasoning: clampString(input.reasoning, 1500),
     destination_authorizations: normalizeDestinationAuthorizations(input.destinationAuthorizations),
     confidence: normalizeConfidence(input.confidence, 0.7),
+    metadata: {
+      ...inputMetadata,
+      requirementDirection
+    },
     effective_date: clampString(input.effectiveDate, 20) || new Date().toISOString().slice(0, 10)
   };
 }
@@ -1124,8 +1232,15 @@ function normalizePolicyDataCategories(value: PolicyRuleDraftInput["dataCategori
 }
 
 function toPolicyRule(row: Record<string, unknown>): AccordPolicyRule {
+  const metadata = isRecord(row.metadata) ? row.metadata : {};
+  const controlType = normalizeImportedControlType(row.control_type);
+  const enforceability = normalizeImportedEnforceability(row.enforceability);
+  const destinationType = normalizeDestinationType(stringValue(row.destination_type));
+
   return {
     id: stringValue(row.id),
+    policyDocumentId: stringValue(row.policy_document_id) || undefined,
+    requirementId: stringValue(row.requirement_id) || undefined,
     companySlug: stringValue(row.company_slug),
     ruleKey: stringValue(row.rule_key),
     version: numberValue(row.version, 1),
@@ -1133,25 +1248,31 @@ function toPolicyRule(row: Record<string, unknown>): AccordPolicyRule {
     sourceText: stringValue(row.source_text || row.supporting_excerpt),
     sourcePolicyName: stringValue(row.source_policy_name),
     sourceSection: stringValue(row.source_section),
+    sourcePage: typeof row.source_page === "number" ? row.source_page : undefined,
     supportingExcerpt: stringValue(row.supporting_excerpt),
     requirementSummary: stringValue(row.requirement_summary || row.name),
-    controlType: normalizeImportedControlType(row.control_type),
-    enforceability: normalizeImportedEnforceability(row.enforceability),
+    controlType,
+    requirementDirection: normalizeImportedRequirementDirection(
+      metadata.requirementDirection ?? requirementDirectionForControl(enforceability, controlType, destinationType)
+    ),
+    enforceability,
     dataCategories: normalizeStringArray(row.data_categories, 40),
-    destinationTypes: normalizePolicyDestinationTypes(row.destination_types, normalizeDestinationType(stringValue(row.destination_type))),
+    destinationTypes: normalizePolicyDestinationTypes(row.destination_types, destinationType),
     userScope: stringValue(row.user_scope) || "all",
     departmentScope: stringValue(row.department_scope) || "all",
     aiProvider: stringValue(row.ai_provider) || "any",
-    destinationType: normalizeDestinationType(stringValue(row.destination_type)),
+    destinationType,
     recommendedAction: normalizeRecommendedAction(row.recommended_action ?? ruleActionToRecommendedAction(normalizePolicyAction(stringValue(row.action)))),
     action: normalizePolicyAction(stringValue(row.action)),
     fallbackAction: normalizePolicyAction(stringValue(row.fallback_action)),
+    recommendedSeverity: normalizeRiskLevel(row.recommended_severity || row.severity, 0),
     severity: normalizeRiskLevel(row.severity, 0),
     conditionDescription: stringValue(row.condition_description),
     employeeExplanation: stringValue(row.employee_explanation),
     reasoning: stringValue(row.reasoning),
     destinationAuthorizations: normalizeDestinationAuthorizations(row.destination_authorizations),
     confidence: normalizeConfidence(row.confidence, 0.7),
+    metadata,
     effectiveDate: stringValue(row.effective_date),
     status: normalizePolicyRuleStatus(row.status),
     active: row.active === true,
@@ -1159,6 +1280,28 @@ function toPolicyRule(row: Record<string, unknown>): AccordPolicyRule {
     updatedAt: stringValue(row.updated_at),
     approvedAt: typeof row.approved_at === "string" ? row.approved_at : undefined,
     archivedAt: typeof row.archived_at === "string" ? row.archived_at : undefined
+  };
+}
+
+function toPolicyDocument(row: Record<string, unknown>): AccordPolicyDocument {
+  const metadata = isRecord(row.metadata) ? (row.metadata as ImportedPolicyIdentity) : fallbackPolicyIdentityFromRow(row);
+  return {
+    id: stringValue(row.id),
+    companySlug: stringValue(row.company_slug),
+    title: stringValue(row.title),
+    description: stringValue(row.description),
+    organizationName: stringValue(row.organization_name) || undefined,
+    owner: stringValue(row.owner) || undefined,
+    effectiveDate: stringValue(row.effective_date) || undefined,
+    version: stringValue(row.version_label) || undefined,
+    scope: stringValue(row.scope) || undefined,
+    sourceFileName: stringValue(row.source_file_name),
+    sourceFileType: normalizePolicySourceFileType(row.source_file_type),
+    extractionConfidence: normalizeConfidence(row.extraction_confidence, 0.6),
+    metadata,
+    sections: Array.isArray(row.sections) ? (row.sections as ImportedPolicyIdentity["sections"]) : metadata.sections || [],
+    createdAt: stringValue(row.created_at),
+    updatedAt: stringValue(row.updated_at)
   };
 }
 
@@ -1212,17 +1355,22 @@ function policyRuleToBundleRule(rule: AccordPolicyRule): PublishedPolicyBundleRu
     source: {
       type: "organization_policy",
       bundleName: rule.sourcePolicyName,
-      documentId: rule.id,
+      documentId: rule.policyDocumentId || rule.id,
       documentName: rule.sourcePolicyName,
+      ruleId: rule.id,
       section: rule.sourceSection,
+      page: rule.sourcePage,
       excerpt: rule.supportingExcerpt,
       sourceText: rule.sourceText,
       requirementSummary: rule.requirementSummary,
       controlType: rule.controlType,
+      requirementDirection: rule.requirementDirection,
       enforceability: rule.enforceability,
       conditionDescription: rule.conditionDescription,
       reasoning: rule.reasoning,
       confidence: rule.confidence,
+      recommendedAction: rule.recommendedAction,
+      recommendedSeverity: rule.recommendedSeverity,
       destinationAuthorizations: rule.destinationAuthorizations
     },
     scope: {
@@ -1311,6 +1459,32 @@ function normalizeProviderList(value: unknown) {
   ).slice(0, 20);
 }
 
+function normalizePolicySourceFileType(value: unknown): ImportedPolicyIdentity["sourceFileType"] {
+  return value === "pdf" || value === "docx" || value === "doc" || value === "text" ? value : "text";
+}
+
+function fallbackPolicyIdentityFromRow(row: Record<string, unknown>): ImportedPolicyIdentity {
+  const title = stringValue(row.title) || "Imported AI policy";
+  return {
+    id: stringValue(row.id),
+    title: {
+      value: title,
+      confidence: normalizeConfidence(row.extraction_confidence, 0.6),
+      extractionMethod: "admin_override"
+    },
+    description: {
+      value: stringValue(row.description),
+      confidence: normalizeConfidence(row.extraction_confidence, 0.6),
+      extractionMethod: "admin_override"
+    },
+    sourceFileName: stringValue(row.source_file_name),
+    sourceFileType: normalizePolicySourceFileType(row.source_file_type),
+    metadataExtractionConfidence: normalizeConfidence(row.extraction_confidence, 0.6),
+    metadataWarnings: [],
+    sections: []
+  };
+}
+
 function policyAction(action: PolicyRuleAction): PolicyAction {
   if (action === "transform") return "REDACT";
   if (action === "block") return "BLOCK";
@@ -1331,8 +1505,9 @@ function destinationProviderMode(destination: PolicyDestinationType): InternalPo
 function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSignal[] {
   const signals = new Set<PolicyDetectorSignal>();
   for (const category of categories) {
-    if (/secret|credential/.test(category)) signals.add("SECRET");
+    if (/credential|application_secret|system_secret|login_secret/.test(category)) signals.add("SECRET");
     if (/api[_-]?token|api[_-]?key/.test(category)) signals.add("API_TOKEN");
+    if (/authentication[_-]?tokens?/.test(category)) signals.add("BEARER_TOKEN");
     if (/password/.test(category)) signals.add("PASSWORD");
     if (/private[_-]?key/.test(category)) signals.add("PRIVATE_KEY");
     if (/database[_-]?url/.test(category)) signals.add("DATABASE_URL");
@@ -1344,7 +1519,9 @@ function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSi
     if (/payment|card/.test(category)) signals.add("PAYMENT_CARD");
     if (/ssn/.test(category)) signals.add("SSN");
     if (/ip[_-]?address/.test(category)) signals.add("IP_ADDRESS");
-    if (/\bphi\b|protected[_-]?health|hipaa|patient[_-]?health|clinical|medical[_-]?record/.test(category)) signals.add("REGULATED_MEDICAL");
+    if (/\bphi\b|protected[_-]?health|hipaa|patient[_-]?health|patient[_-]?information|healthcare[_-]?data|clinical|medical[_-]?record/.test(category)) {
+      signals.add("REGULATED_MEDICAL");
+    }
     if (/\bpii\b|personally[_-]?identifiable|personal[_-]?information|personal[_-]?data/.test(category)) {
       for (const signal of ["PERSON", "EMAIL", "PHONE", "ADDRESS", "ACCOUNT", "SSN"] as PolicyDetectorSignal[]) signals.add(signal);
     }
@@ -1361,7 +1538,9 @@ function organizationRuleDetectorSignals(categories: string[]): PolicyDetectorSi
 function organizationRuleConcepts(categories: string[]): PolicyConcept[] {
   const concepts = new Set<PolicyConcept>();
   for (const category of categories) {
-    if (/\bphi\b|veterinary|medical_record|protected[_-]?health|clinical|case_record/.test(category)) concepts.add("VETERINARY_RECORD");
+    if (/\bphi\b|veterinary|medical_record|protected[_-]?health|patient[_-]?information|healthcare[_-]?data|clinical|case_record/.test(category)) {
+      concepts.add("VETERINARY_RECORD");
+    }
     if (/full[_-]?(?:veterinary|medical|case)[_-]?record/.test(category)) concepts.add("FULL_VETERINARY_RECORD");
     if (/client|customer|patient/.test(category)) concepts.add("CLIENT_CONTEXT");
     if (/employee|employment|candidate|hr|compensation|performance|termination/.test(category)) concepts.add("EMPLOYEE_SENSITIVE_RECORD");
@@ -1370,13 +1549,17 @@ function organizationRuleConcepts(categories: string[]): PolicyConcept[] {
     if (/pricing/.test(category)) concepts.add("INTERNAL_PRICING");
     if (/contract|vendor|legal_document|privileged|litigation/.test(category)) concepts.add("CONTRACT_VENDOR_TERMS");
     if (/confidential_company_data|confidential|proprietary|non_public/.test(category)) concepts.add("CONFIDENTIAL_BUSINESS");
-    if (/source_code|codebase|repository|technical_documentation/.test(category)) concepts.add("PROPRIETARY_TECHNICAL_DOCUMENTATION");
+    if (/source_code|codebase|repository|technical_documentation|intellectual_property|trade_secrets|proprietary_algorithms|unpublished_research/.test(category)) {
+      concepts.add("PROPRIETARY_TECHNICAL_DOCUMENTATION");
+    }
   }
   return Array.from(concepts);
 }
 
 function organizationRuleCategory(categories: string[]): PolicyCategory {
-  if (categories.some((category) => /secret|credential|password|token|private_key|database_url/.test(category))) return "SECURITY_CREDENTIALS";
+  if (categories.some((category) => /credential|password|token|private_key|database_url|authentication_token|application_secret|system_secret|login_secret/.test(category))) {
+    return "SECURITY_CREDENTIALS";
+  }
   if (categories.some((category) => /employee|employment|candidate|hr|compensation|performance|termination/.test(category))) return "EMPLOYEE_HR";
   if (categories.some((category) => /\bphi\b|client|customer|patient|veterinary|medical_record|protected_health|case_record/.test(category))) return "CLIENT_VETERINARY_DATA";
   return "CONFIDENTIAL_BUSINESS";
@@ -2343,6 +2526,7 @@ function normalizeImportedControlType(value: unknown): ImportedPolicyControlType
     "destination_restriction",
     "data_redaction",
     "security_secret",
+    "intellectual_property",
     "tool_usage",
     "human_review",
     "output_usage",
@@ -2356,6 +2540,37 @@ function normalizeImportedControlType(value: unknown): ImportedPolicyControlType
 function normalizeImportedEnforceability(value: unknown): ImportedPolicyEnforceability {
   const allowed: ImportedPolicyEnforceability[] = ["fully_enforceable", "partially_enforceable", "not_enforceable"];
   return allowed.includes(value as ImportedPolicyEnforceability) ? (value as ImportedPolicyEnforceability) : "fully_enforceable";
+}
+
+function normalizeImportedRequirementDirection(value: unknown): ImportedPolicyRequirementDirection {
+  const allowed: ImportedPolicyRequirementDirection[] = [
+    "prompt_input",
+    "ai_provider_usage",
+    "ai_output_usage",
+    "human_process",
+    "organization_policy",
+    "unknown"
+  ];
+  return allowed.includes(value as ImportedPolicyRequirementDirection) ? (value as ImportedPolicyRequirementDirection) : "unknown";
+}
+
+function requirementDirectionForControl(
+  enforceability: ImportedPolicyEnforceability,
+  controlType: ImportedPolicyControlType,
+  destinationType: PolicyDestinationType
+): ImportedPolicyRequirementDirection {
+  if (enforceability === "not_enforceable") {
+    if (controlType === "output_usage") return "ai_output_usage";
+    if (controlType === "human_review" || controlType === "procedural" || controlType === "monitoring" || controlType === "other") return "human_process";
+  }
+  if (controlType === "tool_usage") return "ai_provider_usage";
+  if (controlType === "destination_restriction" && (destinationType === "approved" || destinationType === "enterprise" || destinationType === "personal" || destinationType === "unapproved")) {
+    return "prompt_input";
+  }
+  if (controlType === "data_submission" || controlType === "data_redaction" || controlType === "security_secret" || controlType === "intellectual_property") {
+    return "prompt_input";
+  }
+  return "unknown";
 }
 
 function normalizeRecommendedAction(value: unknown): ImportedPolicyRecommendedAction | null {

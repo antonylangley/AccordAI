@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "build": "wxt build -b chrome",
+    "build": "node scripts/prepare-ort-assets.mjs && wxt build -b chrome",
     "prepare": "wxt prepare",
+    "prepare:ort": "node scripts/prepare-ort-assets.mjs",
     "prepare:ner": "node scripts/prepare-ner-assets.mjs",
     "typecheck": "wxt prepare && tsc -p tsconfig.json --noEmit",
-    "test": "vitest run"
+    "test": "node scripts/prepare-ort-assets.mjs && vitest run"
   },
   "dependencies": {
     "@accord/governance-core": "workspace:*",

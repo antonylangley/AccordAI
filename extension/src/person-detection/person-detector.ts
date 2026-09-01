@@ -41,9 +41,12 @@ type LocalNerPipeline = {
 const MODEL_ID = "accord-ner-v0.3.1";
 const MODEL_THRESHOLD = 0.5;
 const MODEL_DETECTOR = "accord_ner_v0_3_1";
+const ORT_WASM_MJS_PATH = "ort/ort-wasm-simd-threaded.asyncify.mjs";
+const ORT_WASM_BINARY_PATH = "ort/ort-wasm-simd-threaded.asyncify.wasm";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 let runtimeConfigured = false;
+let runtimeConfigurationPromise: Promise<void> | null = null;
 let pipelinePromise: Promise<LocalNerPipeline> | null = null;
 
 export async function warmPersonDetector(): Promise<void> {
@@ -123,7 +126,7 @@ async function detectWithLocalNer(text: string): Promise<ExternalEntityCandidate
 }
 
 async function getNerPipeline(): Promise<LocalNerPipeline> {
-  configureLocalRuntime();
+  await configureLocalRuntime();
 
   if (!pipelinePromise) {
     pipelinePromise = pipeline("token-classification", MODEL_ID, {
@@ -139,9 +142,18 @@ async function getNerPipeline(): Promise<LocalNerPipeline> {
   return pipelinePromise;
 }
 
-function configureLocalRuntime() {
+async function configureLocalRuntime() {
   if (runtimeConfigured) return;
+  if (runtimeConfigurationPromise) return runtimeConfigurationPromise;
 
+  runtimeConfigurationPromise = configureLocalRuntimeOnce().catch((error) => {
+    runtimeConfigurationPromise = null;
+    throw error;
+  });
+  await runtimeConfigurationPromise;
+}
+
+async function configureLocalRuntimeOnce() {
   // The model and ONNX Runtime WASM binaries are packaged with the extension.
   // Remote model loading is disabled: PERSON detection never needs a backend.
   env.allowLocalModels = true;
@@ -162,13 +174,30 @@ function configureLocalRuntime() {
     throw new Error("ONNX Runtime WebAssembly backend is unavailable.");
   }
 
+  const wasmMjsUrl = chrome.runtime.getURL(ORT_WASM_MJS_PATH);
+  const wasmBinaryUrl = chrome.runtime.getURL(ORT_WASM_BINARY_PATH);
   wasm.wasmPaths = {
-    wasm: chrome.runtime.getURL("ort/ort-wasm-simd-threaded.asyncify.wasm")
+    mjs: wasmMjsUrl,
+    wasm: wasmBinaryUrl
   };
+  wasm.wasmBinary = await fetchPackagedWasmBinary(wasmBinaryUrl);
   wasm.proxy = false;
   wasm.numThreads = 1;
 
   runtimeConfigured = true;
+}
+
+async function fetchPackagedWasmBinary(url: string): Promise<Uint8Array> {
+  if (typeof globalThis.fetch !== "function") {
+    throw new Error("Fetch is unavailable for packaged ONNX Runtime WASM assets.");
+  }
+
+  const response = await globalThis.fetch(url, { credentials: "same-origin" });
+  if (!response.ok) {
+    throw new Error(`Packaged ONNX Runtime WASM asset could not be loaded (${response.status}).`);
+  }
+
+  return new Uint8Array(await response.arrayBuffer());
 }
 
 function coverage(

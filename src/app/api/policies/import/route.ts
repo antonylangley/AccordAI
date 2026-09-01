@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractPolicyDocumentText } from "@/lib/policy-import/document-text";
+import { inferPolicyIdentityFromDocument } from "@/lib/policy-import/policy-metadata";
 import { inferPolicyRulesFromText } from "@/lib/policy-import/rule-inference";
 
 export const runtime = "nodejs";
@@ -26,25 +27,28 @@ export async function POST(request: Request) {
       fileName: file.name,
       contentType: file.type
     });
+    const policy = inferPolicyIdentityFromDocument(extracted, file.name);
 
     if (extracted.text.length < 80) {
       return NextResponse.json(
         {
           error: "Accord could not extract enough text from this document.",
+          policy,
           warnings: extracted.warnings
         },
         { status: 422 }
       );
     }
 
-    const inferred = inferPolicyRulesFromText(extracted.text, file.name);
+    const inferred = inferPolicyRulesFromText(extracted.text, file.name, policy);
 
     return NextResponse.json({
       fileName: file.name,
       fileType: extracted.fileType,
       extractedCharacters: extracted.text.length,
+      policy,
       rules: inferred.rules,
-      warnings: [...extracted.warnings, ...inferred.warnings]
+      warnings: [...policy.metadataWarnings, ...inferred.warnings]
     });
   } catch (error) {
     return NextResponse.json(

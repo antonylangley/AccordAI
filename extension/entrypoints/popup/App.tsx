@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { GuardAuthProvider, GuardAuthSnapshot } from "../../src/auth/types";
+import type { GuardAuthProvider, GuardAuthSnapshot, GuardPolicySync } from "../../src/auth/types";
 import { sendGuardMessage } from "../../src/messaging/client";
 import { popupViewForState } from "../../src/popup/view-model";
 
@@ -45,8 +45,21 @@ export function GuardPopup() {
   };
 
   const sync = async () => {
-    await sendGuardMessage({ type: "accord.policy.sync" });
-    await refresh();
+    setState((current) =>
+      current.status === "authenticated"
+        ? {
+            ...current,
+            policy: {
+              ...current.policy,
+              state: "syncing",
+              fallbackActive: current.policy.fallbackActive ?? true
+            }
+          }
+        : current
+    );
+    const response = await sendGuardMessage({ type: "accord.policy.sync" });
+    if (response.ok && response.result && "status" in response.result) setState(response.result as GuardAuthSnapshot);
+    else await refresh(true);
   };
 
   const view = useMemo(() => popupViewForState(state), [state]);
@@ -93,6 +106,22 @@ export function GuardPopup() {
             <div><dt>Guard</dt><dd>Active</dd></div>
             <div><dt>Policy</dt><dd>{policyLabel(state)}</dd></div>
           </dl>
+          <section className={`policy-state-card ${view.policy.tone}`} aria-live="polite">
+            <div className="policy-state-heading">
+              <span className={`policy-dot ${view.policy.tone}`} />
+              <div>
+                <strong>{view.policy.title}</strong>
+                <p>{view.policy.detail}</p>
+              </div>
+            </div>
+            <dl className="policy-facts">
+              <div><dt>Source</dt><dd>{policySourceLabel(state.policy)}</dd></div>
+              <div><dt>Bundle</dt><dd>{policyBundleLabel(state.policy)}</dd></div>
+              <div><dt>Rules</dt><dd>{policyRuleCount(state.policy)}</dd></div>
+              <div><dt>Last synced</dt><dd>{formatRelativeTime(state.policy.lastSuccessfulSyncAt || state.policy.lastSyncedAt)}</dd></div>
+            </dl>
+            {view.policy.canRetry ? <button className="secondary-button compact-button" onClick={() => void sync()}>Retry sync</button> : null}
+          </section>
           <button className="primary-button" onClick={() => openPage(dashboardUrl)}>Open Accord Dashboard</button>
           <div className="footer-actions"><button onClick={() => openPage(accountUrl)}>Account settings</button><button onClick={() => void sync()}>Sync now</button><button onClick={() => void signOut()}>Sign out</button></div>
         </section>
@@ -102,16 +131,17 @@ export function GuardPopup() {
         <section className="state-card">
           <div className="eyebrow">ACCOUNT CONNECTED</div><h1>{view.title}</h1><p>{view.detail}</p>
           <div className="identity-card compact"><Avatar name={state.user.displayName} src={state.user.avatarUrl} /><div className="identity-copy"><strong>{state.user.displayName}</strong><span>{state.user.email}</span></div></div>
+          <div className="local-safe"><span className="live-dot" /> Local protection remains active</div>
           <button className="primary-button" onClick={() => openPage("https://www.accordgovernance.com/settings")}>Create or join organization</button>
           <button className="text-button" onClick={() => void signOut()}>Sign out</button>
         </section>
       ) : null}
 
-      {view.kind === "error" ? (
+      {state.status === "error" && view.kind === "error" ? (
         <section className="state-card">
           <div className="eyebrow error">SYNC UNAVAILABLE</div><h1>{view.title}</h1><p>{view.detail}</p>
           <div className="local-safe"><span className="live-dot" /> Local protection remains active</div>
-          <button className="primary-button" onClick={() => void connect("google")}>Log in again</button>
+          <button className="primary-button" onClick={() => state.code === "session_expired" ? void connect("google") : void refresh(true)}>{state.code === "session_expired" ? "Log in again" : "Retry sync"}</button>
         </section>
       ) : null}
     </main>
@@ -125,9 +155,41 @@ function Avatar({ name, src }: { name: string; src?: string }) {
 function initials(name: string) { return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "A"; }
 function formatRole(role?: string) { return role ? role[0].toUpperCase() + role.slice(1) : "Member"; }
 function policyLabel(state: Extract<GuardAuthSnapshot, { status: "authenticated" }>) {
-  if (state.policy.state === "offline") return "Cached · Offline";
-  if (state.policy.state === "none") return "No published rules";
+  if (state.policy.state === "organization_synced" || state.policy.state === "synced") return policyRuleCount(state.policy);
+  if (state.policy.state === "organization_cached" || state.policy.state === "offline") return `Cached, ${policyRuleCount(state.policy)}`;
+  if (state.policy.state === "local_fallback") return "Local fallback";
+  if (state.policy.state === "none") return "Local fallback";
   if (state.policy.state === "syncing") return "Syncing…";
-  return typeof state.policy.activeRuleCount === "number" ? `${state.policy.activeRuleCount} active rules` : "Synced";
+  return "Local fallback";
+}
+function policySourceLabel(policy: GuardPolicySync) {
+  if (policy.state === "organization_synced" || policy.state === "synced") return "Organization";
+  if (policy.state === "organization_cached" || policy.state === "offline") return "Organization cache";
+  if (policy.state === "syncing") return "Checking";
+  return "Local fallback";
+}
+function policyBundleLabel(policy: GuardPolicySync) {
+  if (!policy.bundleId) return "Unavailable";
+  const version = typeof policy.version === "number" ? `v${policy.version}` : policy.bundleId;
+  return policy.bundleId === "accord.local-builtins" ? `${policy.bundleId} ${version}` : version;
+}
+function policyRuleCount(policy: GuardPolicySync) {
+  return typeof policy.activeRuleCount === "number" ? `${policy.activeRuleCount} active rules` : "Unknown";
+}
+function formatRelativeTime(value?: string) {
+  if (!value) return "Not yet";
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) return "Unknown";
+  const diffMs = Date.now() - timestamp;
+  if (diffMs < 60_000) return "Just now";
+  if (diffMs < 60 * 60_000) {
+    const minutes = Math.max(1, Math.round(diffMs / 60_000));
+    return `${minutes} min ago`;
+  }
+  if (diffMs < 24 * 60 * 60_000) {
+    const hours = Math.max(1, Math.round(diffMs / (60 * 60_000)));
+    return `${hours} hr ago`;
+  }
+  return new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 function openPage(url: string) { void chrome.tabs.create({ url }); }

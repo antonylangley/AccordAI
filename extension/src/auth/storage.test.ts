@@ -53,12 +53,14 @@ describe("Guard auth storage", () => {
     store[`${GUARD_AUTH_STORAGE_PREFIX}session`] = "private-session-json";
     store[GUARD_PUBLIC_ACCOUNT_KEY] = { status: "authenticated" };
     store["accordPolicyBundle:org_1"] = { version: 3 };
+    store["accordPolicyBundleSync:org_1"] = { lastSuccessfulSyncAt: "2026-08-21T00:00:00.000Z" };
     store.accordGuardInstallId = "install_1";
 
     await clearGuardAuthStorage();
 
     expect(store).toEqual({
       "accordPolicyBundle:org_1": { version: 3 },
+      "accordPolicyBundleSync:org_1": { lastSuccessfulSyncAt: "2026-08-21T00:00:00.000Z" },
       accordGuardInstallId: "install_1"
     });
   });

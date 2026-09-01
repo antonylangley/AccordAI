@@ -97,7 +97,7 @@ export function retrievePolicyCandidates(rules: InternalPolicyRule[], input: Pol
 
   return rules
     .filter((rule) => rule.scope.enabled)
-    .map((rule) => candidateForRule(rule, input.text, detectors, concepts))
+    .map((rule) => candidateForRule(rule, input, detectors, concepts))
     .filter((candidate): candidate is RetrievedPolicyCandidate => Boolean(candidate))
     .sort((a, b) => b.relevance - a.relevance || a.rule.id.localeCompare(b.rule.id));
 }
@@ -163,7 +163,9 @@ export function evaluatePolicyRule(
       rule.match.requireConcepts?.length ||
       rule.match.anyConcepts?.length
   );
-  if (!hasEnforcementEvidence) return rejected(rule, "no_deterministic_enforcement_evidence");
+  const hasProviderScopeEvidence = candidate.reasons.some((reason) => reason.type === "scope" && reason.value === "provider_scope");
+  if (!hasEnforcementEvidence && !hasProviderScopeEvidence) return rejected(rule, "no_deterministic_enforcement_evidence");
+  if (hasProviderScopeEvidence) reasons.push("provider_scope_evidence");
 
   const action = rule.action === "REDACT" && !input.redactionAvailable ? rule.fallbackAction || "HOLD" : rule.action;
   if (action !== rule.action) reasons.push("redaction_unavailable_fallback");
@@ -204,11 +206,12 @@ export function evaluatePolicySet(rules: InternalPolicyRule[], input: PolicyEval
 
 function candidateForRule(
   rule: InternalPolicyRule,
-  text: string,
+  input: PolicyEvaluationInput,
   detectors: Set<PolicyDetectorSignal>,
   concepts: Set<PolicyConcept>
 ): RetrievedPolicyCandidate | null {
   const reasons: PolicyCandidateReason[] = [];
+  const text = input.text;
   for (const detector of [...(rule.match.requireDetectors || []), ...(rule.match.anyDetectors || [])]) {
     if (detectors.has(detector)) reasons.push({ type: "detector", value: detector, score: 1 });
   }
@@ -223,10 +226,33 @@ function candidateForRule(
     const score = localLexicalSimilarity(text, example);
     if (score >= 0.22) reasons.push({ type: "semantic_example", value: "policy_example", score });
   }
+  if (!reasons.length && isProviderScopeOnlyRule(rule) && providerModeMatches(rule, input)) {
+    reasons.push({ type: "scope", value: "provider_scope", score: 0.85 });
+  }
 
   if (!reasons.length) return null;
   const relevance = Math.min(1, reasons.reduce((sum, reason) => sum + reason.score, 0) / Math.min(3, reasons.length));
   return { rule, relevance, reasons };
+}
+
+function isProviderScopeOnlyRule(rule: InternalPolicyRule) {
+  return (
+    rule.source.requirementDirection === "ai_provider_usage" &&
+    Boolean(rule.scope.providerMode) &&
+    !rule.match.requireDetectors?.length &&
+    !rule.match.anyDetectors?.length &&
+    !rule.match.requireConcepts?.length &&
+    !rule.match.anyConcepts?.length &&
+    !rule.match.keywords?.length
+  );
+}
+
+function providerModeMatches(rule: InternalPolicyRule, input: PolicyEvaluationInput) {
+  const normalizedProvider = normalizeScopeValue(input.context.provider);
+  const approvedProviders = new Set(input.context.approvedProviders.map(normalizeScopeValue));
+  if (rule.scope.providerMode === "approved_only") return approvedProviders.has(normalizedProvider);
+  if (rule.scope.providerMode === "unapproved_only") return !approvedProviders.has(normalizedProvider);
+  return true;
 }
 
 function localLexicalSimilarity(left: string, right: string) {

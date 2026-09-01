@@ -6,6 +6,7 @@ const actions = new Set(["ALLOW", "REDACT", "HOLD", "BLOCK"]);
 const sourceTypes = new Set(["accord_builtin", "organization_policy"]);
 const providerModes = new Set(["any", "approved_only", "unapproved_only"]);
 const enforceabilities = new Set(["fully_enforceable", "partially_enforceable", "not_enforceable"]);
+const requirementDirections = new Set(["prompt_input", "ai_provider_usage", "ai_output_usage", "human_process", "organization_policy", "unknown"]);
 
 export function validateInternalPolicyRule(value: unknown): value is InternalPolicyRule {
   if (!isRecord(value)) return false;
@@ -15,6 +16,7 @@ export function validateInternalPolicyRule(value: unknown): value is InternalPol
   if (value.fallbackAction != null && !actions.has(String(value.fallbackAction))) return false;
   if (!isRecord(value.source) || !sourceTypes.has(String(value.source.type))) return false;
   if (value.source.enforceability != null && !enforceabilities.has(String(value.source.enforceability))) return false;
+  if (value.source.requirementDirection != null && !requirementDirections.has(String(value.source.requirementDirection))) return false;
   if (!isRecord(value.scope) || typeof value.scope.enabled !== "boolean") return false;
   if (value.scope.providerMode != null && !providerModes.has(String(value.scope.providerMode))) return false;
   if (!isRecord(value.match) || !isRecord(value.explanation) || !nonEmpty(value.explanation.short)) return false;

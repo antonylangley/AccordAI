@@ -9,14 +9,14 @@ import {
   getGuardAuthSnapshot,
   markGuardPolicySync
 } from "../src/auth/session";
-import { getActivePolicyBundle } from "../src/policy/bundle-client";
+import { getActivePolicyBundleStatus, policyStatusToGuardSync } from "../src/policy/bundle-client";
 
 export default defineBackground(() => {
   // Warm the packaged NER model when the MV3 service worker starts. Failure is
   // non-fatal; PERSON detection fails closed with no deterministic fallback.
   void warmPersonDetector().catch(() => undefined);
   void getGuardAuthSnapshot({ force: true }).then((snapshot) => {
-    if (snapshot.status === "authenticated" && snapshot.organization) void syncOrganizationPolicy();
+    if (snapshot.status === "authenticated") void syncOrganizationPolicy();
   });
 
   chrome.runtime.onMessage.addListener((message: AccordGuardMessage, _sender, sendResponse) => {
@@ -62,7 +62,7 @@ async function handleMessage(message: AccordGuardMessage): Promise<AccordGuardRe
       return { ok: true, result: await getGuardAuthSnapshot({ force: message.payload?.force }) };
     case "accord.auth.connect": {
       const result = await connectGuardAccount(message.payload.provider);
-      if (result.status === "authenticated" && result.organization) await syncOrganizationPolicy();
+      if (result.status === "authenticated") await syncOrganizationPolicy();
       return { ok: true, result: await getGuardAuthSnapshot() };
     }
     case "accord.auth.signOut":
@@ -76,17 +76,6 @@ async function handleMessage(message: AccordGuardMessage): Promise<AccordGuardRe
 }
 
 async function syncOrganizationPolicy() {
-  const bundle = await getActivePolicyBundle({ force: true });
-  await markGuardPolicySync(
-    bundle
-      ? {
-          state: "synced",
-          bundleId: bundle.id,
-          version: bundle.version,
-          activeRuleCount: bundle.rules.length,
-          lastPublishedAt: bundle.publishedAt,
-          lastSyncedAt: new Date().toISOString()
-        }
-      : { state: "none", lastSyncedAt: new Date().toISOString() }
-  );
+  const status = await getActivePolicyBundleStatus({ force: true });
+  await markGuardPolicySync(policyStatusToGuardSync(status));
 }

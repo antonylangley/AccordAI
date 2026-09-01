@@ -94,6 +94,51 @@ describe("retrieval and enforcement separation", () => {
     expect(approved.primaryRule?.id).toBe("accord.external-ai.approved-destination");
   });
 
+  test("provider-only organization rules enforce from provider scope without fake data categories", () => {
+    const providerOnlyRule: InternalPolicyRule = {
+      schemaVersion: POLICY_SCHEMA_VERSION,
+      id: "org.provider.unapproved.block",
+      version: 1,
+      title: "Block unapproved AI provider use",
+      description: "Employees may only use organization-approved AI services for company business.",
+      category: "EXTERNAL_AI_USAGE",
+      severity: "MEDIUM",
+      action: "BLOCK",
+      fallbackAction: "BLOCK",
+      source: {
+        type: "organization_policy",
+        documentId: "document-1",
+        documentName: "AI Acceptable Use Policy",
+        section: "Provider usage",
+        controlType: "destination_restriction",
+        requirementDirection: "ai_provider_usage",
+        enforceability: "partially_enforceable"
+      },
+      scope: {
+        enabled: true,
+        providerMode: "unapproved_only",
+        apps: ["chatgpt", "copilot"]
+      },
+      match: {
+        keywords: []
+      },
+      explanation: {
+        short: "Use organization-approved AI services for company business."
+      }
+    };
+
+    expect(validateInternalPolicyRule(providerOnlyRule)).toBe(true);
+
+    const unapproved = evaluatePolicySet([providerOnlyRule], policyInput("Draft a short meeting agenda.", "chatgpt"));
+    const approved = evaluatePolicySet([providerOnlyRule], policyInput("Draft a short meeting agenda.", "copilot-enterprise"));
+
+    expect(unapproved.triggered).toBe(true);
+    expect(unapproved.action).toBe("BLOCK");
+    expect(unapproved.primaryRule?.id).toBe(providerOnlyRule.id);
+    expect(approved.triggered).toBe(false);
+    expect(approved.action).toBe("ALLOW");
+  });
+
   test("public-information exclusions allow a hard negative", () => {
     const decision = evaluatePolicySet(
       builtInRulesForSelection(DEFAULT_ENABLED_BUILT_IN_BUNDLE_IDS),

@@ -21,13 +21,47 @@ export type GuardMembership = {
   status: "active";
 };
 
+export type GuardPolicySyncState =
+  | "organization_synced"
+  | "organization_cached"
+  | "local_fallback"
+  | "syncing"
+  | "none"
+  | "error"
+  | "not_connected"
+  | "synced"
+  | "offline";
+
+export type GuardPolicySourceType = "organization" | "organization_cache" | "local_fallback" | "none";
+
+export type GuardPolicySyncError = {
+  category:
+    | "not_authenticated"
+    | "no_organization"
+    | "storage_unavailable"
+    | "access_token_unavailable"
+    | "http_response"
+    | "schema_validation"
+    | "request"
+    | "account_sync_unavailable"
+    | "unknown";
+  httpStatus?: number;
+  occurredAt: string;
+  recoverable: boolean;
+};
+
 export type GuardPolicySync = {
-  state: "not_connected" | "syncing" | "synced" | "none" | "offline" | "error";
+  state: GuardPolicySyncState;
+  sourceType?: GuardPolicySourceType;
   bundleId?: string;
   version?: number;
   activeRuleCount?: number;
   lastPublishedAt?: string;
   lastSyncedAt?: string;
+  lastSuccessfulSyncAt?: string;
+  fallbackActive?: boolean;
+  organizationSpecificRulesAvailable?: boolean;
+  syncError?: GuardPolicySyncError;
 };
 
 type GuardBaseState = {

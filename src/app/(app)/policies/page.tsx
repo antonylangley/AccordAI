@@ -31,6 +31,7 @@ const controlTypeOptions = [
   "destination_restriction",
   "data_redaction",
   "security_secret",
+  "intellectual_property",
   "tool_usage",
   "human_review",
   "output_usage",
@@ -39,6 +40,7 @@ const controlTypeOptions = [
   "other"
 ];
 const enforceabilityOptions = ["fully_enforceable", "partially_enforceable", "not_enforceable"];
+const directionOptions = ["prompt_input", "ai_provider_usage", "ai_output_usage", "human_process", "organization_policy", "unknown"];
 const recommendedActionOptions = ["none", "warn", "redact", "require_approval", "block"];
 
 export default async function PoliciesPage() {
@@ -516,6 +518,7 @@ function PolicyFields({ rule }: { rule?: AccordPolicyRule }) {
         <Field label="Source policy" name="sourcePolicyName" defaultValue={rule?.sourcePolicyName || "External AI Usage Policy"} />
         <Field label="Source section / citation" name="sourceSection" defaultValue={rule?.sourceSection || "4.2 - Client Information"} />
         <SelectField label="Control type" name="controlType" defaultValue={rule?.controlType || "data_redaction"} options={controlTypeOptions} />
+        <SelectField label="Direction / scope" name="requirementDirection" defaultValue={rule?.requirementDirection || "prompt_input"} options={directionOptions} />
         <SelectField label="Enforceability" name="enforceability" defaultValue={rule?.enforceability || "fully_enforceable"} options={enforceabilityOptions} />
         <SelectField label="Recommended action" name="recommendedAction" defaultValue={rule?.recommendedAction || "redact"} options={recommendedActionOptions} />
         <Field label="User scope" name="userScope" defaultValue={rule?.userScope || "all"} />
@@ -767,11 +770,15 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Data categories</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {rule.dataCategories.map((category) => (
-                  <span key={category} className="rounded border border-accord-border bg-accord-panel px-1.5 py-0.5 text-[11px] font-medium text-accord-muted">
-                    {category.replace(/_/g, " ")}
-                  </span>
-                ))}
+                {rule.dataCategories.length ? (
+                  rule.dataCategories.map((category) => (
+                    <span key={category} className="rounded border border-accord-border bg-accord-panel px-1.5 py-0.5 text-[11px] font-medium text-accord-muted">
+                      {category.replace(/_/g, " ")}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-[13px] leading-6 text-accord-muted">No runtime data category inferred.</span>
+                )}
               </div>
             </div>
 
@@ -792,7 +799,9 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
           <aside className="rounded-md border border-accord-border bg-accord-panel p-3">
             <div className="divide-y divide-accord-border/60">
               <RuleMeta label="Source" value={`${rule.sourcePolicyName} ${rule.sourceSection}`} />
+              {rule.policyDocumentId ? <RuleMeta label="Policy document" value={rule.policyDocumentId} /> : null}
               <RuleMeta label="Control" value={formatLabel(rule.controlType)} />
+              <RuleMeta label="Direction" value={formatLabel(rule.requirementDirection)} />
               <RuleMeta label="Enforceability" value={enforceabilityLabel(rule.enforceability)} />
               <RuleMeta label="Provider" value={rule.aiProvider} />
               <RuleMeta label="Destination" value={rule.destinationType} />
@@ -800,6 +809,7 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
               <RuleMeta label="Recommended" value={rule.recommendedAction ? formatLabel(rule.recommendedAction) : "None"} />
               <RuleMeta label="Action" value={rule.action} />
               <RuleMeta label="Fallback" value={rule.fallbackAction} />
+              <RuleMeta label="Recommended severity" value={rule.recommendedSeverity} />
               <RuleMeta label="Severity" value={rule.severity} />
               <RuleMeta label="Confidence" value={formatConfidence(rule.confidence)} />
               <RuleMeta label="Effective" value={rule.effectiveDate} />

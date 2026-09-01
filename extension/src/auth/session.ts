@@ -13,8 +13,14 @@ import type {
   GuardAuthProvider,
   GuardAuthSnapshot,
   GuardBootstrapResponse,
-  GuardPolicySync
+  GuardPolicySync,
+  GuardPolicySyncError
 } from "./types";
+import {
+  LOCAL_FALLBACK_POLICY_BUNDLE_ID,
+  LOCAL_FALLBACK_POLICY_RULE_COUNT,
+  LOCAL_FALLBACK_POLICY_VERSION
+} from "../policy/local-fallback";
 
 const now = () => new Date().toISOString();
 let connectionPromise: Promise<GuardAuthSnapshot> | null = null;
@@ -144,8 +150,18 @@ async function bootstrapSession(session: Session, cached: GuardAuthSnapshot | nu
     if (!response.ok) throw new Error(`bootstrap_${response.status}`);
     const body = (await response.json()) as GuardBootstrapResponse;
     const policy: GuardPolicySync = body.policy
-      ? { ...body.policy, state: "syncing" }
-      : { state: "none" };
+      ? {
+          ...body.policy,
+          state: "syncing",
+          sourceType: "organization",
+          fallbackActive: true,
+          organizationSpecificRulesAvailable: false
+        }
+      : localFallbackPolicySync(
+          identityMissingOrganization(body)
+            ? syncError("no_organization", { recoverable: true })
+            : undefined
+        );
     const result: GuardAuthSnapshot = {
       status: "authenticated",
       localProtection: true,
@@ -175,7 +191,7 @@ function snapshotFromSessionUser(user: User): GuardAuthSnapshot {
     },
     organization: null,
     membership: null,
-    policy: { state: "offline" }
+    policy: localFallbackPolicySync(syncError("account_sync_unavailable", { recoverable: true }))
   };
 }
 
@@ -184,7 +200,7 @@ function offlineOrError(cached: GuardAuthSnapshot | null, error: unknown): Guard
     const result: GuardAuthSnapshot = {
       ...cached,
       updatedAt: now(),
-      policy: { ...cached.policy, state: "offline" }
+      policy: offlinePolicySync(cached.policy)
     };
     void persistPublicSnapshot(result);
     return result;
@@ -202,6 +218,66 @@ function offlineOrError(cached: GuardAuthSnapshot | null, error: unknown): Guard
   };
   void persistPublicSnapshot(result);
   return result;
+}
+
+function identityMissingOrganization(body: GuardBootstrapResponse) {
+  return body.organization === null || body.membership === null;
+}
+
+function localFallbackPolicySync(syncErrorValue?: GuardPolicySyncError): GuardPolicySync {
+  return {
+    state: "local_fallback",
+    sourceType: "local_fallback",
+    bundleId: LOCAL_FALLBACK_POLICY_BUNDLE_ID,
+    version: LOCAL_FALLBACK_POLICY_VERSION,
+    activeRuleCount: LOCAL_FALLBACK_POLICY_RULE_COUNT,
+    fallbackActive: true,
+    organizationSpecificRulesAvailable: false,
+    syncError: syncErrorValue
+  };
+}
+
+function offlinePolicySync(policy: GuardPolicySync): GuardPolicySync {
+  const error = syncError("account_sync_unavailable", { recoverable: true });
+  if (hasOrganizationPolicyMetadata(policy)) {
+    return {
+      ...policy,
+      state: "organization_cached",
+      sourceType: "organization_cache",
+      fallbackActive: false,
+      organizationSpecificRulesAvailable: true,
+      syncError: error
+    };
+  }
+
+  return {
+    ...localFallbackPolicySync(error),
+    lastSuccessfulSyncAt: policy.lastSuccessfulSyncAt,
+    lastSyncedAt: policy.lastSyncedAt
+  };
+}
+
+function hasOrganizationPolicyMetadata(policy: GuardPolicySync) {
+  return Boolean(
+    policy.bundleId &&
+      policy.bundleId !== LOCAL_FALLBACK_POLICY_BUNDLE_ID &&
+      (policy.state === "organization_synced" ||
+        policy.state === "organization_cached" ||
+        policy.state === "synced" ||
+        policy.state === "offline")
+  );
+}
+
+function syncError(
+  category: GuardPolicySyncError["category"],
+  options: { httpStatus?: number; recoverable: boolean }
+): GuardPolicySyncError {
+  return {
+    category,
+    httpStatus: options.httpStatus,
+    occurredAt: now(),
+    recoverable: options.recoverable
+  };
 }
 
 async function readPublicSnapshot() {
@@ -280,16 +356,50 @@ function isGuardPolicySync(value: unknown) {
     value.state === "not_connected" ||
     value.state === "syncing" ||
     value.state === "synced" ||
+    value.state === "organization_synced" ||
+    value.state === "organization_cached" ||
+    value.state === "local_fallback" ||
     value.state === "none" ||
     value.state === "offline" ||
     value.state === "error";
   return Boolean(
     validState &&
+      (value.sourceType === undefined ||
+        value.sourceType === "organization" ||
+        value.sourceType === "organization_cache" ||
+        value.sourceType === "local_fallback" ||
+        value.sourceType === "none") &&
       (value.bundleId === undefined || typeof value.bundleId === "string") &&
       (value.version === undefined || typeof value.version === "number") &&
       (value.activeRuleCount === undefined || typeof value.activeRuleCount === "number") &&
       (value.lastPublishedAt === undefined || typeof value.lastPublishedAt === "string") &&
-      (value.lastSyncedAt === undefined || typeof value.lastSyncedAt === "string")
+      (value.lastSyncedAt === undefined || typeof value.lastSyncedAt === "string") &&
+      (value.lastSuccessfulSyncAt === undefined || typeof value.lastSuccessfulSyncAt === "string") &&
+      (value.fallbackActive === undefined || typeof value.fallbackActive === "boolean") &&
+      (value.organizationSpecificRulesAvailable === undefined ||
+        typeof value.organizationSpecificRulesAvailable === "boolean") &&
+      (value.syncError === undefined || isGuardPolicySyncError(value.syncError))
+  );
+}
+
+function isGuardPolicySyncError(value: unknown) {
+  if (!isRecord(value)) return false;
+  const validCategory =
+    value.category === "not_authenticated" ||
+    value.category === "no_organization" ||
+    value.category === "storage_unavailable" ||
+    value.category === "access_token_unavailable" ||
+    value.category === "http_response" ||
+    value.category === "schema_validation" ||
+    value.category === "request" ||
+    value.category === "account_sync_unavailable" ||
+    value.category === "unknown";
+
+  return Boolean(
+    validCategory &&
+      (value.httpStatus === undefined || typeof value.httpStatus === "number") &&
+      typeof value.occurredAt === "string" &&
+      typeof value.recoverable === "boolean"
   );
 }
 
