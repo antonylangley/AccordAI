@@ -1,0 +1,6 @@
+{
+  "chromeManifestKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp5x7r3t3HGffsQMc2McHS1F+/HIXuGsPdqdaK8ccc4pXF7WKmd0MlEzjK90U5mm/5TSnKYLzQ5ObNDeEYPfbVuOPz7xMffIqBA+GvVF1+WJGppTQ+8BrxrbXNzgcwiOjWbgq+fJ5u1qLxepgsdVqirPZFPsuU/dEwH9UUrmhiHw2mcr8m5w42L1AXxPru3pFnmJNStu4/WBIYKzyyttknrynGn3nlBS/KURH66nfUVOEqvNR8KzhdnNC/2+edkmrWBf0z0X7/XV5ofoK95I7Km7wFNPyTcs2fIQ1Z3jPx3Pj77QkTEnLrmJh4DrVIUa3pr9mkrypK1Fpqu6+jVLFMwIDAQAB",
+  "chromeExtensionId": "dpckdfglhfjeocnfipbolpchnlijokhb",
+  "oauthCallbackPath": "auth/callback",
+  "oauthRedirectUrl": "https://dpckdfglhfjeocnfipbolpchnlijokhb.chromiumapp.org/auth/callback"
+}

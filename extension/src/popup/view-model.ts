@@ -1,4 +1,4 @@
-import type { GuardAuthSnapshot, GuardPolicySync } from "../auth/types";
+import type { GuardAuthSnapshot, GuardEnforcementState, GuardPolicySync } from "../auth/types";
 
 export type GuardPolicyStatusView = {
   state: "organization_synced" | "organization_cached" | "local_fallback" | "syncing";
@@ -16,6 +16,17 @@ export type GuardPopupView =
   | { kind: "no_organization"; title: string; detail: string; policy: GuardPolicyStatusView }
   | { kind: "connected"; title: string; detail: string; policy: GuardPolicyStatusView }
   | { kind: "error"; title: string; detail: string; policy: GuardPolicyStatusView };
+
+export type GuardPauseControlView =
+  | { visible: false }
+  | {
+      visible: true;
+      paused: boolean;
+      title: string;
+      detail: string;
+      stateLabel: string;
+      actionLabel: string;
+    };
 
 export function popupViewForState(state: GuardAuthSnapshot): GuardPopupView {
   switch (state.status) {
@@ -54,6 +65,41 @@ export function popupViewForState(state: GuardAuthSnapshot): GuardPopupView {
         policy: policyStatusView(state.policy)
       };
   }
+}
+
+export function pauseControlViewForState(
+  state: GuardAuthSnapshot,
+  enforcement: GuardEnforcementState | null
+): GuardPauseControlView {
+  if (
+    state.status !== "authenticated" ||
+    !state.organization ||
+    !state.membership ||
+    state.membership.role !== "owner" ||
+    !enforcement?.canPause
+  ) {
+    return { visible: false };
+  }
+
+  if (enforcement.paused) {
+    return {
+      visible: true,
+      paused: true,
+      title: "Guard paused",
+      detail: "Accord is not currently enforcing AI policy in this browser.",
+      stateLabel: "OFF",
+      actionLabel: "Resume Guard"
+    };
+  }
+
+  return {
+    visible: true,
+    paused: false,
+    title: "Guard active",
+    detail: "Accord is enforcing AI policy in this browser.",
+    stateLabel: "ON",
+    actionLabel: "Pause Guard"
+  };
 }
 
 export function policyStatusView(policy: GuardPolicySync): GuardPolicyStatusView {
@@ -99,7 +145,7 @@ function localFallbackView(): GuardPolicyStatusView {
   return {
     state: "local_fallback",
     title: "Local protection active",
-    detail: "Organization policy sync is unavailable. Organization-specific rules may not be available.",
+    detail: "Organization policy sync is unavailable. Built-in protections remain active; organization-specific rules may not be available.",
     tone: "degraded",
     canRetry: true,
     organizationSpecificRulesAvailable: false

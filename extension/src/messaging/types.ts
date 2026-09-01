@@ -10,7 +10,7 @@ import type { AISurface } from "../adapters/types";
 import type { AttachmentExtractionKind } from "../attachments/policy";
 import type { PersonDetectionCoverage } from "../person-detection/person-detector";
 import type { AppliedPolicyDecision } from "../policy/types";
-import type { GuardAuthProvider, GuardAuthSnapshot } from "../auth/types";
+import type { GuardAuthProvider, GuardAuthSnapshot, GuardEnforcementState } from "../auth/types";
 
 export type SafeRiskFlag = {
   type: ChatFlagType;
@@ -193,8 +193,15 @@ export type AccordGuardMessage =
   | { type: "accord.auth.getState"; payload?: { force?: boolean } }
   | { type: "accord.auth.connect"; payload: { provider: GuardAuthProvider } }
   | { type: "accord.auth.signOut" }
-  | { type: "accord.policy.sync" };
+  | { type: "accord.policy.sync" }
+  | { type: "accord.enforcement.getState"; payload?: { force?: boolean } }
+  | { type: "accord.enforcement.setPaused"; payload: { paused: boolean } };
+
+export type GuardEnforcementChangedMessage = {
+  type: "accord.enforcement.changed";
+  payload: GuardEnforcementState;
+};
 
 export type AccordGuardResponse =
-  | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult | GuardAuthSnapshot }
+  | { ok: true; result?: SafeScanResult | RehydrateSafeResult | GovernAttachmentsResult | GuardAuthSnapshot | GuardEnforcementState }
   | { ok: false; error: string };

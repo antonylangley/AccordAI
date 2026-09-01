@@ -9,7 +9,14 @@ import { extractGovernableAttachmentText } from "../../src/attachments/extract-t
 import { isExtractableDocumentAttachment, isSupportedTextAttachment, MAX_GUARDED_TEXT_ATTACHMENT_BYTES, mimeCategory, safeMimeType } from "../../src/attachments/policy";
 import { renderResolvedAssistantResponse } from "../../src/governance/response-rehydration";
 import type { EntityCountSummary } from "@accord/governance-core";
-import type { GovernAttachmentsResult, GuardAttachmentInput, GuardTelemetryPayload, SafeScanResult } from "../../src/messaging/types";
+import type { GuardEnforcementState } from "../../src/auth/types";
+import type {
+  GovernAttachmentsResult,
+  GuardAttachmentInput,
+  GuardEnforcementChangedMessage,
+  GuardTelemetryPayload,
+  SafeScanResult
+} from "../../src/messaging/types";
 import { sendGuardMessage } from "../../src/messaging/client";
 import { attachmentSendBlockReason, type AttachmentGateStatus } from "../../src/state/attachment-send-gate";
 import { runGovernedAttachmentHandoff } from "../../src/state/attachment-handoff";
@@ -74,6 +81,7 @@ export default defineContentScript({
     let liveScanTimer: number | undefined;
     let conversationKey = adapter.getConversationKey();
     let attachmentGateStatus: AttachmentGateStatus = "none";
+    let enforcementState: GuardEnforcementState | null = null;
     const recordTelemetry = (payload: Omit<GuardTelemetryPayload, "surface" | "conversationKey">) => {
       void sendGuardMessage({
         type: "accord.recordTelemetry",
@@ -84,6 +92,54 @@ export default defineContentScript({
         }
       });
     };
+    const clearGuardSurface = () => {
+      window.clearTimeout(liveScanTimer);
+      attachmentGateStatus = "none";
+      state.set({
+        phase: "idle",
+        scan: undefined,
+        message: undefined,
+        draftText: adapter.getDraftText(),
+        whyOpen: false,
+        attachmentNotice: false,
+        attachmentEntityCounts: undefined,
+        attachmentRedactionCount: undefined
+      });
+      adapter.setComposerDecoratedState("clear");
+      adapter.clearEntityDecorations();
+    };
+    const applyEnforcementState = (nextState: GuardEnforcementState) => {
+      enforcementState = nextState;
+      rootElement.hidden = !nextState.enabled;
+
+      if (!nextState.enabled) {
+        clearGuardSurface();
+      }
+    };
+    const refreshEnforcementState = async (force = false) => {
+      const response = await sendGuardMessage({ type: "accord.enforcement.getState", payload: { force } });
+      if (!response.ok || !response.result || !("enabled" in response.result)) {
+        return true;
+      }
+
+      applyEnforcementState(response.result as GuardEnforcementState);
+      return response.result.enabled;
+    };
+    const submitWithoutEnforcement = async () => {
+      clearGuardSurface();
+      trustedGate.authorizeNext();
+      await adapter.submit();
+    };
+    const handleEnforcementChanged = (message: GuardEnforcementChangedMessage | unknown) => {
+      if (!message || typeof message !== "object" || !("type" in message)) return;
+      if (message.type !== "accord.enforcement.changed" || !("payload" in message)) return;
+      const payload = message.payload as GuardEnforcementState;
+      if (typeof payload.enabled === "boolean") {
+        applyEnforcementState(payload);
+      }
+    };
+    void refreshEnforcementState();
+    chrome.runtime.onMessage.addListener(handleEnforcementChanged);
     window.addEventListener("resize", syncGuardChrome);
     window.addEventListener("scroll", syncGuardChrome, true);
 
@@ -123,14 +179,22 @@ export default defineContentScript({
         return;
       }
 
-      state.set({ phase: "scanning", message: undefined, draftText: text });
-      adapter.setComposerDecoratedState("scanning");
-      adapter.clearEntityDecorations();
+      if (enforcementState?.enabled === false) {
+        clearGuardSurface();
+        return;
+      }
 
       liveScanTimer = window.setTimeout(() => {
         void syncConversationKey()
-          .then(() =>
-            sendGuardMessage({
+          .then(() => refreshEnforcementState())
+          .then((enabled) => {
+            if (!enabled || sequence !== scanSeq.current) return null;
+
+            state.set({ phase: "scanning", message: undefined, draftText: text });
+            adapter.setComposerDecoratedState("scanning");
+            adapter.clearEntityDecorations();
+
+            return sendGuardMessage({
               type: "accord.scanDraft",
               payload: {
                 surface: "chatgpt",
@@ -140,10 +204,10 @@ export default defineContentScript({
                 authoritative: false,
                 includeSanitizedText: false
               }
-            })
-          )
+            });
+          })
           .then((response) => {
-            if (!response.ok || response.result == null || !("action" in response.result) || sequence !== scanSeq.current) return;
+            if (!response || !response.ok || response.result == null || !("action" in response.result) || sequence !== scanSeq.current) return;
 
             applyScanState(response.result, text);
           })
@@ -170,15 +234,7 @@ export default defineContentScript({
       }
     };
 
-    const unsubscribeDraft = adapter.subscribeToDraft(runLiveScan);
-    const unsubscribeSubmit = adapter.subscribeToSubmit((submission) => {
-      const submittedDraftText = adapter.getDraftText();
-
-      if (trustedGate.consumeIfAuthorized()) {
-        return;
-      }
-
-      submission.prevent();
+    const runGuardedSubmission = (submittedDraftText: string) => {
       const attachmentBlockReason = attachmentSendBlockReason({
         gateStatus: attachmentGateStatus,
         hasHostAttachments: adapter.hasAttachments(),
@@ -208,112 +264,139 @@ export default defineContentScript({
             reason: attachmentBlockReason
           }
         });
-        return;
+        return Promise.resolve();
       }
 
       state.set({ phase: "scanning", message: "Running final Accord scan...", draftText: submittedDraftText });
       adapter.setComposerDecoratedState("scanning");
       adapter.clearEntityDecorations();
 
-      void syncConversationKey()
-        .then(() => {
-          let finalScan: SafeScanResult | undefined;
+      let finalScan: SafeScanResult | undefined;
 
-          return runFinalSubmissionDecision({
-            readDraft: () => adapter.getDraftText(),
-            scan: (text) =>
-              sendGuardMessage({
-                type: "accord.scanDraft",
-                payload: {
-                  surface: "chatgpt",
-                  conversationKey,
-                  text,
-                  sensitivity: "Internal",
-                  authoritative: true,
-                  includeSanitizedText: true
-                }
-              }).then((response) => {
-                if (!response.ok) {
-                  throw new Error(response.error);
-                }
-                if (!response.result || !("action" in response.result)) {
-                  throw new Error("Accord final scan failed.");
-                }
-                return response.result;
-              }),
-            setDraftText: (text) => adapter.setDraftText(text),
-            verifyDraftText: () => adapter.getDraftText(),
-            submitTrusted: async () => {
-              trustedGate.authorizeNext();
-              await adapter.submit();
-            },
-            onState: (nextState) => {
-              if (nextState.scan) {
-                finalScan = nextState.scan;
-              }
-              const draftText = adapter.getDraftText();
-              state.set({ ...nextState, draftText });
-              if (nextState.phase) {
-                adapter.setComposerDecoratedState(nextState.phase);
-              }
-              if (nextState.phase === "blocked" && nextState.scan) {
-                adapter.setEntityDecorations(nextState.scan.decorations, "blocked", draftText);
-              } else {
-                adapter.clearEntityDecorations();
-              }
+      return runFinalSubmissionDecision({
+        readDraft: () => adapter.getDraftText(),
+        scan: (text) =>
+          sendGuardMessage({
+            type: "accord.scanDraft",
+            payload: {
+              surface: "chatgpt",
+              conversationKey,
+              text,
+              sensitivity: "Internal",
+              authoritative: true,
+              includeSanitizedText: true
             }
-          }).then((outcome) => {
-            const eventType = outcome === "submitted" ? "message_sent_to_ai" : outcome === "blocked" ? "message_blocked" : "extension_error";
-            const scan = finalScan;
-
-            recordTelemetry({
-              eventType,
-              action: scan?.action || (outcome === "blocked" ? "block" : outcome === "failed" ? "failed" : "allow"),
-              riskScore: scan?.riskScore || 0,
-              riskLevel: scan?.riskLevel || "low",
-              flags: scan ? flagLabels(scan) : [],
-              entityCounts: scan?.entityCounts || {},
-              redactionCount: scan?.detectedEntityCount || 0,
-              messageLengthBucket: messageLengthBucket(submittedDraftText.length),
-              ...policyTelemetryFields(scan, "prompt"),
-              metadata: {
-                outcome,
-                scanId: scan?.scanId || null,
-                redacted: scan?.action === "redact",
-                enforcementSource: scan?.enforcementSource || "accord_core",
-                findingSources: scan?.flags.length ? "accord_core" : "none"
-              }
-            });
-
-            return outcome;
-          });
-        })
-        .catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : "Accord could not complete the final scan.";
-          state.set({ phase: "failed", message });
-          adapter.setComposerDecoratedState("failed");
-          recordTelemetry({
-            eventType: "extension_error",
-            action: "failed",
-            riskScore: 0,
-            riskLevel: "low",
-            messageLengthBucket: messageLengthBucket(submittedDraftText.length),
-            metadata: {
-              reasonCategory: "final_scan_error",
-              reason: message
+          }).then((response) => {
+            if (!response.ok) {
+              throw new Error(response.error);
             }
-          });
+            if (!response.result || !("action" in response.result)) {
+              throw new Error("Accord final scan failed.");
+            }
+            return response.result;
+          }),
+        setDraftText: (text) => adapter.setDraftText(text),
+        verifyDraftText: () => adapter.getDraftText(),
+        submitTrusted: async () => {
+          trustedGate.authorizeNext();
+          await adapter.submit();
+        },
+        onState: (nextState) => {
+          if (nextState.scan) {
+            finalScan = nextState.scan;
+          }
+          const draftText = adapter.getDraftText();
+          state.set({ ...nextState, draftText });
+          if (nextState.phase) {
+            adapter.setComposerDecoratedState(nextState.phase);
+          }
+          if (nextState.phase === "blocked" && nextState.scan) {
+            adapter.setEntityDecorations(nextState.scan.decorations, "blocked", draftText);
+          } else {
+            adapter.clearEntityDecorations();
+          }
+        }
+      }).then((outcome) => {
+        const eventType = outcome === "submitted" ? "message_sent_to_ai" : outcome === "blocked" ? "message_blocked" : "extension_error";
+        const scan = finalScan;
+
+        recordTelemetry({
+          eventType,
+          action: scan?.action || (outcome === "blocked" ? "block" : outcome === "failed" ? "failed" : "allow"),
+          riskScore: scan?.riskScore || 0,
+          riskLevel: scan?.riskLevel || "low",
+          flags: scan ? flagLabels(scan) : [],
+          entityCounts: scan?.entityCounts || {},
+          redactionCount: scan?.detectedEntityCount || 0,
+          messageLengthBucket: submittedDraftText.length ? messageLengthBucket(submittedDraftText.length) : "empty",
+          ...policyTelemetryFields(scan, "prompt"),
+          metadata: {
+            outcome,
+            scanId: scan?.scanId || null,
+            redacted: scan?.action === "redact",
+            enforcementSource: scan?.enforcementSource || "accord_core",
+            findingSources: scan?.flags.length ? "accord_core" : "none"
+          }
         });
+
+        return outcome;
+      });
+    };
+
+    const handleFinalScanError = (error: unknown, submittedDraftText: string) => {
+      const message = error instanceof Error ? error.message : "Accord could not complete the final scan.";
+      state.set({ phase: "failed", message });
+      adapter.setComposerDecoratedState("failed");
+      recordTelemetry({
+        eventType: "extension_error",
+        action: "failed",
+        riskScore: 0,
+        riskLevel: "low",
+        messageLengthBucket: messageLengthBucket(submittedDraftText.length),
+        metadata: {
+          reasonCategory: "final_scan_error",
+          reason: message
+        }
+      });
+    };
+
+    const unsubscribeDraft = adapter.subscribeToDraft(runLiveScan);
+    const unsubscribeSubmit = adapter.subscribeToSubmit((submission) => {
+      const submittedDraftText = adapter.getDraftText();
+
+      if (trustedGate.consumeIfAuthorized()) {
+        return;
+      }
+
+      submission.prevent();
+      void syncConversationKey()
+        .then(() => refreshEnforcementState(enforcementState?.enabled === false))
+        .then(async (enabled) => {
+          if (enabled) {
+            await runGuardedSubmission(submittedDraftText);
+          } else {
+            await submitWithoutEnforcement();
+          }
+        })
+        .catch((error: unknown) => handleFinalScanError(error, submittedDraftText));
     });
 
     const unsubscribeAttachments = adapter.subscribeToAttachmentSelection((selection) => {
-      attachmentGateStatus = "pending";
-      state.set({ phase: "scanning", message: "Scanning file...", draftText: adapter.getDraftText(), attachmentNotice: true });
-
       void syncConversationKey()
-        .then(() => buildAttachmentPayload(selection.files))
-        .then((attachments) =>
-          sendGuardMessage({
+        .then(() => refreshEnforcementState(enforcementState?.enabled === false))
+        .then((enabled) => {
+          if (!enabled) {
+            return null;
+          }
+
+          attachmentGateStatus = "pending";
+          state.set({ phase: "scanning", message: "Scanning file...", draftText: adapter.getDraftText(), attachmentNotice: true });
+          return buildAttachmentPayload(selection.files);
+        })
+        .then((attachments) => {
+          if (!attachments) return null;
+
+          return sendGuardMessage({
             type: "accord.governAttachments",
             payload: {
               surface: "chatgpt",
@@ -321,9 +404,10 @@ export default defineContentScript({
               sensitivity: "Internal",
               attachments
             }
-          })
-        )
+          });
+        })
         .then(async (message) => {
+          if (!message) return;
           if (!message.ok || !message.result || !("batchAction" in message.result)) {
             throw new Error(message.ok ? "Accord attachment governance failed." : message.error);
           }
@@ -403,7 +487,11 @@ export default defineContentScript({
     });
 
     const unsubscribeResponses = adapter.subscribeToAssistantResponses((response) => {
-      void syncConversationKey().then(() => rehydrateResponse(response));
+      void syncConversationKey()
+        .then(() => refreshEnforcementState(enforcementState?.enabled === false))
+        .then((enabled) => {
+          if (enabled) rehydrateResponse(response);
+        });
     });
 
     const rehydrateResponse = (response: SurfaceAssistantResponse) => {
@@ -457,6 +545,12 @@ export default defineContentScript({
     });
 
     const attachmentTimer = window.setInterval(() => {
+      if (enforcementState?.enabled === false) {
+        clearGuardSurface();
+        syncGuardChrome();
+        return;
+      }
+
       const attachmentNotice = adapter.hasAttachments();
       if (!attachmentNotice && attachmentGateStatus === "governed") {
         attachmentGateStatus = "none";
@@ -473,6 +567,7 @@ export default defineContentScript({
       resizeObserver?.disconnect();
       window.removeEventListener("resize", syncGuardChrome);
       window.removeEventListener("scroll", syncGuardChrome, true);
+      chrome.runtime.onMessage.removeListener(handleEnforcementChanged);
       adapter.clearEntityDecorations();
       unsubscribeDraft();
       unsubscribeSubmit();

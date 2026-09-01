@@ -1,10 +1,18 @@
 import { defineConfig } from "wxt";
+import { readFileSync } from "node:fs";
+
+const extensionIdentity = JSON.parse(
+  readFileSync(new URL("./config/extension-identity.json", import.meta.url), "utf8")
+) as {
+  chromeManifestKey: string;
+};
 
 export default defineConfig({
   manifest: {
     name: "Accord Guard",
     short_name: "Accord Guard",
     description: "Accord governance inside ChatGPT. Detected identifiers are removed before governed message submission.",
+    key: extensionIdentity.chromeManifestKey,
     icons: {
       "16": "icons/accord-icon-16.png",
       "32": "icons/accord-icon-32.png",

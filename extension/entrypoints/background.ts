@@ -1,14 +1,8 @@
 import { defineBackground } from "wxt/utils/define-background";
-import { governAttachmentBatch, moveVault, rehydrateAssistantText, scanDraft } from "../src/governance/scan-session";
+import { handleAccordGuardMessage } from "../src/background/message-handler";
 import type { AccordGuardMessage, AccordGuardResponse } from "../src/messaging/types";
 import { warmPersonDetector } from "../src/person-detection/person-detector";
-import { recordGuardTelemetry } from "../src/telemetry/client";
-import {
-  connectGuardAccount,
-  disconnectGuardAccount,
-  getGuardAuthSnapshot,
-  markGuardPolicySync
-} from "../src/auth/session";
+import { getGuardAuthSnapshot, markGuardPolicySync } from "../src/auth/session";
 import { getActivePolicyBundleStatus, policyStatusToGuardSync } from "../src/policy/bundle-client";
 
 export default defineBackground(() => {
@@ -24,7 +18,7 @@ export default defineBackground(() => {
       return false;
     }
 
-    void handleMessage(message)
+    void handleAccordGuardMessage(message)
       .then((response) => sendResponse(response))
       .catch((error: unknown) => {
         const messageText = error instanceof Error ? error.message : "Accord Guard request failed.";
@@ -34,46 +28,6 @@ export default defineBackground(() => {
     return true;
   });
 });
-
-async function handleMessage(message: AccordGuardMessage): Promise<AccordGuardResponse> {
-  switch (message.type) {
-    case "accord.scanDraft":
-      return {
-        ok: true,
-        result: await scanDraft(message.payload)
-      };
-    case "accord.governAttachments":
-      return {
-        ok: true,
-        result: await governAttachmentBatch(message.payload)
-      };
-    case "accord.rehydrateResponse":
-      return {
-        ok: true,
-        result: await rehydrateAssistantText(message.payload)
-      };
-    case "accord.moveVault":
-      await moveVault(message.payload);
-      return { ok: true };
-    case "accord.recordTelemetry":
-      await recordGuardTelemetry(message.payload);
-      return { ok: true };
-    case "accord.auth.getState":
-      return { ok: true, result: await getGuardAuthSnapshot({ force: message.payload?.force }) };
-    case "accord.auth.connect": {
-      const result = await connectGuardAccount(message.payload.provider);
-      if (result.status === "authenticated") await syncOrganizationPolicy();
-      return { ok: true, result: await getGuardAuthSnapshot() };
-    }
-    case "accord.auth.signOut":
-      return { ok: true, result: await disconnectGuardAccount() };
-    case "accord.policy.sync":
-      await syncOrganizationPolicy();
-      return { ok: true, result: await getGuardAuthSnapshot() };
-    default:
-      return { ok: false, error: "Unknown Accord Guard message." };
-  }
-}
 
 async function syncOrganizationPolicy() {
   const status = await getActivePolicyBundleStatus({ force: true });

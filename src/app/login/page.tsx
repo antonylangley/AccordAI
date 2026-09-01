@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Github, ShieldCheck } from "lucide-react";
 import { AccordLogo } from "@/components/ui/accord-logo";
+import { friendlyAuthError } from "@/lib/auth/auth-errors";
 import { getAccordOrganizationContext } from "@/lib/auth/organization";
 import { trustedExtensionOAuthUrl } from "@/lib/auth/extension-oauth";
 import { getSupabaseAuthConfig, type AuthProvider } from "@/lib/auth/supabase-server";
@@ -108,12 +109,4 @@ export default async function LoginPage({
 
 function normalizeProvider(value: string | undefined): AuthProvider {
   return value === "github" ? "github" : "google";
-}
-
-function friendlyAuthError(error: string) {
-  if (error === "supabase-not-configured") {
-    return "Supabase Auth is not configured for this deployment yet.";
-  }
-
-  return `Login failed: ${error}`;
 }

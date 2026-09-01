@@ -29,6 +29,12 @@ p { margin: 0; color: #60718d; font-size: 13px; line-height: 1.55; }
 .details-card div { display:flex; align-items:center; justify-content:space-between; min-height:35px; padding: 0 11px; border-bottom:1px solid #e6ebf2; }.details-card div:last-child { border:0; }
 .details-card dt { color:#6b7a93; font-size:12px; }.details-card dd { margin:0; max-width:220px; overflow:hidden; font-size:12px; font-weight:650; text-overflow:ellipsis; white-space:nowrap; }
 .role-badge { color:#0c192c; }
+.guard-toggle-card { display:grid; gap:10px; padding:12px; border:1px solid #d8dee8; border-radius:7px; background:#fff; }
+.guard-toggle-card.paused { border-color:#dac08b; background:#fff8ea; }
+.guard-toggle-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.guard-toggle-heading strong { color:#0c192c; font-size:13px; }
+.guard-toggle-heading span { min-width:34px; padding:3px 7px; border:1px solid #d8dee8; border-radius:999px; color:#0c192c; background:#fff; text-align:center; font:700 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.guard-toggle-card p { margin-top:4px; font-size:12px; line-height:1.45; }
 .policy-state-card { display:grid; gap:10px; padding:12px; border:1px solid #d8dee8; border-radius:7px; background:#fff; }
 .policy-state-card.degraded { border-color:#f0d7a6; background:#fffaf1; }
 .policy-state-card.neutral { background:#f8fafc; }

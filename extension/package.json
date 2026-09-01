@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "build": "node scripts/prepare-ort-assets.mjs && wxt build -b chrome",
+    "build": "node scripts/prepare-ort-assets.mjs && wxt build -b chrome && node scripts/verify-extension-identity.mjs",
     "prepare": "wxt prepare",
     "prepare:ort": "node scripts/prepare-ort-assets.mjs",
     "prepare:ner": "node scripts/prepare-ner-assets.mjs",
     "typecheck": "wxt prepare && tsc -p tsconfig.json --noEmit",
-    "test": "node scripts/prepare-ort-assets.mjs && vitest run"
+    "test": "node scripts/prepare-ort-assets.mjs && vitest run",
+    "verify:identity": "node scripts/verify-extension-identity.mjs"
   },
   "dependencies": {
     "@accord/governance-core": "workspace:*",

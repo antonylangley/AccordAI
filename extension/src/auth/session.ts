@@ -1,7 +1,15 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { getApiBaseUrl } from "./config";
 import { getGuardAuthClient } from "./client";
-import { buildGuardLoginUrl } from "./oauth-url";
+import {
+  clearGuardOAuthAttempt,
+  clearSupabasePkceVerifier,
+  createGuardOAuthState,
+  oauthAttemptId,
+  pruneStoredGuardOAuthAttempts,
+  rememberGuardOAuthAttempt,
+  restoreGuardOAuthAttempt
+} from "./oauth-attempts";
 import {
   clearGuardAuthStorage,
   GUARD_PUBLIC_ACCOUNT_KEY,
@@ -86,37 +94,78 @@ export async function markGuardPolicySync(policy: GuardPolicySync) {
 async function runOAuth(provider: GuardAuthProvider) {
   const connecting: GuardAuthSnapshot = { status: "connecting", localProtection: true, updatedAt: now() };
   await persistPublicSnapshot(connecting);
+  let attemptState: string | null = null;
+  let attemptClient: Awaited<ReturnType<typeof getGuardAuthClient>> | null = null;
   try {
     const identity = globalThis.chrome?.identity;
     if (!identity?.launchWebAuthFlow) throw new Error("Chrome identity is unavailable.");
     const client = await getGuardAuthClient();
+    attemptClient = client;
     const redirectTo = identity.getRedirectURL("auth/callback");
+    const state = createGuardOAuthState();
+    attemptState = state;
+    await pruneStoredGuardOAuthAttempts();
+    await clearSupabasePkceVerifier(client);
+    logAuthDiagnostic("attempt_started", {
+      provider,
+      attemptId: oauthAttemptId(state),
+      redirectHost: safeHost(redirectTo)
+    });
     const { data, error } = await client.auth.signInWithOAuth({
       provider,
-      options: { redirectTo, skipBrowserRedirect: true }
+      options: { redirectTo, skipBrowserRedirect: true, queryParams: { state } }
     });
     if (error || !data.url) throw error || new Error("Accord could not start OAuth.");
-    const callbackUrl = await launchAuthFlow(
-      buildGuardLoginUrl({
-        apiBaseUrl: await getApiBaseUrl(),
-        provider,
-        oauthUrl: data.url
-      })
-    );
-    const code = new URL(callbackUrl).searchParams.get("code");
+    await rememberGuardOAuthAttempt({ state, provider, redirectUrl: redirectTo, client });
+    logAuthDiagnostic("authorize_url_ready", { provider, attemptId: oauthAttemptId(state) });
+    const callbackUrl = await launchAuthFlow(data.url);
+    const parsedCallback = new URL(callbackUrl);
+    const returnedState = parsedCallback.searchParams.get("state");
+    const providerError = parsedCallback.searchParams.get("error");
+    logAuthDiagnostic("redirect_received", {
+      provider,
+      attemptId: oauthAttemptId(state),
+      callbackHost: safeHost(callbackUrl),
+      stateMatched: returnedState === state,
+      hasCode: parsedCallback.searchParams.has("code"),
+      hasProviderError: Boolean(providerError)
+    });
+
+    if (providerError) throw new Error(providerError);
+    if (!returnedState || returnedState !== state) throw new Error("oauth_state_mismatch");
+    const attempt = await restoreGuardOAuthAttempt({ state: returnedState, provider, redirectUrl: redirectTo, client });
+    logAuthDiagnostic(attempt ? "verifier_found" : "verifier_missing", {
+      provider,
+      attemptId: oauthAttemptId(state)
+    });
+    if (!attempt) throw new Error("oauth_session_expired");
+    const code = parsedCallback.searchParams.get("code");
     if (!code) throw new Error("The OAuth provider did not return an authorization code.");
     const exchange = await client.auth.exchangeCodeForSession(code);
     if (exchange.error || !exchange.data.session) throw exchange.error || new Error("Accord could not create a session.");
+    await clearGuardOAuthAttempt(state);
+    logAuthDiagnostic("code_exchange_succeeded", { provider, attemptId: oauthAttemptId(state) });
     return bootstrapSession(exchange.data.session, null);
   } catch (error) {
+    if (attemptState) await clearGuardOAuthAttempt(attemptState, attemptClient ?? undefined).catch(() => undefined);
+    logAuthDiagnostic("attempt_failed", {
+      provider,
+      attemptId: attemptState ? oauthAttemptId(attemptState) : undefined,
+      reasonCategory: oauthErrorCode(error)
+    });
     const message = error instanceof Error ? error.message : "Accord account connection failed.";
     const cancelled = /cancel|closed|window/i.test(message);
+    const expired = isRecoverableOAuthAttemptError(message);
     const result: GuardAuthSnapshot = {
       status: "error",
       localProtection: true,
       updatedAt: now(),
-      code: cancelled ? "oauth_cancelled" : "oauth_failed",
-      message: cancelled ? "Account connection was cancelled." : "Accord could not connect your account. Please try again.",
+      code: cancelled ? "oauth_cancelled" : expired ? "oauth_session_expired" : "oauth_failed",
+      message: cancelled
+        ? "Account connection was cancelled."
+        : expired
+          ? "Sign-in session expired. Please try signing in again."
+          : "Accord could not connect your account. Please try again.",
       recoverable: true
     };
     await persistPublicSnapshot(result);
@@ -193,6 +242,29 @@ function snapshotFromSessionUser(user: User): GuardAuthSnapshot {
     membership: null,
     policy: localFallbackPolicySync(syncError("account_sync_unavailable", { recoverable: true }))
   };
+}
+
+function isRecoverableOAuthAttemptError(message: string) {
+  return /pkce|code verifier|oauth_session_expired|oauth_state_mismatch|oauth_verifier_missing|oauth_storage_key_unavailable/i.test(message);
+}
+
+function oauthErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  if (/cancel|closed|window/i.test(message)) return "oauth_cancelled";
+  if (isRecoverableOAuthAttemptError(message)) return "oauth_session_expired";
+  return "oauth_failed";
+}
+
+function safeHost(value: string) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "unknown";
+  }
+}
+
+function logAuthDiagnostic(event: string, metadata: Record<string, unknown>) {
+  console.info("[Accord Guard auth]", { event, ...metadata });
 }
 
 function offlineOrError(cached: GuardAuthSnapshot | null, error: unknown): GuardAuthSnapshot {

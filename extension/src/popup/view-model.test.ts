@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { policyStatusView, popupViewForState } from "./view-model";
-import type { GuardAuthSnapshot } from "../auth/types";
+import { pauseControlViewForState, policyStatusView, popupViewForState } from "./view-model";
+import type { GuardAuthSnapshot, GuardRole } from "../auth/types";
 
 const base = { localProtection: true as const, updatedAt: "2026-08-21T00:00:00.000Z" };
 
@@ -82,6 +82,7 @@ describe("Accord Guard popup states", () => {
     ).toMatchObject({
       state: "local_fallback",
       title: "Local protection active",
+      detail: "Organization policy sync is unavailable. Built-in protections remain active; organization-specific rules may not be available.",
       tone: "degraded",
       canRetry: true,
       organizationSpecificRulesAvailable: false
@@ -131,4 +132,73 @@ describe("Accord Guard popup states", () => {
       policy: { title: "Local protection active" }
     });
   });
+
+  test("shows the pause control only for owners", () => {
+    const owner = authenticatedState("owner");
+    expect(pauseControlViewForState(owner, enforcementState(true))).toMatchObject({
+      visible: true,
+      paused: false,
+      title: "Guard active",
+      stateLabel: "ON",
+      actionLabel: "Pause Guard"
+    });
+    expect(pauseControlViewForState(owner, enforcementState(false))).toMatchObject({
+      visible: true,
+      paused: true,
+      title: "Guard paused",
+      stateLabel: "OFF",
+      actionLabel: "Resume Guard"
+    });
+  });
+
+  test.each(["admin", "member", "viewer"] satisfies GuardRole[])(
+    "hides the pause control for %s",
+    (role) => {
+      expect(pauseControlViewForState(authenticatedState(role), enforcementState(true))).toEqual({ visible: false });
+    }
+  );
+
+  test("hides the pause control for signed-out and no-organization states", () => {
+    expect(pauseControlViewForState({ ...base, status: "signed_out" }, enforcementState(true))).toEqual({ visible: false });
+    expect(
+      pauseControlViewForState(
+        {
+          ...authenticatedState("owner"),
+          organization: null,
+          membership: null
+        },
+        enforcementState(true)
+      )
+    ).toEqual({ visible: false });
+  });
 });
+
+function authenticatedState(role: GuardRole): Extract<GuardAuthSnapshot, { status: "authenticated" }> {
+  return {
+    ...base,
+    status: "authenticated",
+    user: { id: "user", email: "user@example.test", displayName: "User" },
+    organization: { id: "org", slug: "org", name: "Organization" },
+    membership: { id: "membership", role, status: "active" },
+    policy: {
+      state: "organization_synced",
+      sourceType: "organization",
+      bundleId: "bundle_1",
+      version: 1,
+      activeRuleCount: 3,
+      fallbackActive: false,
+      organizationSpecificRulesAvailable: true
+    }
+  };
+}
+
+function enforcementState(enabled: boolean) {
+  return {
+    enabled,
+    paused: !enabled,
+    canPause: true,
+    reason: enabled ? "active" : "owner_paused",
+    updatedAt: "2026-08-31T00:00:00.000Z",
+    scope: { userId: "user", organizationId: "org", role: "owner" }
+  } as const;
+}

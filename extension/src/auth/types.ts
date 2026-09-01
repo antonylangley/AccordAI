@@ -64,6 +64,27 @@ export type GuardPolicySync = {
   syncError?: GuardPolicySyncError;
 };
 
+export type GuardEnforcementPauseReason =
+  | "active"
+  | "owner_paused"
+  | "not_owner"
+  | "signed_out"
+  | "no_organization"
+  | "role_unresolved";
+
+export type GuardEnforcementState = {
+  enabled: boolean;
+  paused: boolean;
+  canPause: boolean;
+  reason: GuardEnforcementPauseReason;
+  updatedAt: string;
+  scope?: {
+    userId: string;
+    organizationId: string;
+    role: GuardRole;
+  };
+};
+
 type GuardBaseState = {
   localProtection: true;
   updatedAt: string;

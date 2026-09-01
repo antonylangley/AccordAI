@@ -1,33 +1,40 @@
-import { NextResponse } from "next/server";
-import { createSupabaseServerAuthClient } from "@/lib/auth/supabase-server";
+import { NextResponse, type NextRequest } from "next/server";
+import { authErrorCodeForMessage } from "@/lib/auth/auth-errors";
 import { ensureUserOrganization } from "@/lib/auth/organization";
+import { createSupabaseRouteAuthClient } from "@/lib/auth/supabase-route";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const returnTo = normalizeReturnTo(requestUrl.searchParams.get("returnTo"));
-  const supabase = createSupabaseServerAuthClient();
+  const routeAuth = createSupabaseRouteAuthClient(request);
 
-  if (!supabase || !code) {
+  if (!routeAuth) {
+    return NextResponse.redirect(new URL("/login?error=supabase-not-configured", requestUrl.origin));
+  }
+
+  if (!code) {
     return NextResponse.redirect(new URL("/login?error=auth-callback-failed", requestUrl.origin));
   }
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { error } = await routeAuth.supabase.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(new URL(`/login?error=${encodeURIComponent(error.message)}`, requestUrl.origin));
+    const errorCode = authErrorCodeForMessage(error.message);
+    console.info("[Accord auth] OAuth callback failed", { reasonCategory: errorCode });
+    return routeAuth.applyAuthCookies(NextResponse.redirect(new URL(`/login?error=${errorCode}`, requestUrl.origin)));
   }
 
   const {
     data: { user }
-  } = await supabase.auth.getUser();
+  } = await routeAuth.supabase.auth.getUser();
 
   if (user) {
     await ensureUserOrganization(user);
   }
 
-  return NextResponse.redirect(new URL(returnTo, requestUrl.origin));
+  return routeAuth.applyAuthCookies(NextResponse.redirect(new URL(returnTo, requestUrl.origin)));
 }
 
 function normalizeReturnTo(value: string | null) {

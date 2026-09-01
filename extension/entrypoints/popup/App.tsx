@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { GuardAuthProvider, GuardAuthSnapshot, GuardPolicySync } from "../../src/auth/types";
+import type { GuardAuthProvider, GuardAuthSnapshot, GuardEnforcementState, GuardPolicySync } from "../../src/auth/types";
 import { sendGuardMessage } from "../../src/messaging/client";
-import { popupViewForState } from "../../src/popup/view-model";
+import { pauseControlViewForState, popupViewForState } from "../../src/popup/view-model";
 
 const dashboardUrl = "https://www.accordgovernance.com/dashboard";
 const accountUrl = "https://www.accordgovernance.com/account";
@@ -12,19 +12,28 @@ export function GuardPopup() {
     localProtection: true,
     updatedAt: new Date().toISOString()
   });
+  const [enforcement, setEnforcement] = useState<GuardEnforcementState | null>(null);
 
   const refresh = useCallback(async (force = false) => {
-    const response = await sendGuardMessage({ type: "accord.auth.getState", payload: { force } });
-    if (response.ok && response.result && "status" in response.result) setState(response.result as GuardAuthSnapshot);
-    else if (!response.ok) {
+    const [authResponse, enforcementResponse] = await Promise.all([
+      sendGuardMessage({ type: "accord.auth.getState", payload: { force } }),
+      sendGuardMessage({ type: "accord.enforcement.getState", payload: { force } })
+    ]);
+    if (authResponse.ok && authResponse.result && "status" in authResponse.result) setState(authResponse.result as GuardAuthSnapshot);
+    else if (!authResponse.ok) {
       setState({
         status: "error",
         localProtection: true,
         updatedAt: new Date().toISOString(),
         code: "background_unavailable",
-        message: response.error,
+        message: authResponse.error,
         recoverable: true
       });
+    }
+    if (enforcementResponse.ok && enforcementResponse.result && "enabled" in enforcementResponse.result) {
+      setEnforcement(enforcementResponse.result as GuardEnforcementState);
+    } else {
+      setEnforcement(null);
     }
   }, []);
 
@@ -37,11 +46,14 @@ export function GuardPopup() {
     const response = await sendGuardMessage({ type: "accord.auth.connect", payload: { provider } });
     if (response.ok && response.result && "status" in response.result) setState(response.result as GuardAuthSnapshot);
     else void refresh(true);
+    await refresh(true);
   };
 
   const signOut = async () => {
     await sendGuardMessage({ type: "accord.auth.signOut" });
+    const enforcementResponse = await sendGuardMessage({ type: "accord.enforcement.getState", payload: { force: true } });
     setState({ status: "signed_out", localProtection: true, updatedAt: new Date().toISOString() });
+    setEnforcement(enforcementResponse.ok && enforcementResponse.result && "enabled" in enforcementResponse.result ? enforcementResponse.result as GuardEnforcementState : null);
   };
 
   const sync = async () => {
@@ -62,7 +74,17 @@ export function GuardPopup() {
     else await refresh(true);
   };
 
+  const setPaused = async (paused: boolean) => {
+    const response = await sendGuardMessage({ type: "accord.enforcement.setPaused", payload: { paused } });
+    if (response.ok && response.result && "enabled" in response.result) {
+      setEnforcement(response.result as GuardEnforcementState);
+    } else {
+      await refresh(true);
+    }
+  };
+
   const view = useMemo(() => popupViewForState(state), [state]);
+  const pauseControl = useMemo(() => pauseControlViewForState(state, enforcement), [state, enforcement]);
   return (
     <main className="popup-shell">
       <header className="brand-row">
@@ -103,9 +125,23 @@ export function GuardPopup() {
           <dl className="details-card">
             <div><dt>Organization</dt><dd>{state.organization?.name}</dd></div>
             <div><dt>Role</dt><dd className="role-badge">{formatRole(state.membership?.role)}</dd></div>
-            <div><dt>Guard</dt><dd>Active</dd></div>
+            <div><dt>Guard</dt><dd>{pauseControl.visible && pauseControl.paused ? "Paused" : "Active"}</dd></div>
             <div><dt>Policy</dt><dd>{policyLabel(state)}</dd></div>
           </dl>
+          {pauseControl.visible ? (
+            <section className={`guard-toggle-card ${pauseControl.paused ? "paused" : "active"}`} aria-live="polite">
+              <div>
+                <div className="guard-toggle-heading">
+                  <strong>{pauseControl.title}</strong>
+                  <span>{pauseControl.stateLabel}</span>
+                </div>
+                <p>{pauseControl.detail}</p>
+              </div>
+              <button className="secondary-button compact-button" onClick={() => void setPaused(!pauseControl.paused)}>
+                {pauseControl.actionLabel}
+              </button>
+            </section>
+          ) : null}
           <section className={`policy-state-card ${view.policy.tone}`} aria-live="polite">
             <div className="policy-state-heading">
               <span className={`policy-dot ${view.policy.tone}`} />

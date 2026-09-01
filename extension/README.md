@@ -44,6 +44,32 @@ Assistant responses are resolved in Accord-owned UI. The original ChatGPT assist
 
 No `<all_urls>` permission is requested.
 
+## Stable Chrome Extension ID
+
+Accord Guard includes a checked-in Chrome manifest `key` in `extension/config/extension-identity.json` so unpacked development and pilot builds keep the same Chrome extension ID across Windows, macOS, fresh Chrome profiles, and other pilot machines.
+
+Expected Chrome extension ID:
+
+```text
+dpckdfglhfjeocnfipbolpchnlijokhb
+```
+
+Expected Supabase Auth redirect URL:
+
+```text
+https://dpckdfglhfjeocnfipbolpchnlijokhb.chromiumapp.org/auth/callback
+```
+
+The manifest `key` is public extension identity material. It is not a password, Supabase key, OAuth secret, or private signing key. Do not replace or regenerate it during normal builds; changing it changes the Chrome extension ID and breaks the OAuth redirect allowlist.
+
+If Accord later distributes a packaged CRX outside the Chrome Web Store, keep any private signing key outside Git and treat it as sensitive. Chrome Web Store distribution may receive or preserve an ID through the Store package flow, so production OAuth may need its own allowed `https://<production-extension-id>.chromiumapp.org/auth/callback` redirect if that ID differs from this development/pilot ID.
+
+After running `pnpm guard:build`, verify the generated manifest identity from the repository root:
+
+```powershell
+pnpm --prefix extension verify:identity
+```
+
 ## Install Dependencies
 
 From the repository root:
