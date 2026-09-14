@@ -8,6 +8,7 @@ import {
   FileText,
   KeyRound,
   MessageSquare,
+  UsersRound,
   Settings,
   ShieldAlert,
   SlidersHorizontal
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 const navGroups = [
   [
     { label: "Overview", href: "/dashboard", icon: BarChart3 },
+    { label: "Organization", href: "/organization", icon: UsersRound },
     { label: "Policies", href: "/policies", icon: SlidersHorizontal },
     { label: "Audit Reports", href: "/audit-reports", icon: FileText },
     { label: "Risk Events", href: "/risk-events", icon: ShieldAlert }
@@ -49,7 +51,7 @@ export function Sidebar() {
         />
       </Link>
 
-      <div className="absolute bottom-0 left-0 top-[52px] w-14 overflow-hidden border-r border-accord-border bg-[#081526] transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/sidebar:w-52 group-focus-within/sidebar:w-52">
+      <div className="absolute bottom-0 left-0 top-[52px] w-14 overflow-hidden border-r border-accord-border bg-[#081526] transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/sidebar:w-52 group-has-[:focus-visible]/sidebar:w-52">
         <div className="w-52">
           <nav aria-label="Primary navigation" className="flex w-full flex-col px-1.5 py-3">
             {navGroups.map((group, groupIndex) => (
@@ -80,7 +82,7 @@ export function Sidebar() {
                       >
                         <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
-                      <span className="whitespace-nowrap opacity-0 transition-opacity delay-100 duration-150 ease-out group-hover/sidebar:opacity-100 group-focus-within/sidebar:opacity-100">
+                      <span className="whitespace-nowrap opacity-0 transition-opacity delay-100 duration-150 ease-out group-hover/sidebar:opacity-100 group-has-[:focus-visible]/sidebar:opacity-100">
                         {item.label}
                       </span>
                     </Link>

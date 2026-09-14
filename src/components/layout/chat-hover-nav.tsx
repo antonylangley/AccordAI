@@ -9,13 +9,15 @@ import {
   MessageSquare,
   Settings,
   ShieldAlert,
-  SlidersHorizontal
+  SlidersHorizontal,
+  UsersRound
 } from "lucide-react";
 import { AccordLogo } from "@/components/ui/accord-logo";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { label: "Overview", href: "/dashboard", icon: BarChart3 },
+  { label: "Organization", href: "/organization", icon: UsersRound },
   { label: "Accord Chat", href: "/chat", icon: MessageSquare },
   { label: "Risk Events", href: "/risk-events", icon: ShieldAlert },
   { label: "Policies", href: "/policies", icon: SlidersHorizontal },
@@ -37,7 +39,7 @@ export function ChatHoverNav() {
         <AccordLogo lockup framed compact />
       </Link>
 
-      <aside className="pointer-events-none absolute left-0 top-12 w-72 translate-y-2 rounded-2xl border border-white/10 bg-accord-night p-3 text-white opacity-0 shadow-accord-glow transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100">
+      <aside className="pointer-events-none absolute left-0 top-12 w-72 translate-y-2 rounded-2xl border border-white/10 bg-accord-night p-3 text-white opacity-0 shadow-accord-glow transition duration-150 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-has-[:focus-visible]:pointer-events-auto group-has-[:focus-visible]:translate-y-0 group-has-[:focus-visible]:opacity-100">
         <p className="mb-2 px-2 font-mono text-[11px] uppercase tracking-[0.1em] text-slate-500">Workspace nav</p>
         <nav aria-label="Chat mode navigation" className="space-y-1">
           {navItems.map((item) => {
