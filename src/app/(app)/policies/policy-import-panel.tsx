@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck, Loader2, UploadCloud } from "lucide-react";
 import { isPolicyGuidanceOnly, recommendedActionToRuleAction, ruleActionToRecommendedAction } from "@/lib/policy-import/enforceability";
@@ -32,6 +32,7 @@ const recommendedActionOptions = ["none", "warn", "redact", "require_approval", 
 
 export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<ImportState>("idle");
   const [error, setError] = useState("");
   const [result, setResult] = useState<PolicyImportResult | null>(null);
@@ -45,13 +46,8 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    event.currentTarget.blur();
     setState("parsing");
     setError("");
-    setResult(null);
-    setPolicy(null);
-    setRules([]);
-    setSelectedIds(new Set());
 
     const body = new FormData();
     body.append("file", file);
@@ -165,21 +161,26 @@ export function PolicyImportPanel({ companySlug }: { companySlug: string }) {
             </p>
           </div>
 
-          <label
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={state === "parsing"}
             className={cn(
               "inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md bg-accord-primary px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-accord-blue",
-              state === "parsing" && "pointer-events-none opacity-70"
+              state === "parsing" && "cursor-not-allowed opacity-70"
             )}
           >
             {state === "parsing" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
             {state === "parsing" ? "Parsing document" : "Choose file"}
-            <input
-              className="sr-only"
-              type="file"
-              accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/msword,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleFileChange}
-            />
-          </label>
+          </button>
+          <input
+            ref={fileInputRef}
+            className="hidden"
+            type="file"
+            tabIndex={-1}
+            accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/msword,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={handleFileChange}
+          />
         </div>
 
         {error ? (
@@ -256,7 +257,7 @@ function PolicyIdentityEditor({
     <div className="rounded-md border border-accord-border bg-accord-surface/40 p-3">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-faint">Step 1 · Policy identity</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">Step 1 · Policy identity</p>
           <h4 className="mt-1 text-sm font-semibold text-accord-text">Confirm the imported policy</h4>
         </div>
         <span className="w-fit rounded border border-accord-border bg-accord-panel px-1.5 py-0.5 font-mono text-[11px] text-accord-muted">
@@ -471,7 +472,7 @@ function ImportedRuleEditor({
           />
           {rule.destinationAuthorizations.length ? (
             <div className="rounded-md border border-accord-border bg-accord-surface/40 px-3 py-2">
-              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Destination authorization</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Destination authorization</p>
               <div className="mt-1.5 space-y-1">
                 {rule.destinationAuthorizations.map((authorization, index) => (
                   <p key={`${authorization.provider}-${index}`} className="text-[12px] leading-5 text-accord-muted">

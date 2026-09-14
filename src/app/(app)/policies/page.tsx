@@ -230,7 +230,7 @@ function PolicyHeader({
   return (
     <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-faint">{companyName} / Policy authoring</p>
+        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">{companyName} / Policy authoring</p>
         <h1 className="mt-1.5 text-2xl font-semibold tracking-[-0.025em] text-accord-text">Policies</h1>
       </div>
 
@@ -345,7 +345,7 @@ function BuiltInBundleRow({
               <span className="block text-[13px] font-medium text-accord-text">{bundle.name}</span>
               <span className="mt-0.5 block text-xs leading-5 text-accord-muted">{bundle.description}</span>
             </span>
-            <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] text-accord-faint">
+            <span className="flex shrink-0 items-center gap-1 font-mono text-[11px] text-slate-600 dark:text-slate-300">
               {bundle.rules.length} rules
               <ChevronDown className="h-3.5 w-3.5 transition group-open:rotate-180" aria-hidden="true" />
             </span>
@@ -355,10 +355,10 @@ function BuiltInBundleRow({
               <div key={rule.id} className="px-3 py-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-medium text-accord-text">{rule.title}</p>
-                  <span className="font-mono text-[10px] text-accord-faint">{rule.action} · {rule.severity}</span>
+                  <span className="font-mono text-[10px] text-slate-600 dark:text-slate-300">{rule.action} · {rule.severity}</span>
                 </div>
                 <p className="mt-1 text-xs leading-5 text-accord-muted">{rule.description}</p>
-                <p className="mt-1 font-mono text-[10px] text-accord-faint">
+                <p className="mt-1 font-mono text-[10px] text-slate-600 dark:text-slate-300">
                   {rule.scope.providerMode || "any provider"} · {rule.match.requireDetectors?.length || rule.match.anyDetectors?.length ? "Accord Core signals" : "local concept evidence"} · {rule.match.semanticExamples?.length ? "retrieval examples" : "no semantic retrieval"}
                 </p>
               </div>
@@ -724,7 +724,7 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 outline-none transition-colors hover:bg-accord-surface/60 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-accord-text">{rule.name}</p>
-          <p className="mt-0.5 truncate font-mono text-[11px] text-accord-faint">{rule.ruleKey}</p>
+          <p className="mt-0.5 truncate font-mono text-[11px] text-slate-600 dark:text-slate-300">{rule.ruleKey}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -737,17 +737,17 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(240px,0.38fr)] xl:items-start">
           <div className="space-y-4">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Requirement summary</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Requirement summary</p>
               <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.requirementSummary}</p>
             </div>
 
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Employee explanation</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Employee explanation</p>
               <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.employeeExplanation}</p>
             </div>
 
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Supporting excerpt</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Supporting excerpt</p>
               <p className="mt-1.5 rounded-md border border-accord-border bg-accord-panel p-3 text-[13px] leading-6 text-accord-muted">
                 {rule.supportingExcerpt}
               </p>
@@ -755,20 +755,20 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
 
             {rule.conditionDescription ? (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Condition</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Condition</p>
                 <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.conditionDescription}</p>
               </div>
             ) : null}
 
             {rule.reasoning ? (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Reasoning</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Reasoning</p>
                 <p className="mt-1.5 text-[13px] leading-6 text-accord-muted">{rule.reasoning}</p>
               </div>
             ) : null}
 
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Data categories</p>
+              <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Data categories</p>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {rule.dataCategories.length ? (
                   rule.dataCategories.map((category) => (
@@ -784,7 +784,7 @@ function PolicyRuleRow({ rule, editable, actionsEnabled }: { rule: AccordPolicyR
 
             {rule.destinationAuthorizations.length ? (
               <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-accord-faint">Destination authorization</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.06em] text-slate-600 dark:text-slate-300">Destination authorization</p>
                 <div className="mt-1.5 space-y-1 rounded-md border border-accord-border bg-accord-panel p-3">
                   {rule.destinationAuthorizations.map((authorization, index) => (
                     <p key={`${authorization.provider}-${index}`} className="text-[13px] leading-6 text-accord-muted">
@@ -910,7 +910,7 @@ function EnforceabilityPill({ enforceability }: { enforceability: AccordPolicyRu
 function RuleMeta({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4 py-1.5 first:pt-0 last:pb-0">
-      <span className="text-xs text-accord-faint">{label}</span>
+      <span className="text-xs text-slate-600 dark:text-slate-300">{label}</span>
       <span className="text-right text-xs font-medium text-accord-text">{value.replace(/_/g, " ")}</span>
     </div>
   );
@@ -1028,7 +1028,7 @@ function BundleRow({ bundle }: { bundle: PolicyBundle }) {
         <p className="text-[13px] font-medium text-accord-text">
           v{bundle.version} <span className="font-normal text-accord-muted">· {bundle.status}</span>
         </p>
-        <p className="mt-0.5 truncate font-mono text-[11px] text-accord-faint">{bundle.checksum.slice(0, 24)}</p>
+        <p className="mt-0.5 truncate font-mono text-[11px] text-slate-600 dark:text-slate-300">{bundle.checksum.slice(0, 24)}</p>
       </div>
       <p className="shrink-0 font-mono text-xs text-accord-muted [font-variant-numeric:tabular-nums]">
         {bundle.ruleCount} rules
