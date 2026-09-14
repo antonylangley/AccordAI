@@ -4,8 +4,6 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseServerAuthClient } from "@/lib/auth/supabase-server";
 import { getSupabaseServerClient } from "@/lib/db/accord-store";
 import { canEditOrganization, type AccordRole } from "@/lib/auth/permissions";
-import { getAccordAuthProfile } from "@/lib/auth/user-profile";
-import { riskLevelForScore, summarizeMemberRisk, type MemberRiskSummary } from "@/lib/organization/member-risk";
 
 export type OrganizationRole = AccordRole;
 export type OrganizationMemberStatus = "active" | "invited" | "suspended";
@@ -31,16 +29,6 @@ export type AccordOrganizationMember = {
   createdAt?: string;
   updatedAt?: string;
 };
-
-export type AccordOrganizationPerson = AccordOrganizationMember &
-  MemberRiskSummary & {
-    displayName: string;
-    avatarUrl?: string;
-    department?: string;
-    surface?: string;
-    lastSeenAt?: string;
-    riskLevel: ReturnType<typeof riskLevelForScore>;
-  };
 
 export type OrganizationMemberResult = {
   ok: boolean;
@@ -152,103 +140,6 @@ export async function getOrganizationMembers(
       updatedAt: typeof member.updated_at === "string" ? member.updated_at : undefined
     };
   });
-}
-
-export async function getOrganizationPeople(
-  companySlug: string,
-  currentUserId?: string
-): Promise<AccordOrganizationPerson[]> {
-  const supabase = getSupabaseServerClient();
-  if (!supabase || !currentUserId) return [];
-
-  const { data: authorizedMember } = await supabase
-    .from("accord_company_members")
-    .select("id")
-    .eq("company_slug", companySlug)
-    .eq("user_id", currentUserId)
-    .eq("status", "active")
-    .in("role", ["owner", "admin"])
-    .maybeSingle();
-
-  if (!authorizedMember) return [];
-
-  const members = await getOrganizationMembers(companySlug, currentUserId);
-  const activeUserIds = members.flatMap((member) => (member.userId ? [member.userId] : []));
-  const [{ data: extensionUserRows }, { data: eventRows }, { data: authData }] = await Promise.all([
-    supabase
-      .from("accord_extension_users")
-      .select("id,auth_user_id,department,surface,last_seen_at")
-      .eq("company_slug", companySlug),
-    supabase
-      .from("accord_extension_events")
-      .select("auth_user_id,extension_user_id,created_at,risk_score")
-      .eq("company_slug", companySlug)
-      .order("created_at", { ascending: false })
-      .limit(5000),
-    supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
-  ]);
-
-  const extensionUsers = (extensionUserRows || []).flatMap((row) => {
-    if (typeof row.id !== "string") return [];
-    return [{ id: row.id, authUserId: typeof row.auth_user_id === "string" ? row.auth_user_id : undefined }];
-  });
-  const summaries = summarizeMemberRisk(
-    activeUserIds,
-    extensionUsers,
-    (eventRows || []).flatMap((row) => {
-      if (typeof row.created_at !== "string") return [];
-      return [{
-        authUserId: typeof row.auth_user_id === "string" ? row.auth_user_id : undefined,
-        extensionUserId: typeof row.extension_user_id === "string" ? row.extension_user_id : undefined,
-        createdAt: row.created_at,
-        riskScore: typeof row.risk_score === "number" ? row.risk_score : 0
-      }];
-    })
-  );
-  const authUsers = new Map((authData?.users || []).map((user) => [user.id, user]));
-  const extensionMetadata = new Map<string, { department?: string; surface?: string; lastSeenAt?: string }>();
-
-  for (const row of extensionUserRows || []) {
-    if (typeof row.auth_user_id !== "string") continue;
-    const candidate = {
-      department: typeof row.department === "string" && row.department ? row.department : undefined,
-      surface: typeof row.surface === "string" && row.surface ? row.surface : undefined,
-      lastSeenAt: typeof row.last_seen_at === "string" ? row.last_seen_at : undefined
-    };
-    const existing = extensionMetadata.get(row.auth_user_id);
-    if (!existing?.lastSeenAt || (candidate.lastSeenAt && candidate.lastSeenAt > existing.lastSeenAt)) {
-      extensionMetadata.set(row.auth_user_id, candidate);
-    }
-  }
-
-  return members
-    .map((member) => {
-      const authUser = member.userId ? authUsers.get(member.userId) : undefined;
-      const profile = authUser ? getAccordAuthProfile(authUser) : undefined;
-      const summary = member.userId ? summaries.get(member.userId) : undefined;
-      const metadata = member.userId ? extensionMetadata.get(member.userId) : undefined;
-      const averageRiskScore = summary?.averageRiskScore || 0;
-
-      return {
-        ...member,
-        displayName: profile?.displayName || displayNameFromEmail(member.email),
-        avatarUrl: profile?.avatarUrl,
-        department: metadata?.department,
-        surface: metadata?.surface,
-        lastSeenAt: metadata?.lastSeenAt,
-        averageRiskScore,
-        highestRiskScore: summary?.highestRiskScore || 0,
-        latestRiskScore: summary?.latestRiskScore || 0,
-        lastAuditAt: summary?.lastAuditAt,
-        auditCount: summary?.auditCount || 0,
-        riskLevel: riskLevelForScore(averageRiskScore)
-      };
-    })
-    .sort((a, b) =>
-      b.averageRiskScore - a.averageRiskScore ||
-      b.highestRiskScore - a.highestRiskScore ||
-      Date.parse(b.lastAuditAt || "1970-01-01") - Date.parse(a.lastAuditAt || "1970-01-01")
-    );
 }
 
 export async function addOrganizationMemberFromForm(formData: FormData): Promise<OrganizationMemberResult> {

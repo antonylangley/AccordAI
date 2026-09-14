@@ -69,9 +69,9 @@ export function summarizeMemberRisk(
 }
 
 export function riskLevelForScore(score: number) {
-  if (score >= 80) return "critical" as const;
-  if (score >= 60) return "high" as const;
-  if (score >= 35) return "medium" as const;
+  if (score >= 75) return "critical" as const;
+  if (score >= 50) return "high" as const;
+  if (score >= 25) return "moderate" as const;
   return "low" as const;
 }
 

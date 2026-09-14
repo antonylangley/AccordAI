@@ -29,9 +29,9 @@ describe("organization member risk summaries", () => {
   });
 
   test("maps risk scores to the shared dashboard bands", () => {
-    expect(riskLevelForScore(34)).toBe("low");
-    expect(riskLevelForScore(35)).toBe("medium");
-    expect(riskLevelForScore(60)).toBe("high");
-    expect(riskLevelForScore(80)).toBe("critical");
+    expect(riskLevelForScore(24)).toBe("low");
+    expect(riskLevelForScore(25)).toBe("moderate");
+    expect(riskLevelForScore(50)).toBe("high");
+    expect(riskLevelForScore(75)).toBe("critical");
   });
 });
