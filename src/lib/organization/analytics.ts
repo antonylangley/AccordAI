@@ -1,10 +1,5 @@
 import { riskLevelForScore } from "@/lib/organization/member-risk";
-import type {
-  OrganizationBreakdownItem,
-  OrganizationDateRange,
-  OrganizationEventCategory,
-  OrganizationTrendPoint
-} from "@/lib/organization/types";
+import type { OrganizationDateRange, OrganizationEventCategory } from "@/lib/organization/types";
 
 export type RawOrganizationEvent = {
   id?: unknown;
@@ -30,7 +25,7 @@ export type RawOrganizationEvent = {
   detected_categories?: unknown;
 };
 
-export const ORGANIZATION_RANGE_DAYS: Record<OrganizationDateRange, number> = {
+const ORGANIZATION_RANGE_DAYS: Record<OrganizationDateRange, number> = {
   "7d": 7,
   "30d": 30,
   "90d": 90
@@ -72,71 +67,6 @@ export function isSummaryEvent(event: RawOrganizationEvent) {
 export function isRiskEvent(event: RawOrganizationEvent) {
   const category = classifyOrganizationEvent(event);
   return category !== "allowed" && category !== "error";
-}
-
-export function buildOrganizationTrend(
-  events: RawOrganizationEvent[],
-  range: OrganizationDateRange,
-  now = new Date()
-): OrganizationTrendPoint[] {
-  const start = organizationRangeStart(range, now);
-  const days = ORGANIZATION_RANGE_DAYS[range];
-  const points = Array.from({ length: days }, (_, offset) => {
-    const date = new Date(start);
-    date.setUTCDate(start.getUTCDate() + offset);
-    const key = date.toISOString().slice(0, 10);
-    return {
-      date: key,
-      label: new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC"
-      }).format(date),
-      allowed: 0,
-      enforced: 0,
-      total: 0
-    };
-  });
-  const byDate = new Map(points.map((point) => [point.date, point]));
-
-  for (const event of events) {
-    if (!isSummaryEvent(event)) continue;
-    const createdAt = stringValue(event.created_at);
-    const point = byDate.get(createdAt.slice(0, 10));
-    if (!point) continue;
-    point.total += 1;
-    if (isRiskEvent(event)) point.enforced += 1;
-    else point.allowed += 1;
-  }
-
-  return points;
-}
-
-export function buildOrganizationBreakdown(events: RawOrganizationEvent[]): OrganizationBreakdownItem[] {
-  const order: OrganizationEventCategory[] = ["blocked", "redacted", "held", "warning", "flagged", "allowed", "error"];
-  const labels: Record<OrganizationEventCategory, string> = {
-    blocked: "Blocked",
-    redacted: "Redacted",
-    held: "Held for review",
-    warning: "Warnings",
-    flagged: "Other flagged",
-    allowed: "Allowed",
-    error: "Runtime errors"
-  };
-  const counts = new Map<OrganizationEventCategory, number>();
-  for (const event of events) {
-    if (stringValue(event.event_type) === "assistant_response_rehydrated") continue;
-    const category = classifyOrganizationEvent(event);
-    counts.set(category, (counts.get(category) || 0) + 1);
-  }
-  return order
-    .map((category) => ({ category, label: labels[category], count: counts.get(category) || 0 }))
-    .filter((item) => item.count > 0);
-}
-
-export function riskEventTrendPercent(current: number, previous: number) {
-  if (previous === 0) return current === 0 ? 0 : undefined;
-  return Math.round(((current - previous) / previous) * 100);
 }
 
 export function safeMetadata(value: unknown): Record<string, unknown> {

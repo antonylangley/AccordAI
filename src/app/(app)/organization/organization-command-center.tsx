@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Search, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronRight, Search, ShieldAlert, ShieldCheck, UserRoundX, UsersRound } from "lucide-react";
 import type { OrganizationDateRange, OrganizationOverview, OrganizationPersonSummary } from "@/lib/organization/types";
 import { cn } from "@/lib/utils";
 import { EmployeeDetailDrawer } from "./employee-detail-drawer";
-import { RiskActivityChart } from "./risk-activity-chart";
 
 type SortKey = "risk" | "events" | "latest";
 type SortDirection = "asc" | "desc";
@@ -71,35 +70,6 @@ export function OrganizationCommandCenter({ overview, initialPersonId }: { overv
     <>
       <div className="space-y-5">
         <SummaryStrip overview={overview} />
-
-        <section className="grid overflow-hidden rounded-lg border border-accord-border bg-accord-panel xl:grid-cols-[minmax(0,1.55fr)_minmax(300px,0.65fr)]">
-          <div className="border-b border-accord-border p-4 xl:border-b-0 xl:border-r">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-semibold text-accord-text">Risk activity</h2>
-                <p className="mt-0.5 text-xs text-accord-muted">Governed events and enforcement over the selected range.</p>
-              </div>
-              <span className="rounded-md bg-accord-surface px-2 py-1 font-mono text-xs font-semibold text-accord-text">{overview.metrics.totalEvents.toLocaleString("en-US")}</span>
-            </div>
-            <div className="mt-3"><RiskActivityChart data={overview.trend} /></div>
-          </div>
-          <div className="p-4">
-            <h3 className="text-sm font-semibold text-accord-text">Event breakdown</h3>
-            <p className="mt-0.5 text-xs text-accord-muted">Outcome distribution, excluding response rehydration.</p>
-            <div className="mt-5 space-y-3">
-              {overview.breakdown.length ? overview.breakdown.map((item) => {
-                const percentage = overview.breakdown.reduce((sum, candidate) => sum + candidate.count, 0) ? Math.round((item.count / overview.breakdown.reduce((sum, candidate) => sum + candidate.count, 0)) * 100) : 0;
-                return (
-                  <div key={item.category}>
-                    <div className="flex items-center justify-between gap-3 text-xs"><span className="font-medium text-accord-text">{item.label}</span><span className="font-mono text-accord-muted">{item.count} · {percentage}%</span></div>
-                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-accord-surface"><div className={cn("h-full rounded-full", breakdownTone(item.category))} style={{ width: `${percentage}%` }} /></div>
-                  </div>
-                );
-              }) : <p className="rounded-md border border-dashed border-accord-border px-3 py-5 text-center text-xs text-accord-muted">No governed events in this range.</p>}
-            </div>
-            {overview.surfaces.length ? <p className="mt-5 border-t border-accord-border pt-3 text-[11px] text-accord-faint">Top surface: <span className="font-semibold text-accord-muted">{labelize(overview.surfaces[0].name)}</span> · {overview.surfaces[0].count} events</p> : null}
-          </div>
-        </section>
 
         <section className="overflow-hidden rounded-lg border border-accord-border bg-accord-panel">
           <div className="border-b border-accord-border px-4 py-3.5">
@@ -176,20 +146,25 @@ export function OrganizationCommandCenter({ overview, initialPersonId }: { overv
 }
 
 function SummaryStrip({ overview }: { overview: OrganizationOverview }) {
-  const trend = overview.metrics.riskEventTrendPercent;
+  const invitedMembers = overview.people.filter((person) => person.status === "invited").length;
+  const coverageGaps = overview.people.filter((person) =>
+    person.status === "active" && person.coverageStatus !== "reporting"
+  ).length;
+  const peopleWithEnforcement = overview.people.filter((person) => person.enforcementCount > 0).length;
+  const enforcementActions = overview.people.reduce((sum, person) => sum + person.enforcementCount, 0);
   return (
     <section className="grid overflow-hidden rounded-lg border border-accord-border bg-accord-panel sm:grid-cols-2 xl:grid-cols-5">
-      <SummaryMetric icon={UsersRound} label="Active / reporting" value={`${overview.metrics.activeMembers} / ${overview.metrics.reportingMembers}`} detail={overview.metrics.activeMembers === overview.metrics.reportingMembers ? "all active members reporting" : `${overview.metrics.activeMembers - overview.metrics.reportingMembers} active not reporting`} />
-      <SummaryMetric label="Risk events" value={overview.metrics.riskEvents.toLocaleString("en-US")} detail={trend === undefined ? "new vs prior period" : `${trend > 0 ? "+" : ""}${trend}% vs prior`} trend={trend} />
-      <SummaryMetric label="High-risk users" value={String(overview.metrics.highRiskUsers)} detail="average score 50+" />
-      <SummaryMetric icon={ShieldCheck} label="Enforcement" value={`${overview.metrics.enforcementRate}%`} detail={`${overview.metrics.blockedEvents} blocked · ${overview.metrics.redactedEvents} redacted`} />
-      <SummaryMetric label="Coverage" value={`${overview.metrics.coverageRate}%`} detail="active members reporting" />
+      <SummaryMetric icon={UsersRound} label="Members" value={String(overview.metrics.activeMembers)} detail={`${overview.people.length} total${invitedMembers ? ` · ${invitedMembers} invited` : ""}`} />
+      <SummaryMetric icon={ShieldCheck} label="Reporting coverage" value={`${overview.metrics.reportingMembers} / ${overview.metrics.activeMembers}`} detail={`${overview.metrics.coverageRate}% of active members`} />
+      <SummaryMetric icon={ShieldAlert} label="High-risk members" value={String(overview.metrics.highRiskUsers)} detail="average risk score 50+" />
+      <SummaryMetric icon={UserRoundX} label="Coverage gaps" value={String(coverageGaps)} detail={coverageGaps ? "active members need attention" : "all active members reporting"} />
+      <SummaryMetric label="Enforcement reach" value={String(peopleWithEnforcement)} detail={`${enforcementActions} policy action${enforcementActions === 1 ? "" : "s"}`} />
     </section>
   );
 }
 
-function SummaryMetric({ icon: Icon, label, value, detail, trend }: { icon?: typeof UsersRound; label: string; value: string; detail: string; trend?: number }) {
-  return <article className="border-b border-accord-border px-4 py-3.5 last:border-b-0 sm:border-r sm:[&:nth-child(2)]:border-r-0 xl:border-b-0 xl:[&:nth-child(2)]:border-r xl:last:border-r-0"><div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.055em] text-accord-faint">{Icon ? <Icon className="h-3.5 w-3.5" aria-hidden="true" /> : null}{label}</div><div className="mt-1.5 flex items-baseline gap-2"><p className="font-mono text-xl font-semibold tracking-tight text-accord-text">{value}</p>{trend !== undefined && trend !== 0 ? trend > 0 ? <ArrowUp className="h-3.5 w-3.5 text-rose-600" aria-hidden="true" /> : <ArrowDown className="h-3.5 w-3.5 text-emerald-600" aria-hidden="true" /> : null}</div><p className="mt-0.5 text-[10px] text-accord-muted">{detail}</p></article>;
+function SummaryMetric({ icon: Icon, label, value, detail }: { icon?: typeof UsersRound; label: string; value: string; detail: string }) {
+  return <article className="border-b border-accord-border px-4 py-3.5 last:border-b-0 sm:border-r sm:[&:nth-child(2)]:border-r-0 xl:border-b-0 xl:[&:nth-child(2)]:border-r xl:last:border-r-0"><div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.055em] text-accord-faint">{Icon ? <Icon className="h-3.5 w-3.5" aria-hidden="true" /> : null}{label}</div><p className="mt-1.5 font-mono text-xl font-semibold tracking-tight text-accord-text">{value}</p><p className="mt-0.5 text-[10px] text-accord-muted">{detail}</p></article>;
 }
 
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[][] }) {
@@ -224,13 +199,6 @@ function updatePersonQuery(personId: string | null) {
   if (personId) url.searchParams.set("person", personId);
   else url.searchParams.delete("person");
   window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
-}
-
-function breakdownTone(category: string) {
-  if (category === "blocked" || category === "error") return "bg-rose-500";
-  if (category === "allowed") return "bg-emerald-500";
-  if (category === "redacted" || category === "held") return "bg-violet-500";
-  return "bg-amber-500";
 }
 
 function riskTone(level: OrganizationPersonSummary["riskLevel"]) {

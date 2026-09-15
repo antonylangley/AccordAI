@@ -5,17 +5,13 @@ import { getOrganizationMembers } from "@/lib/auth/organization";
 import { getAccordAuthProfile } from "@/lib/auth/user-profile";
 import { getSupabaseServerClient } from "@/lib/db/accord-store";
 import {
-  buildOrganizationBreakdown,
-  buildOrganizationTrend,
   classifyOrganizationEvent,
   eventRiskLevel,
   eventRiskScore,
   isRiskEvent,
   isSummaryEvent,
   numberValue,
-  ORGANIZATION_RANGE_DAYS,
   organizationRangeStart,
-  riskEventTrendPercent,
   safeMetadata,
   safeStringArray,
   stringValue,
@@ -65,8 +61,6 @@ export async function getOrganizationOverview(
 
   const now = new Date();
   const currentStart = organizationRangeStart(range, now);
-  const queryStart = new Date(currentStart);
-  queryStart.setUTCDate(queryStart.getUTCDate() - ORGANIZATION_RANGE_DAYS[range]);
 
   const members = await getOrganizationMembers(companySlug, currentUserId);
   const [extensionResult, eventResult, authResult, policyLookup] = await Promise.all([
@@ -78,7 +72,7 @@ export async function getOrganizationOverview(
       .from("accord_extension_events")
       .select(overviewEventColumns)
       .eq("company_slug", companySlug)
-      .gte("created_at", queryStart.toISOString())
+      .gte("created_at", currentStart.toISOString())
       .order("created_at", { ascending: false })
       .limit(OVERVIEW_EVENT_LIMIT + 1),
     supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }),
@@ -89,12 +83,7 @@ export async function getOrganizationOverview(
 
   const allEvents = (eventResult.data || []) as RawOrganizationEvent[];
   const isTruncated = allEvents.length > OVERVIEW_EVENT_LIMIT;
-  const boundedEvents = allEvents.slice(0, OVERVIEW_EVENT_LIMIT);
-  const currentEvents = boundedEvents.filter((event) => Date.parse(stringValue(event.created_at)) >= currentStart.getTime());
-  const previousEvents = boundedEvents.filter((event) => {
-    const timestamp = Date.parse(stringValue(event.created_at));
-    return timestamp >= queryStart.getTime() && timestamp < currentStart.getTime();
-  });
+  const currentEvents = allEvents.slice(0, OVERVIEW_EVENT_LIMIT);
   const extensions = normalizeExtensionRows(extensionResult.data || []);
   const authUsers = new Map((authResult.data?.users || []).map((user) => [user.id, user]));
   const people = buildPeople({
@@ -107,36 +96,16 @@ export async function getOrganizationOverview(
   });
   const activeMembers = people.filter((person) => person.status === "active");
   const reportingMembers = activeMembers.filter((person) => person.coverageStatus === "reporting").length;
-  const summaryEvents = currentEvents.filter(isSummaryEvent);
-  const riskEvents = summaryEvents.filter(isRiskEvent).length;
-  const previousRiskEvents = previousEvents.filter(isSummaryEvent).filter(isRiskEvent).length;
-  const enforced = summaryEvents.filter((event) => {
-    const category = classifyOrganizationEvent(event);
-    return category === "blocked" || category === "redacted" || category === "held" || category === "warning";
-  }).length;
-  const blockedEvents = summaryEvents.filter((event) => classifyOrganizationEvent(event) === "blocked").length;
-  const redactedEvents = summaryEvents.filter((event) => classifyOrganizationEvent(event) === "redacted").length;
 
   return {
     range,
-    rangeStart: currentStart.toISOString(),
-    generatedAt: now.toISOString(),
     people,
     metrics: {
       activeMembers: activeMembers.length,
       reportingMembers,
-      riskEvents,
-      riskEventTrendPercent: riskEventTrendPercent(riskEvents, previousRiskEvents),
       highRiskUsers: people.filter((person) => person.auditCount > 0 && (person.riskLevel === "high" || person.riskLevel === "critical")).length,
-      enforcementRate: percentage(enforced, summaryEvents.length),
-      blockedEvents,
-      redactedEvents,
-      coverageRate: percentage(reportingMembers, activeMembers.length),
-      totalEvents: summaryEvents.length
+      coverageRate: percentage(reportingMembers, activeMembers.length)
     },
-    trend: buildOrganizationTrend(currentEvents, range, now),
-    breakdown: buildOrganizationBreakdown(currentEvents),
-    surfaces: surfaceBreakdown(currentEvents),
     isTruncated
   };
 }
@@ -405,16 +374,6 @@ function normalizeExtensionRows(rows: Array<Record<string, unknown>>): Extension
 function applyDetailBounds<T extends { gte: (column: string, value: string) => T; lt: (column: string, value: string) => T }>(query: T, start: Date, before?: string) {
   const bounded = query.gte("created_at", start.toISOString());
   return before ? bounded.lt("created_at", before) : bounded;
-}
-
-function surfaceBreakdown(events: RawOrganizationEvent[]) {
-  const counts = new Map<string, number>();
-  for (const event of events) {
-    if (!isSummaryEvent(event)) continue;
-    const surface = stringValue(event.surface) || "unknown";
-    counts.set(surface, (counts.get(surface) || 0) + 1);
-  }
-  return Array.from(counts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
 }
 
 function percentage(value: number, total: number) {

@@ -36,40 +36,15 @@ export type OrganizationPersonSummary = AccordOrganizationMember & {
   riskLevel: "low" | "moderate" | "high" | "critical";
 };
 
-export type OrganizationTrendPoint = {
-  date: string;
-  label: string;
-  allowed: number;
-  enforced: number;
-  total: number;
-};
-
-export type OrganizationBreakdownItem = {
-  category: OrganizationEventCategory;
-  label: string;
-  count: number;
-};
-
 export type OrganizationOverview = {
   range: OrganizationDateRange;
-  rangeStart: string;
-  generatedAt: string;
   people: OrganizationPersonSummary[];
   metrics: {
     activeMembers: number;
     reportingMembers: number;
-    riskEvents: number;
-    riskEventTrendPercent?: number;
     highRiskUsers: number;
-    enforcementRate: number;
-    blockedEvents: number;
-    redactedEvents: number;
     coverageRate: number;
-    totalEvents: number;
   };
-  trend: OrganizationTrendPoint[];
-  breakdown: OrganizationBreakdownItem[];
-  surfaces: Array<{ name: string; count: number }>;
   isTruncated: boolean;
 };
 

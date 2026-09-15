@@ -1,10 +1,9 @@
 import { describe, expect, test } from "vitest";
 import {
-  buildOrganizationBreakdown,
-  buildOrganizationTrend,
   classifyOrganizationEvent,
+  isRiskEvent,
   isSummaryEvent,
-  riskEventTrendPercent
+  organizationRangeStart
 } from "./analytics";
 
 describe("organization analytics", () => {
@@ -16,21 +15,9 @@ describe("organization analytics", () => {
     expect(isSummaryEvent({ event_type: "assistant_response_rehydrated" })).toBe(false);
   });
 
-  test("builds a bounded trend and enforcement breakdown", () => {
-    const events = [
-      { created_at: "2026-09-14T12:00:00.000Z", event_type: "message_sent_to_ai", action: "allow" },
-      { created_at: "2026-09-14T13:00:00.000Z", event_type: "message_blocked", action: "block" },
-      { created_at: "2026-09-13T13:00:00.000Z", event_type: "message_sent_to_ai", action: "redact" }
-    ];
-    const trend = buildOrganizationTrend(events, "7d", new Date("2026-09-14T18:00:00.000Z"));
-    expect(trend).toHaveLength(7);
-    expect(trend.at(-1)).toMatchObject({ allowed: 1, enforced: 1, total: 2 });
-    expect(buildOrganizationBreakdown(events)).toEqual([
-      { category: "blocked", label: "Blocked", count: 1 },
-      { category: "redacted", label: "Redacted", count: 1 },
-      { category: "allowed", label: "Allowed", count: 1 }
-    ]);
-    expect(riskEventTrendPercent(12, 10)).toBe(20);
-    expect(riskEventTrendPercent(2, 0)).toBeUndefined();
+  test("keeps employee ranges bounded and separates risk from allowed activity", () => {
+    expect(organizationRangeStart("7d", new Date("2026-09-14T18:00:00.000Z")).toISOString()).toBe("2026-09-08T00:00:00.000Z");
+    expect(isRiskEvent({ event_type: "message_blocked", action: "block" })).toBe(true);
+    expect(isRiskEvent({ event_type: "message_sent_to_ai", action: "allow" })).toBe(false);
   });
 });
