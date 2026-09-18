@@ -444,7 +444,7 @@ export default defineContentScript({
             files: governedFiles,
             setGovernedFiles: (files) => adapter.setGovernedFiles(selection.input, files),
             verifyGovernedFiles: (files) => adapter.verifyGovernedFiles(selection.input, files),
-            verifyHostAccepted: (files) => adapter.verifyHostAttachmentAccepted(files),
+            verifyHostAccepted: (files) => adapter.verifyHostAttachmentAccepted(files, selection.input),
             dispatchTrustedSelection: () => adapter.dispatchGovernedFileSelection(selection.input),
             clearFileInput: () => adapter.clearFileInput(selection.input),
             onState: (nextState) => {
@@ -455,6 +455,10 @@ export default defineContentScript({
 
           if (!verified) return;
           attachmentGateStatus = "governed";
+          console.info("[Accord Guard] governed attachment handoff", {
+            fileCount: governedFiles.length,
+            status: "host_accepted"
+          });
           recordTelemetry(attachmentTelemetryPayload(result, "attachment_governed"));
 
           const hasRedactions = result.results.some((fileResult) => fileResult.redactionCount > 0);
@@ -551,10 +555,12 @@ export default defineContentScript({
         return;
       }
 
-      const attachmentNotice = adapter.hasAttachments();
-      if (!attachmentNotice && attachmentGateStatus === "governed") {
+      const hasHostAttachments = adapter.hasAttachments();
+      if (!hasHostAttachments && attachmentGateStatus === "governed") {
         attachmentGateStatus = "none";
       }
+      const attachmentNotice =
+        hasHostAttachments || attachmentGateStatus === "pending" || attachmentGateStatus === "blocked";
       if (state.getSnapshot().attachmentNotice !== attachmentNotice) {
         state.set({ attachmentNotice });
       }
@@ -618,6 +624,13 @@ async function buildAttachmentPayload(files: File[]): Promise<GuardAttachmentInp
         } else {
           input.extractionReason = extraction.reason;
         }
+        console.info("[Accord Guard] attachment extraction", {
+          extension: file.name.split(".").pop()?.toLocaleLowerCase() || "",
+          extractionKind: extraction.kind || "unknown",
+          status: extraction.status,
+          extractedCharacterCount: extraction.status === "extracted" ? extraction.text.length : 0,
+          warningCount: extraction.warnings.length
+        });
       }
 
       return input;

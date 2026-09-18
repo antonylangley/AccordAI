@@ -1,0 +1,8 @@
+Synthetic test fixture
+
+Please draft a short project handoff for Jordan Rivera and Maya Chen.
+Jordan can be reached at jordan.rivera@example.test or 202-555-0147.
+Maya can be reached at maya.chen@example.test or 202-555-0182.
+
+Test prompt: Turn this into a concise handoff note.
+Expected result: ALLOW after redaction. The governed copy should not contain the original names, emails, or phone numbers.

@@ -13,6 +13,7 @@ export type AccordOrganizationContext = {
   authConfigured: boolean;
   userId?: string;
   userEmail?: string;
+  companyId?: string;
   companySlug: string;
   companyName: string;
   role: OrganizationRole | "demo";
@@ -434,7 +435,7 @@ async function getFirstMembership(user: User): Promise<AccordOrganizationContext
 
   const { data: company } = await supabase
     .from("accord_companies")
-    .select("name")
+    .select("id,name")
     .eq("slug", data.company_slug)
     .maybeSingle();
 
@@ -443,6 +444,7 @@ async function getFirstMembership(user: User): Promise<AccordOrganizationContext
     authConfigured: true,
     userId: user.id,
     userEmail: user.email || undefined,
+    companyId: typeof company?.id === "string" ? company.id : undefined,
     companySlug: data.company_slug,
     companyName: typeof company?.name === "string" ? company.name : titleFromSlug(data.company_slug),
     role: normalizeRole(data.role),
@@ -471,17 +473,21 @@ async function ensureDefaultOrganization(user: User): Promise<AccordOrganization
   const companyName = organizationNameFromUser(user);
   const companySlug = slugify(`${companyName}-${user.id.slice(0, 8)}`) || "test-company";
   const now = new Date().toISOString();
-  const companyResult = await supabase.from("accord_companies").upsert(
-    {
-      slug: companySlug,
-      name: companyName,
-      created_by: user.id,
-      updated_at: now
-    },
-    { onConflict: "slug" }
-  );
+  const companyResult = await supabase
+    .from("accord_companies")
+    .upsert(
+      {
+        slug: companySlug,
+        name: companyName,
+        created_by: user.id,
+        updated_at: now
+      },
+      { onConflict: "slug" }
+    )
+    .select("id")
+    .maybeSingle();
 
-  if (companyResult.error) {
+  if (companyResult.error || typeof companyResult.data?.id !== "string") {
     return {
       ...demoOrganization,
       authConfigured: true,
@@ -520,6 +526,7 @@ async function ensureDefaultOrganization(user: User): Promise<AccordOrganization
     authConfigured: true,
     userId: user.id,
     userEmail: email || undefined,
+    companyId: companyResult.data.id,
     companySlug,
     companyName,
     role: "owner",
@@ -557,7 +564,7 @@ async function claimPendingMembership(user: User): Promise<AccordOrganizationCon
 
   const { data: company } = await supabase
     .from("accord_companies")
-    .select("name")
+    .select("id,name")
     .eq("slug", invitation.company_slug)
     .maybeSingle();
 
@@ -566,6 +573,7 @@ async function claimPendingMembership(user: User): Promise<AccordOrganizationCon
     authConfigured: true,
     userId: user.id,
     userEmail: user.email || undefined,
+    companyId: typeof company?.id === "string" ? company.id : undefined,
     companySlug: invitation.company_slug,
     companyName: typeof company?.name === "string" ? company.name : titleFromSlug(invitation.company_slug),
     role: normalizeMemberRole(invitation.role),

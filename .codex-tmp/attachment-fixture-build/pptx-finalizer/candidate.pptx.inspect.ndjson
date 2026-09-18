@@ -1,0 +1,10 @@
+{"kind":"deck","id":"pr/23hw11","name":"Deck"}
+{"kind":"layout","layoutId":"b6d0b46f-2a16-444c-9512-b920c43f8ffc","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"545c64a6-cc68-4a4a-9ca1-54e8a2b019a6","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/rlsc51","slide":1,"title":"Project Northstar briefing contacts","textShapes":4}
+{"kind":"shape","id":"sh/c7ytkzad","slide":1,"bbox":[0,0,18,720]}
+{"kind":"textbox","id":"sh/r6pcbu98","slide":1,"text":"Project Northstar briefing contacts","textPreview":"Project Northstar briefing contacts","textChars":35,"textLines":1,"bbox":[72,58,1136,72]}
+{"kind":"textbox","id":"sh/q5wbipsn","slide":1,"text":"Synthetic fixture for local attachment redaction testing","textPreview":"Synthetic fixture for local attachment redaction testing","textChars":56,"textLines":1,"bbox":[76,137,1080,48]}
+{"kind":"textbox","id":"sh/1c7uh4ra","slide":1,"text":"Meeting owner: Lena Foster\nEmail: lena.foster@example.test\nPhone: 646-555-0134\n\nBackup contact: Marcus Reed\nEmail: marcus.reed@example.test\nPhone: 646-555-0188\n\nPrompt: Turn these contacts into a short handoff note.","textPreview":"Meeting owner: Lena Foster | Email: lena.foster@example.test | Phone: 646-555-0134 |  | Backup contact: Marcus Reed | Email: marcus.reed@...","textChars":215,"textLines":9,"bbox":[76,230,1060,290]}
+{"kind":"textbox","id":"sh/0bytozap","slide":1,"text":"Expected result: ALLOW after redaction. Accord should upload a governed text copy without the original names, emails, or phone numbers.","textPreview":"Expected result: ALLOW after redaction. Accord should upload a governed text copy without the original names, emails, or phone numbers.","textChars":135,"textLines":1,"bbox":[76,570,1060,64]}
+{"kind":"notes","id":"nt/rlsc51","slide":1,"text":"All names and contact details in this fixture are synthetic."}

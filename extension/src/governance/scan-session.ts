@@ -534,12 +534,16 @@ function governedAttachmentText(
     .join("\n");
 }
 
-function isExtractedDocumentKind(kind?: AttachmentExtractionKind): kind is "pdf_text" | "docx_text" {
-  return kind === "pdf_text" || kind === "docx_text";
+function isExtractedDocumentKind(kind?: AttachmentExtractionKind): kind is Exclude<AttachmentExtractionKind, "native_text"> {
+  return kind === "pdf_text" || kind === "docx_text" || kind === "xlsx_text" || kind === "pptx_text";
 }
 
 function attachmentSourceLabel(kind: AttachmentExtractionKind) {
-  return kind === "pdf_text" ? "PDF" : "DOCX";
+  if (kind === "pdf_text") return "PDF";
+  if (kind === "docx_text") return "DOCX";
+  if (kind === "xlsx_text") return "XLSX spreadsheet";
+  if (kind === "pptx_text") return "PPTX presentation";
+  return "document";
 }
 
 function unsupportedAttachmentReason(name: string) {
@@ -551,6 +555,14 @@ function unsupportedAttachmentReason(name: string) {
 
   if (["doc", "docx"].includes(extension)) {
     return `Document text extraction did not run. ${sanitizedName} was not uploaded. Select the file again so Accord can create a governed text copy.`;
+  }
+
+  if (["xls", "xlsx"].includes(extension)) {
+    return `Spreadsheet text extraction did not run. ${sanitizedName} was not uploaded. Select an XLSX or CSV file so Accord can create a governed text copy.`;
+  }
+
+  if (["ppt", "pptx"].includes(extension)) {
+    return `Presentation text extraction did not run. ${sanitizedName} was not uploaded. Select a PPTX file so Accord can create a governed text copy.`;
   }
 
   if (["jpg", "jpeg", "png", "gif", "webp", "heic"].includes(extension)) {

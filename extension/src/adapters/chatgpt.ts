@@ -32,9 +32,13 @@ const assistantSelectors = [
 const attachmentSelectors = [
   "[data-testid*='attachment-preview']",
   "[data-testid*='composer-attachment']",
+  "[data-testid*='file-upload']",
+  "[data-testid*='file-thumbnail']",
   "[data-testid*='file-preview']",
   "[data-testid*='uploaded-file']",
-  "[data-testid*='upload-preview']"
+  "[data-testid*='upload-preview']",
+  "button[aria-label*='Remove file']",
+  "button[aria-label*='remove file']"
 ];
 
 const attachmentTriggerSelectors = [
@@ -56,6 +60,7 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   private lastDecorationState: ComposerDecorationState = "clear";
   private lastDecorationDraft = "";
   private trustedAttachmentInputs = new WeakSet<HTMLInputElement>();
+  private governedAttachmentInputs = new WeakMap<HTMLInputElement, HTMLInputElement>();
   private lastComposerAttachmentIntentAt = 0;
 
   isCurrentSurface() {
@@ -233,16 +238,19 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   }
 
   async setGovernedFiles(input: HTMLInputElement, files: File[]) {
+    const target = this.resolveAttachmentInput(input);
+    this.governedAttachmentInputs.set(input, target);
     const transfer = new DataTransfer();
     for (const file of files) {
       transfer.items.add(file);
     }
-    input.files = transfer.files;
+    target.files = transfer.files;
     await microtask();
   }
 
   verifyGovernedFiles(input: HTMLInputElement, files: File[]) {
-    const current = Array.from(input.files || []);
+    const target = this.governedAttachmentInputs.get(input) || this.resolveAttachmentInput(input);
+    const current = Array.from(target.files || []);
     if (current.length !== files.length) return false;
 
     return current.every((file, index) => {
@@ -251,10 +259,13 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
     });
   }
 
-  async verifyHostAttachmentAccepted(files: File[]) {
-    const deadline = Date.now() + 2500;
+  async verifyHostAttachmentAccepted(files: File[], input?: HTMLInputElement) {
+    const startedAt = Date.now();
+    const deadline = startedAt + 12_000;
     while (Date.now() < deadline) {
       if (findAcceptedAttachmentPreview(files)) return true;
+      const target = input ? this.governedAttachmentInputs.get(input) || this.resolveAttachmentInput(input) : undefined;
+      if (Date.now() - startedAt >= 600 && hostConsumedGovernedInput(target)) return true;
       await delay(80);
     }
 
@@ -262,13 +273,21 @@ export class ChatGPTAdapter implements AISurfaceAdapter {
   }
 
   dispatchGovernedFileSelection(input: HTMLInputElement) {
-    this.trustedAttachmentInputs.add(input);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
+    const target = this.governedAttachmentInputs.get(input) || this.resolveAttachmentInput(input);
+    this.trustedAttachmentInputs.add(target);
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   clearFileInput(input: HTMLInputElement) {
-    input.value = "";
+    const target = this.governedAttachmentInputs.get(input) || this.resolveAttachmentInput(input);
+    target.value = "";
+  }
+
+  private resolveAttachmentInput(input: HTMLInputElement) {
+    if (input.isConnected) return input;
+    const candidates = Array.from(document.querySelectorAll<HTMLInputElement>("input[type='file']"));
+    return candidates.find((candidate) => this.isComposerAttachmentInput(candidate)) || input;
   }
 
   subscribeToAssistantResponses(callback: (response: SurfaceAssistantResponse) => void) {
@@ -694,11 +713,33 @@ function findAcceptedAttachmentPreview(files: File[]) {
   const visiblePreviews = previews.filter((element) => isVisible(element));
   const broadVisibleText = getVisiblePageTextOutsideAccord();
 
-  const visibleText = visiblePreviews.map((element) => element.innerText || element.textContent || "").join("\n");
-  if (expectedNames.every((name) => visibleText.includes(name))) return true;
-  if (expectedNames.every((name) => broadVisibleText.includes(name))) return true;
+  const visibleText = visiblePreviews.map(elementSearchText).join("\n");
+  if (expectedNames.every((name) => attachmentNameAppears(name, visibleText))) return true;
+  if (expectedNames.every((name) => attachmentNameAppears(name, broadVisibleText))) return true;
 
   return visiblePreviews.length >= files.length && visibleText.trim().length === 0;
+}
+
+function hostConsumedGovernedInput(input?: HTMLInputElement) {
+  if (!input) return false;
+  return input.isConnected && (input.files?.length || 0) === 0;
+}
+
+function elementSearchText(element: HTMLElement) {
+  return [
+    element.innerText || element.textContent || "",
+    element.getAttribute("aria-label") || "",
+    element.getAttribute("title") || "",
+    element.getAttribute("data-testid") || ""
+  ].join("\n");
+}
+
+function attachmentNameAppears(name: string, haystack: string) {
+  if (haystack.includes(name)) return true;
+  const dotIndex = name.lastIndexOf(".");
+  const stem = dotIndex > 0 ? name.slice(0, dotIndex) : name;
+  const previewPrefix = stem.slice(0, 18);
+  return previewPrefix.length >= 8 && haystack.includes(previewPrefix);
 }
 
 function getVisiblePageTextOutsideAccord() {

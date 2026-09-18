@@ -75,9 +75,9 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
             <dl className="mt-5 space-y-3 text-[13px]">
               <div className="flex items-center justify-between gap-4">
-                <dt className="text-accord-muted">Company slug</dt>
-                <dd className="font-mono text-xs uppercase tracking-[0.04em] text-accord-text">
-                  {organization.companySlug}
+                <dt className="text-accord-muted">Organization ID</dt>
+                <dd className="font-mono text-xs tracking-[0.02em] text-accord-text">
+                  {organization.companyId || "Unavailable"}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-4">

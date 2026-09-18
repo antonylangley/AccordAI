@@ -7,19 +7,25 @@ export const supportedTextAttachmentExtensions = new Set([
   "cc",
   "cpp",
   "csv",
+  "env",
   "h",
+  "htm",
+  "html",
   "hpp",
   "ini",
   "java",
   "js",
   "json",
   "jsx",
+  "log",
   "md",
   "py",
   "sh",
   "sql",
+  "tex",
   "toml",
   "ts",
+  "tsv",
   "tsx",
   "txt",
   "xml",
@@ -60,8 +66,6 @@ const genericMimeTypes = new Set([
 ]);
 const explicitlyUnsupportedMimeTypes = new Set([
   "application/gzip",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "application/x-7z-compressed",
   "application/x-msdownload",
   "application/x-rar-compressed",
@@ -76,7 +80,7 @@ export type AttachmentContentClassification =
   | "read_failed"
   | "binary_content";
 
-export type AttachmentExtractionKind = "native_text" | "pdf_text" | "docx_text";
+export type AttachmentExtractionKind = "native_text" | "pdf_text" | "docx_text" | "xlsx_text" | "pptx_text";
 
 export type AttachmentDescriptor = {
   name: string;
@@ -102,6 +106,8 @@ export function isExtractableDocumentAttachment(name: string, mimeType: string) 
   const category = mimeCategory(mimeType);
   if (extension === "pdf") return !mimeType || category === "document" || category === "generic";
   if (extension === "docx") return !mimeType || category === "document" || category === "generic";
+  if (extension === "xlsx") return !mimeType || category === "document" || category === "generic";
+  if (extension === "pptx") return !mimeType || category === "document" || category === "generic";
   return false;
 }
 
@@ -110,7 +116,7 @@ export function classifyAttachmentContent(
   text?: string,
   extractionKind: AttachmentExtractionKind = "native_text"
 ): AttachmentContentClassification {
-  if (extractionKind === "pdf_text" || extractionKind === "docx_text") {
+  if (extractionKind !== "native_text") {
     if (descriptor.size > MAX_GUARDED_DOCUMENT_ATTACHMENT_BYTES) return "too_large";
     if (typeof text !== "string" || !text.trim()) return "read_failed";
     if (looksLikeBinaryText(text)) return "binary_content";
@@ -150,6 +156,8 @@ export function safeMimeType(mimeType: string, name: string) {
   if (extension === "js" || extension === "jsx") return "application/javascript";
   if (extension === "ts" || extension === "tsx") return "application/typescript";
   if (extension === "csv") return "text/csv";
+  if (extension === "tsv") return "text/tab-separated-values";
+  if (extension === "html" || extension === "htm") return "text/html";
   if (extension === "md") return "text/markdown";
   if (extension === "py") return "text/x-python";
   if (extension === "yaml" || extension === "yml") return "application/x-yaml";
@@ -163,6 +171,8 @@ export function mimeCategory(mimeType: string) {
   if (genericMimeTypes.has(normalized)) return "generic";
   if (normalized === "application/pdf") return "document";
   if (normalized === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") return "document";
+  if (normalized === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") return "document";
+  if (normalized === "application/vnd.openxmlformats-officedocument.presentationml.presentation") return "document";
   if (normalized.includes("json")) return "json";
   if (normalized.includes("xml")) return "xml";
   if (normalized.includes("yaml")) return "yaml";

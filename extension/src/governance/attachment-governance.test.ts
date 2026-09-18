@@ -223,6 +223,35 @@ describe("Accord Guard attachment governance", () => {
     expect(result.results[0].sanitizedText).not.toContain("jordan.example@test.com");
   });
 
+  test("governs extracted XLSX cells as a redacted text-copy replacement", async () => {
+    const result = await govern(
+      [
+        file(
+          "customer-risk.xlsx",
+          "Sheet: Customer risk\nName\tEmail\tRisk\nJordan Example\tjordan.example@test.com\tHigh",
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          4096,
+          "xlsx_text"
+        )
+      ],
+      "attachments:extracted-xlsx",
+      ["Jordan Example"]
+    );
+
+    expect(result.batchAction).toBe("allow");
+    expect(result.results[0]).toMatchObject({
+      action: "redacted",
+      sanitizedName: "customer-risk.governed.txt",
+      extractionKind: "xlsx_text"
+    });
+    expect(result.results[0].reason).toContain("Original XLSX spreadsheet was not uploaded");
+    expect(result.results[0].sanitizedText).toContain("Source: XLSX SPREADSHEET");
+    expect(result.results[0].sanitizedText).toContain("[PERSON_1]");
+    expect(result.results[0].sanitizedText).toContain("[EMAIL_1]");
+    expect(result.results[0].sanitizedText).not.toContain("Jordan Example");
+    expect(result.results[0].sanitizedText).not.toContain("jordan.example@test.com");
+  });
+
   test("blocks extracted documents when readable text extraction failed", async () => {
     const result = await govern(
       [

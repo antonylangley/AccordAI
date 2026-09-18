@@ -86,6 +86,63 @@ describe("ChatGPT adapter", () => {
 
     await expect(adapter.verifyHostAttachmentAccepted([new File(["safe"], "customer.governed.txt", { type: "text/plain" })])).resolves.toBe(true);
   });
+
+  test("verifies host attachment acceptance from a current remove-file control", async () => {
+    document.body.innerHTML = `
+      <div id="prompt-textarea" contenteditable="true" role="textbox"></div>
+      <button aria-label="Remove file customer-risk.governed.txt"></button>
+    `;
+    setRect(document.querySelector("#prompt-textarea") as HTMLElement, { left: 120, top: 500, width: 620, height: 40 });
+    setRect(document.querySelector("button") as HTMLElement, { left: 120, top: 450, width: 180, height: 32 });
+
+    const adapter = new ChatGPTAdapter();
+
+    await expect(
+      adapter.verifyHostAttachmentAccepted([new File(["safe"], "customer-risk.governed.txt", { type: "text/plain" })])
+    ).resolves.toBe(true);
+  });
+
+  test("accepts a governed file after ChatGPT consumes and clears its picker", async () => {
+    document.body.innerHTML = `
+      <form><div id="prompt-textarea" contenteditable="true" role="textbox"></div><input type="file" /></form>
+    `;
+    const composer = document.querySelector("#prompt-textarea") as HTMLElement;
+    const input = document.querySelector("input") as HTMLInputElement;
+    setRect(composer, { left: 120, top: 500, width: 620, height: 40 });
+
+    const adapter = new ChatGPTAdapter();
+    let selectedFiles: File[] = [new File(["safe"], "customer-risk.governed.txt", { type: "text/plain" })];
+    Object.defineProperty(input, "files", { configurable: true, get: () => selectedFiles });
+    const verification = adapter.verifyHostAttachmentAccepted(
+      [new File(["safe"], "customer-risk.governed.txt", { type: "text/plain" })],
+      input
+    );
+    window.setTimeout(() => {
+      selectedFiles = [];
+    }, 20);
+
+    await expect(verification).resolves.toBe(true);
+  });
+
+  test("dispatches a governed selection through the current composer picker when the original picker was replaced", () => {
+    document.body.innerHTML = `
+      <form><div id="prompt-textarea" contenteditable="true" role="textbox"></div><input id="current" type="file" multiple /></form>
+    `;
+    const composer = document.querySelector("#prompt-textarea") as HTMLElement;
+    const current = document.querySelector("#current") as HTMLInputElement;
+    const stale = document.createElement("input");
+    stale.type = "file";
+    setRect(composer, { left: 120, top: 500, width: 620, height: 40 });
+    let changes = 0;
+    current.addEventListener("change", () => {
+      changes += 1;
+    });
+
+    const adapter = new ChatGPTAdapter();
+    adapter.dispatchGovernedFileSelection(stale);
+
+    expect(changes).toBe(1);
+  });
 });
 
 function installDomGlobals(dom: JSDOM) {
@@ -95,6 +152,7 @@ function installDomGlobals(dom: JSDOM) {
   globalThis.HTMLElement = dom.window.HTMLElement;
   globalThis.HTMLInputElement = dom.window.HTMLInputElement;
   globalThis.HTMLLabelElement = dom.window.HTMLLabelElement;
+  globalThis.Event = dom.window.Event;
   globalThis.File = dom.window.File;
   globalThis.NodeFilter = dom.window.NodeFilter;
 }

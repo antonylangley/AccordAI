@@ -43,7 +43,7 @@ export function OrganizationSettings({
             </form>
             {workspaceStatus ? <Notice ok={workspaceStatus === "saved"} text={workspaceStatus === "saved" ? "Organization name saved." : "Could not save the organization name."} /> : null}
             <dl className="mt-4 space-y-2 text-xs">
-              <MetaRow label="Organization ID" value={organization.companySlug} mono />
+              <MetaRow label="Organization ID" value={organization.companyId || "Unavailable"} mono />
               <MetaRow label="Your access" value={organization.role} />
             </dl>
           </div>
