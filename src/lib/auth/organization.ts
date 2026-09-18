@@ -162,16 +162,16 @@ export async function updateOrganizationNameFromForm(formData: FormData): Promis
 export async function updateOrganizationName(companyName: string): Promise<OrganizationUpdateResult> {
   const organization = await getAccordOrganizationContext({ autoCreate: true });
   if (!organization.authenticated) {
-    return { ok: false, message: "Sign in before updating the workspace." };
+    return { ok: false, message: "Sign in before updating the organization." };
   }
 
   if (!canManageOrganization(organization.role)) {
-    return { ok: false, message: "Only owners and admins can update workspace settings." };
+    return { ok: false, message: "Only owners and admins can update organization settings." };
   }
 
   const normalizedName = normalizeCompanyName(companyName);
   if (normalizedName.length < 2) {
-    return { ok: false, message: "Enter a workspace name." };
+    return { ok: false, message: "Enter an organization name." };
   }
 
   const supabase = getSupabaseServerClient();
@@ -179,16 +179,20 @@ export async function updateOrganizationName(companyName: string): Promise<Organ
     return { ok: false, message: "Supabase is not configured for organization management." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("accord_companies")
     .update({
       name: normalizedName,
       updated_at: new Date().toISOString()
     })
-    .eq("slug", organization.companySlug);
+    .eq("slug", organization.companySlug)
+    .select("name")
+    .maybeSingle();
 
-  if (error) return { ok: false, message: "Could not update the workspace name." };
-  return { ok: true, message: "Workspace name saved." };
+  if (error || data?.name !== normalizedName) {
+    return { ok: false, message: "Could not update the organization name." };
+  }
+  return { ok: true, message: "Organization name saved." };
 }
 
 export async function addOrganizationMember({

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "build": "node scripts/prepare-ort-assets.mjs && wxt build -b chrome && node scripts/verify-extension-identity.mjs",
+    "build": "node scripts/prepare-ort-assets.mjs && wxt build -b chrome && node scripts/verify-background-syntax.mjs && node scripts/verify-extension-identity.mjs",
     "prepare": "wxt prepare",
     "prepare:ort": "node scripts/prepare-ort-assets.mjs",
     "prepare:ner": "node scripts/prepare-ner-assets.mjs",

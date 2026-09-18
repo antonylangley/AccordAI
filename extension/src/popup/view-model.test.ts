@@ -138,6 +138,7 @@ describe("Accord Guard popup states", () => {
     expect(pauseControlViewForState(owner, enforcementState(true))).toMatchObject({
       visible: true,
       paused: false,
+      locked: false,
       title: "Guard active",
       stateLabel: "ON",
       actionLabel: "Pause Guard"
@@ -145,6 +146,7 @@ describe("Accord Guard popup states", () => {
     expect(pauseControlViewForState(owner, enforcementState(false))).toMatchObject({
       visible: true,
       paused: true,
+      locked: false,
       title: "Guard paused",
       stateLabel: "OFF",
       actionLabel: "Resume Guard"
@@ -152,11 +154,26 @@ describe("Accord Guard popup states", () => {
   });
 
   test.each(["admin", "member", "viewer"] satisfies GuardRole[])(
-    "hides the pause control for %s",
+    "shows a locked-on pause control for %s",
     (role) => {
-      expect(pauseControlViewForState(authenticatedState(role), enforcementState(true))).toEqual({ visible: false });
+      expect(pauseControlViewForState(authenticatedState(role), enforcementState(true))).toMatchObject({
+        visible: true,
+        paused: false,
+        locked: true,
+        title: "Guard active",
+        actionLabel: "Guard is managed by your organization"
+      });
     }
   );
+
+  test("keeps the owner control visible while enforcement state refreshes after login", () => {
+    expect(pauseControlViewForState(authenticatedState("owner"), null)).toMatchObject({
+      visible: true,
+      paused: false,
+      locked: false,
+      actionLabel: "Pause Guard"
+    });
+  });
 
   test("hides the pause control for signed-out and no-organization states", () => {
     expect(pauseControlViewForState({ ...base, status: "signed_out" }, enforcementState(true))).toEqual({ visible: false });

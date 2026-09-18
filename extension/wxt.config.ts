@@ -8,10 +8,20 @@ const extensionIdentity = JSON.parse(
 };
 
 export default defineConfig({
+  // The MV3 background worker includes Supabase and the local inference runtime.
+  // Do not run the production worker through Oxc minification: that path can
+  // emit a bundle Chrome rejects before the auth/message listeners register.
+  // The packaged inference libraries are already optimized upstream.
+  vite: () => ({
+    build: {
+      minify: false
+    }
+  }),
   manifest: {
     name: "Accord Guard",
     short_name: "Accord Guard",
     description: "Accord governance inside ChatGPT. Detected identifiers are removed before governed message submission.",
+    minimum_chrome_version: "114",
     key: extensionIdentity.chromeManifestKey,
     icons: {
       "16": "icons/accord-icon-16.png",
@@ -19,7 +29,7 @@ export default defineConfig({
       "48": "icons/accord-icon-48.png",
       "128": "icons/accord-icon-128.png"
     },
-    permissions: ["storage", "identity"],
+    permissions: ["storage", "identity", "sidePanel"],
     host_permissions: [
       "https://chatgpt.com/*",
       "https://www.accordgovernance.com/*",
@@ -32,7 +42,6 @@ export default defineConfig({
     },
     action: {
       default_title: "Accord Guard",
-      default_popup: "popup.html",
       default_icon: {
         "16": "icons/accord-icon-16.png",
         "32": "icons/accord-icon-32.png",

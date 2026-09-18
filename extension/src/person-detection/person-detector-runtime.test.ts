@@ -47,7 +47,7 @@ const transformers = vi.hoisted(() => {
       backends: {
         onnx: {
           wasm: {
-            wasmPaths: "" as string | { mjs: string; wasm: string },
+            wasmPaths: "" as string | { wasm: string },
             wasmBinary: undefined as Uint8Array | undefined,
             proxy: true,
             numThreads: 4
@@ -87,11 +87,10 @@ test("configures Transformers.js to fetch packaged extension assets without file
     useWasmCache: false,
     localModelPath: "chrome-extension://accord-test/models/"
   });
+  expect(transformers.env.backends.onnx.wasm.wasmPaths).toEqual({
+    wasm: "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.wasm"
+  });
   expect(transformers.env.backends.onnx.wasm).toMatchObject({
-    wasmPaths: {
-      mjs: "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.mjs",
-      wasm: "chrome-extension://accord-test/ort/ort-wasm-simd-threaded.asyncify.wasm"
-    },
     wasmBinary: new Uint8Array([0, 97, 115, 109]),
     proxy: false,
     numThreads: 1
@@ -126,9 +125,8 @@ test("configures Transformers.js to fetch packaged extension assets without file
   });
 });
 
-test("packages ONNX Runtime WASM backend assets used by the MV3 service worker", () => {
+test("packages the ONNX Runtime WASM binary used by the MV3 service worker", () => {
   const publicRoot = join(process.cwd(), "public", "ort");
 
-  expect(existsSync(join(publicRoot, "ort-wasm-simd-threaded.asyncify.mjs"))).toBe(true);
   expect(existsSync(join(publicRoot, "ort-wasm-simd-threaded.asyncify.wasm"))).toBe(true);
 });

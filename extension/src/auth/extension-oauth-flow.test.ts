@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   getClient: vi.fn(),
   client: null as any,
   launchError: null as string | null,
-  callbackMode: "success" as "success" | "state_mismatch",
+  callbackMode: "success" as "success" | "unexpected_redirect",
   writeVerifier: true,
   launchedUrls: [] as string[]
 }));
@@ -39,9 +39,8 @@ beforeEach(() => {
     storageKey: "sb-test-auth-token",
     getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
     signInWithOAuth: vi.fn(async (credentials: any) => {
-      const state = credentials.options?.queryParams?.state;
-      if (mocks.writeVerifier) store[verifierStorageKey] = `verifier_${state}`;
-      return { data: { url: authorizeUrl(state, credentials.options?.redirectTo) }, error: null };
+      if (mocks.writeVerifier) store[verifierStorageKey] = "verifier_for_active_attempt";
+      return { data: { url: authorizeUrl(credentials.options?.redirectTo) }, error: null };
     }),
     exchangeCodeForSession: vi.fn(async () => ({ data: { session: session() }, error: null })),
     refreshSession: vi.fn(),
@@ -62,9 +61,10 @@ beforeEach(() => {
           delete (chrome.runtime as { lastError?: { message: string } }).lastError;
           return;
         }
-        const state = new URL(url).searchParams.get("state");
-        const returnedState = mocks.callbackMode === "state_mismatch" ? "wrong_state" : state;
-        callback(`${redirectUrl}?code=fresh_code&state=${returnedState}`);
+        const callbackBase = mocks.callbackMode === "unexpected_redirect"
+          ? "https://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.chromiumapp.org/auth/callback"
+          : redirectUrl;
+        callback(`${callbackBase}?code=fresh_code`);
       })
     },
     storage: {
@@ -115,8 +115,7 @@ describe("Guard extension OAuth flow", () => {
       provider: "google",
       options: {
         redirectTo: redirectUrl,
-        skipBrowserRedirect: true,
-        queryParams: { state: expect.any(String) }
+        skipBrowserRedirect: true
       }
     });
     expect(chrome.identity.getRedirectURL).toHaveBeenCalledWith("auth/callback");
@@ -145,14 +144,14 @@ describe("Guard extension OAuth flow", () => {
     expect(mocks.client.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 
-  test("OAuth state mismatch is rejected before code exchange", async () => {
-    mocks.callbackMode = "state_mismatch";
+  test("an unexpected callback origin is rejected before code exchange", async () => {
+    mocks.callbackMode = "unexpected_redirect";
 
     const result = await connectGuardAccount("google");
 
     expect(result).toMatchObject({
       status: "error",
-      code: "oauth_session_expired"
+      code: "oauth_failed"
     });
     expect(mocks.client.auth.exchangeCodeForSession).not.toHaveBeenCalled();
   });
@@ -195,13 +194,12 @@ describe("Guard extension OAuth flow", () => {
   });
 });
 
-function authorizeUrl(state: string, redirectTo: string) {
+function authorizeUrl(redirectTo: string) {
   const url = new URL("https://project.supabase.co/auth/v1/authorize");
   url.searchParams.set("provider", "google");
   url.searchParams.set("redirect_to", redirectTo);
   url.searchParams.set("code_challenge", "challenge");
   url.searchParams.set("code_challenge_method", "s256");
-  url.searchParams.set("state", state);
   return url.toString();
 }
 

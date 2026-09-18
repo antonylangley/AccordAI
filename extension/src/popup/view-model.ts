@@ -22,6 +22,7 @@ export type GuardPauseControlView =
   | {
       visible: true;
       paused: boolean;
+      locked: boolean;
       title: string;
       detail: string;
       stateLabel: string;
@@ -71,20 +72,27 @@ export function pauseControlViewForState(
   state: GuardAuthSnapshot,
   enforcement: GuardEnforcementState | null
 ): GuardPauseControlView {
-  if (
-    state.status !== "authenticated" ||
-    !state.organization ||
-    !state.membership ||
-    state.membership.role !== "owner" ||
-    !enforcement?.canPause
-  ) {
+  if (state.status !== "authenticated" || !state.organization || !state.membership) {
     return { visible: false };
   }
 
-  if (enforcement.paused) {
+  if (state.membership.role !== "owner") {
+    return {
+      visible: true,
+      paused: false,
+      locked: true,
+      title: "Guard active",
+      detail: "Your organization requires Guard to stay active on this browser.",
+      stateLabel: "ON",
+      actionLabel: "Guard is managed by your organization"
+    };
+  }
+
+  if (enforcement?.paused) {
     return {
       visible: true,
       paused: true,
+      locked: false,
       title: "Guard paused",
       detail: "Accord is not currently enforcing AI policy in this browser.",
       stateLabel: "OFF",
@@ -95,6 +103,7 @@ export function pauseControlViewForState(
   return {
     visible: true,
     paused: false,
+    locked: false,
     title: "Guard active",
     detail: "Accord is enforcing AI policy in this browser.",
     stateLabel: "ON",

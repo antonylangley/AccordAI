@@ -111,29 +111,32 @@ async function runOAuth(provider: GuardAuthProvider) {
       attemptId: oauthAttemptId(state),
       redirectHost: safeHost(redirectTo)
     });
+    // Supabase owns the provider-facing OAuth state parameter and replaces any
+    // caller-supplied value. Accord binds the callback with its stored PKCE
+    // verifier plus the expected provider, redirect URL, and attempt TTL.
     const { data, error } = await client.auth.signInWithOAuth({
       provider,
-      options: { redirectTo, skipBrowserRedirect: true, queryParams: { state } }
+      options: { redirectTo, skipBrowserRedirect: true }
     });
     if (error || !data.url) throw error || new Error("Accord could not start OAuth.");
     await rememberGuardOAuthAttempt({ state, provider, redirectUrl: redirectTo, client });
     logAuthDiagnostic("authorize_url_ready", { provider, attemptId: oauthAttemptId(state) });
     const callbackUrl = await launchAuthFlow(data.url);
     const parsedCallback = new URL(callbackUrl);
-    const returnedState = parsedCallback.searchParams.get("state");
     const providerError = parsedCallback.searchParams.get("error");
+    const callbackMatched = matchesOAuthCallback(parsedCallback, redirectTo);
     logAuthDiagnostic("redirect_received", {
       provider,
       attemptId: oauthAttemptId(state),
       callbackHost: safeHost(callbackUrl),
-      stateMatched: returnedState === state,
+      callbackMatched,
       hasCode: parsedCallback.searchParams.has("code"),
       hasProviderError: Boolean(providerError)
     });
 
     if (providerError) throw new Error(providerError);
-    if (!returnedState || returnedState !== state) throw new Error("oauth_state_mismatch");
-    const attempt = await restoreGuardOAuthAttempt({ state: returnedState, provider, redirectUrl: redirectTo, client });
+    if (!callbackMatched) throw new Error("oauth_callback_mismatch");
+    const attempt = await restoreGuardOAuthAttempt({ state, provider, redirectUrl: redirectTo, client });
     logAuthDiagnostic(attempt ? "verifier_found" : "verifier_missing", {
       provider,
       attemptId: oauthAttemptId(state)
@@ -260,6 +263,21 @@ function safeHost(value: string) {
     return new URL(value).host;
   } catch {
     return "unknown";
+  }
+}
+
+function matchesOAuthCallback(callback: URL, expectedRedirect: string) {
+  try {
+    const expected = new URL(expectedRedirect);
+    return (
+      callback.protocol === expected.protocol &&
+      callback.host === expected.host &&
+      callback.pathname === expected.pathname &&
+      callback.username === expected.username &&
+      callback.password === expected.password
+    );
+  } catch {
+    return false;
   }
 }
 

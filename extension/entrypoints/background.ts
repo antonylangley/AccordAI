@@ -4,8 +4,11 @@ import type { AccordGuardMessage, AccordGuardResponse } from "../src/messaging/t
 import { warmPersonDetector } from "../src/person-detection/person-detector";
 import { getGuardAuthSnapshot, markGuardPolicySync } from "../src/auth/session";
 import { getActivePolicyBundleStatus, policyStatusToGuardSync } from "../src/policy/bundle-client";
+import { configureSidePanelAction } from "../src/sidepanel/action";
 
 export default defineBackground(() => {
+  void configureSidePanelAction().catch(() => undefined);
+
   // Warm the packaged NER model when the MV3 service worker starts. Failure is
   // non-fatal; PERSON detection fails closed with no deterministic fallback.
   void warmPersonDetector().catch(() => undefined);

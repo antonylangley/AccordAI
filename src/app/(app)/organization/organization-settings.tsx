@@ -25,7 +25,7 @@ export function OrganizationSettings({
             </span>
             <div>
               <h2 className="text-sm font-semibold text-accord-text">Organization settings</h2>
-              <p className="mt-0.5 text-xs text-accord-muted">Workspace details, access, and invitations.</p>
+              <p className="mt-0.5 text-xs text-accord-muted">Organization details, access, and invitations.</p>
             </div>
           </div>
           <ChevronDown className="h-4 w-4 text-accord-muted transition-transform group-open:rotate-180" aria-hidden="true" />
@@ -33,17 +33,17 @@ export function OrganizationSettings({
 
         <div className="grid gap-4 border-t border-accord-border p-4 xl:grid-cols-[0.7fr_1.3fr]">
           <div className="rounded-md border border-accord-border p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-accord-faint">Workspace</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-accord-faint">Organization</p>
             <form action={updateWorkspaceAction} className="mt-3 space-y-3">
               <label className="grid gap-1.5 text-xs font-semibold text-accord-text">
                 Company name
                 <input name="companyName" defaultValue={organization.companyName} required minLength={2} maxLength={80} className={inputClass} />
               </label>
-              <button type="submit" className={primaryButtonClass}>Save workspace</button>
+              <button type="submit" className={primaryButtonClass}>Save organization</button>
             </form>
-            {workspaceStatus ? <Notice ok={workspaceStatus === "saved"} text={workspaceStatus === "saved" ? "Workspace name saved." : "Could not save the workspace name."} /> : null}
+            {workspaceStatus ? <Notice ok={workspaceStatus === "saved"} text={workspaceStatus === "saved" ? "Organization name saved." : "Could not save the organization name."} /> : null}
             <dl className="mt-4 space-y-2 text-xs">
-              <MetaRow label="Workspace ID" value={organization.companySlug} mono />
+              <MetaRow label="Organization ID" value={organization.companySlug} mono />
               <MetaRow label="Your access" value={organization.role} />
             </dl>
           </div>

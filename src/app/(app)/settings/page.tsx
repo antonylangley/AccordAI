@@ -36,7 +36,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
       <PageHeader
         eyebrow={organization.companyName}
         title="Settings"
-        description="Manage the workspace, access, provider connections, and privacy defaults."
+        description="Manage the organization, access, provider connections, and privacy defaults."
       />
 
       <SettingsPanel title="Appearance">
@@ -45,10 +45,10 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </SettingsRow>
       </SettingsPanel>
 
-      <SettingsPanel title="Organization" description="Account ownership and members for this Accord workspace.">
+      <SettingsPanel title="Organization" description="Account ownership and members for this Accord organization.">
         <div className="grid gap-4 p-4 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="rounded-lg border border-accord-border bg-white p-4">
-            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-muted">Workspace</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-accord-muted">Organization</p>
             <form action={updateWorkspaceAction} className="mt-3 space-y-3">
               <label className="grid gap-1.5 text-xs font-semibold text-accord-text">
                 Company name
@@ -67,7 +67,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
                 disabled={!canManageMembers}
                 className="rounded-md bg-accord-navy px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-accord-text disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                Save workspace
+                Save organization
               </button>
             </form>
 
@@ -314,7 +314,7 @@ function WorkspaceNotice({ status }: { status: string }) {
           : "border-amber-200 bg-amber-50 text-amber-800"
       ].join(" ")}
     >
-      {isSaved ? "Workspace name saved." : "Could not save the workspace name. Check your access and try again."}
+      {isSaved ? "Organization name saved." : "Could not save the organization name. Check your access and try again."}
     </div>
   );
 }

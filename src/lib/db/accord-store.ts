@@ -2,6 +2,7 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { ensureAccordCompanyExists } from "@/lib/db/company-record";
 import {
   BUILT_IN_POLICY_BUNDLES,
   DEFAULT_APPROVED_AI_PROVIDERS,
@@ -967,14 +968,7 @@ async function seedWorkspaceMemory(supabase: SupabaseClient) {
 }
 
 async function seedTestCompany(supabase: SupabaseClient, slug = "test-company", name = "Test Company") {
-  const result = await supabase.from("accord_companies").upsert(
-    {
-      slug,
-      name,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: "slug" }
-  );
+  const result = await ensureAccordCompanyExists(supabase, slug, name);
 
   if (result.error) {
     if (isMissingSupabaseRelation(result.error)) return false;

@@ -41,7 +41,6 @@ type LocalNerPipeline = {
 const MODEL_ID = "accord-ner-v0.3.1";
 const MODEL_THRESHOLD = 0.5;
 const MODEL_DETECTOR = "accord_ner_v0_3_1";
-const ORT_WASM_MJS_PATH = "ort/ort-wasm-simd-threaded.asyncify.mjs";
 const ORT_WASM_BINARY_PATH = "ort/ort-wasm-simd-threaded.asyncify.wasm";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -174,10 +173,11 @@ async function configureLocalRuntimeOnce() {
     throw new Error("ONNX Runtime WebAssembly backend is unavailable.");
   }
 
-  const wasmMjsUrl = chrome.runtime.getURL(ORT_WASM_MJS_PATH);
   const wasmBinaryUrl = chrome.runtime.getURL(ORT_WASM_BINARY_PATH);
+  // Do not provide an `mjs` override here. ONNX Runtime resolves custom module
+  // paths with dynamic import(), which Chrome forbids in MV3 service workers.
+  // Supplying the binary directly keeps the bundled bootstrap on its static path.
   wasm.wasmPaths = {
-    mjs: wasmMjsUrl,
     wasm: wasmBinaryUrl
   };
   wasm.wasmBinary = await fetchPackagedWasmBinary(wasmBinaryUrl);
